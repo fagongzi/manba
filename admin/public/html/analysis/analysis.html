@@ -1,0 +1,55 @@
+<div class="panel panel-default ">
+    <div class="panel-heading">Server:<a href="#/servers/{{serverAddr}}">{{serverAddr}}</a> in Proxy:{{proxyAddr}}</div>
+    <div class="panel-body">
+        <div class="col-md-3">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>requests</td>
+                        <td>{{metrics.requestCount}}</td>
+                    </tr>
+                    <tr>
+                        <td>successed</td>
+                        <td>{{metrics.requestSuccessedCount}}</td>
+                    </tr>
+                    <tr>
+                        <td>qps</td>
+                        <td>{{metrics.qps}}/s</td>
+                    </tr>
+                    <tr>
+                        <td>failures</td>
+                        <td>{{metrics.requestFailureCount}}</td>
+                    </tr>
+                    <tr>
+                        <td>rejects</td>
+                        <td>{{metrics.rejectCount}}</td>
+                    </tr>
+                    <tr>
+                        <td>Avg</td>
+                        <td>{{metrics.avg}} ms</td>
+                    </tr>
+                    <tr>
+                        <td>Max</td>
+                        <td>{{metrics.max}} ms</td>
+                    </tr>
+                    <tr>
+                        <td>Min</td>
+                        <td>{{metrics.min}} ms</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-9">
+            <div id="containerCount"></div>
+                <div style="height: 5px;"></div>
+                <div id="containerDelays"></div>
+            </div>
+        </div>
+    </div>
+</div>

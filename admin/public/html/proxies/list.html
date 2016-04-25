@@ -1,0 +1,40 @@
+<h1 class="page-header">Proxies</h1>
+
+<div>
+    <form style="margin-bottom: 3px;" class="form-inline">  
+        <label for="LogLevel">LogLevel:</label>
+        <select ng-model="logLevel" id="LogLevel">
+            <option value="info">info</option>
+            <option value="debug">debug</option>
+            <option value="warn">warn</option>
+            <option value="error">error</option>
+        </select>
+
+        <label for="search">Search:</label>
+        <input type="text" class="form-control" ng-model="q" id="search" />
+    </form>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped">
+        <thead>
+        <tr>
+            <th>Addr</th>
+            <th>Manager Addr</th>
+            <th>Log Level</th>
+            <th>Opts</th>
+        </tr>
+        </thead>
+
+        <tbody>
+            <tr ng-repeat="proxy in proxies">
+                <td>{{proxy.conf.addr}}</td>
+                <td>{{proxy.conf.mgrAddr}}</td>
+                <td>{{proxy.conf.logLevel}}</td>
+                <td>
+                    <button type="button" class="btn btn-success btn-sm" ng-click="setLogLevel(proxy.conf.mgrAddr)">SetLogLevel</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
