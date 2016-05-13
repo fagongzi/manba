@@ -1,11 +1,11 @@
-<h1 class="page-header">Clusters</h1>
+<h1 class="page-header">Routings</h1>
 
 <div>
     <form style="margin-bottom: 3px;" class="form-inline">
         <button type="button" class="btn btn-success btn-sm" ng-click="create()">
             Create
         </button>
-
+       
         <label for="search">Search:</label>
         <input type="text" class="form-control" ng-model="q" id="search" />
     </form>
@@ -15,22 +15,24 @@
     <table class="table table-bordered table-striped">
         <thead>
         <tr>
-            <th>Name</th>
-            <th>Pattern</th>
-            <th>Load Balance</th>
-            <th>ServerCounts</th>
+            <th>Cluster</th>
+            <th>URL</th>
+            <th>Cfg</th>
             <th>Opts</th>
         </tr>
         </thead>
 
         <tbody>
-            <tr ng-repeat="cluster in clusters | filter: q">
-                <td><a href="#/clusters/{{cluster.name}}">{{cluster.name}}</a></td>
-                <td>{{cluster.pattern}}</td>
-                <td>{{cluster.lbName}}</td>
-                <td>{{cluster.count}}</td>
+            <tr ng-repeat="routing in routings | filter: q">
+                <td><a href="#/clusters/{{routing.clusterName}}">{{routing.clusterName}}</a></td>
+                 <td>
+                    {{routing.url}}
+                </td>
                 <td>
-                        <button type="button" class="btn btn-success btn-sm" ng-click="delete(cluster.name)">Delete</button>
+                    {{routing.cfg}}
+                </td>
+                <td>
+                    <button type="button" class="btn btn-success btn-sm" ng-click="delete(routing.id)">Delete</button>
                 </td>
             </tr>
         </tbody>

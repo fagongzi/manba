@@ -25,6 +25,9 @@ func (self *AdminServer) initApiRoute() {
 	self.e.Post("/api/aggregations", self.newAggregation())
 	self.e.Delete("/api/aggregations", self.deleteAggregation())
 
+	self.e.Get("/api/routings", self.getRoutings())
+	self.e.Post("/api/routings", self.newRouting())
+
 	self.e.Get("/api/analysis/:proxy/:server/:secs", self.getAnalysis())
 	self.e.Post("/api/analysis", self.newAnalysis())
 }

@@ -10,15 +10,17 @@ import (
 )
 
 var (
-	ERR_SERVER_EXISTS      = errors.New("Server already exist.")
-	ERR_CLUSTER_EXISTS     = errors.New("Cluster already exist.")
+	ERR_SERVER_EXISTS      = errors.New("Server already exist")
+	ERR_CLUSTER_EXISTS     = errors.New("Cluster already exist")
 	ERR_BIND_EXISTS        = errors.New("Bind already exist")
-	ERR_AGGREGATION_EXISTS = errors.New("Aggregation already exist.")
+	ERR_AGGREGATION_EXISTS = errors.New("Aggregation already exist")
+	ERR_ROUTING_EXISTS     = errors.New("Routing already exist")
 
-	ERR_SERVER_NOT_FOUND      = errors.New("Server not found.")
-	ERR_CLUSTER_NOT_FOUND     = errors.New("Cluster not found.")
+	ERR_SERVER_NOT_FOUND      = errors.New("Server not found")
+	ERR_CLUSTER_NOT_FOUND     = errors.New("Cluster not found")
 	ERR_BIND_NOT_FOUND        = errors.New("Bind not found")
-	ERR_AGGREGATION_NOT_FOUND = errors.New("Aggregation not found.")
+	ERR_AGGREGATION_NOT_FOUND = errors.New("Aggregation not found")
+	ERR_ROUTING_NOT_FOUND     = errors.New("Routing not found")
 )
 
 type RouteResult struct {
@@ -37,6 +39,7 @@ type RouteTable struct {
 	svrs         map[string]*Server
 	mapping      map[string]map[string]*Cluster
 	aggregations map[string]*Aggregation
+	routings     map[string]*Routing
 
 	tw             *net.HashedTimeWheel
 	evtChan        chan *Server
@@ -61,6 +64,7 @@ func NewRouteTable(store Store) *RouteTable {
 		clusters:     make(map[string]*Cluster),
 		svrs:         make(map[string]*Server),
 		aggregations: make(map[string]*Aggregation),
+		routings:     make(map[string]*Routing),
 		mapping:      make(map[string]map[string]*Cluster), // serverAddr -> map[clusterName]*Cluster
 
 		evtChan:        make(chan *Server, 1024),
@@ -78,6 +82,46 @@ func (self *RouteTable) GetServer(addr string) *Server {
 	return self.svrs[addr]
 }
 
+func (self *RouteTable) AddNewRouting(routing *Routing) error {
+	self.rwLock.Lock()
+	defer self.rwLock.Unlock()
+
+	err := routing.Check()
+
+	if nil != err {
+		return err
+	}
+
+	_, ok := self.routings[routing.Id]
+
+	if ok {
+		return ERR_ROUTING_EXISTS
+	}
+
+	self.routings[routing.Id] = routing
+
+	log.Infof("Routing <%s> added", routing.Cfg)
+
+	return nil
+}
+
+func (self *RouteTable) DeleteRouting(id string) error {
+	self.rwLock.Lock()
+	defer self.rwLock.Unlock()
+
+	r, ok := self.routings[id]
+
+	if !ok {
+		return ERR_ROUTING_NOT_FOUND
+	}
+
+	delete(self.routings, id)
+
+	log.Infof("Routing <%s> deleted", r.Cfg)
+
+	return nil
+}
+
 func (self *RouteTable) AddNewAggregation(ang *Aggregation) error {
 	self.rwLock.Lock()
 	defer self.rwLock.Unlock()
@@ -89,6 +133,8 @@ func (self *RouteTable) AddNewAggregation(ang *Aggregation) error {
 	}
 
 	self.aggregations[ang.Url] = ang
+
+	log.Infof("Aggregation <%s> added", ang.Url)
 
 	return nil
 }
@@ -105,6 +151,8 @@ func (self *RouteTable) UpdateAggregation(ang *Aggregation) error {
 
 	old.updateFrom(ang)
 
+	log.Infof("Aggregation <%s> updated", ang.Url)
+
 	return nil
 }
 
@@ -119,6 +167,8 @@ func (self *RouteTable) DeleteAggregation(url string) error {
 	}
 
 	delete(self.aggregations, url)
+
+	log.Infof("Aggregation <%s> deleted", url)
 
 	return nil
 }
@@ -135,14 +185,14 @@ func (self *RouteTable) UpdateServer(svr *Server) error {
 
 	old.updateFrom(svr)
 
+	log.Infof("Server <%s> updated", svr.Addr)
+
 	return nil
 }
 
 func (self *RouteTable) DeleteServer(serverAddr string) error {
 	self.rwLock.Lock()
 	defer self.rwLock.Unlock()
-
-	log.Infof("Server delete start: <%s>", serverAddr)
 
 	svr, ok := self.svrs[serverAddr]
 
@@ -164,6 +214,8 @@ func (self *RouteTable) DeleteServer(serverAddr string) error {
 	for _, cluster := range binded {
 		cluster.unbind(svr)
 	}
+
+	log.Infof("Server <%s> deleted", svr.Addr)
 
 	return nil
 }
@@ -212,6 +264,8 @@ func (self *RouteTable) UpdateCluster(cluster *Cluster) error {
 
 	old.updateFrom(cluster)
 
+	log.Infof("Cluster <%s> updated", cluster.Name)
+
 	return nil
 }
 
@@ -234,7 +288,9 @@ func (self *RouteTable) DeleteCluster(clusterName string) error {
 
 	delete(self.clusters, cluster.Name)
 
-	// TODO Aggregation node loose cluster
+	// TODO: Aggregation node loose cluster
+
+	log.Infof("Cluster <%s> deleted", cluster.Name)
 
 	return nil
 }
@@ -341,6 +397,19 @@ func (self *RouteTable) Select(req *http.Request) []*RouteResult {
 		return results
 	}
 
+	var targetCluster *Cluster
+
+	for _, routing := range self.routings {
+		if routing.Matches(req) {
+			targetCluster = self.clusters[routing.ClusterName]
+			break
+		}
+	}
+
+	if nil != targetCluster {
+		return []*RouteResult{&RouteResult{Svr: self.doSelectServer(req, targetCluster)}}
+	}
+
 	for _, cluster := range self.clusters {
 		svr := self.selectServer(req, cluster)
 
@@ -374,12 +443,16 @@ func (self *RouteTable) selectAggregation(req *http.Request) (matches bool, resu
 
 func (self *RouteTable) selectServer(req *http.Request, cluster *Cluster) *Server {
 	if cluster.Matches(req) {
-		addr := cluster.Select(req) // 这里有可能会被锁住，会被正在修改bind关系的cluster锁住
-		svr, _ := self.svrs[addr]
-		return svr
+		return self.doSelectServer(req, cluster)
 	}
 
 	return nil
+}
+
+func (self *RouteTable) doSelectServer(req *http.Request, cluster *Cluster) *Server {
+	addr := cluster.Select(req) // 这里有可能会被锁住，会被正在修改bind关系的cluster锁住
+	svr, _ := self.svrs[addr]
+	return svr
 }
 
 func (self *RouteTable) GetAnalysis() *Analysis {
@@ -409,11 +482,25 @@ func (self *RouteTable) doEvtReceive() {
 			self.doReceiveServer(evt)
 		} else if evt.Src == EVT_SRC_BIND {
 			self.doReceiveBind(evt)
-		} else if evt.Src == EVT_STC_AGGREGATION {
+		} else if evt.Src == EVT_SRC_AGGREGATION {
 			self.doReceiveAggregation(evt)
+		} else if evt.Src == EVT_SRC_ROUTING {
+			self.doReceiveRouting(evt)
 		} else {
 			log.Warnf("EVT unknown <%+v>", evt)
 		}
+	}
+}
+
+func (self *RouteTable) doReceiveRouting(evt *Evt) {
+	routing, _ := evt.Value.(*Routing)
+
+	if evt.Type == EVT_TYPE_NEW {
+		self.AddNewRouting(routing)
+	} else if evt.Type == EVT_TYPE_DELETE {
+		self.DeleteRouting(evt.Key)
+	} else if evt.Type == EVT_TYPE_UPDATE {
+		// TODO: impl
 	}
 }
 
@@ -468,12 +555,14 @@ func (self *RouteTable) Load() {
 	self.loadServers()
 	self.loadBinds()
 	self.loadAggregations()
+	self.loadRoutings()
 }
 
 func (self *RouteTable) loadClusters() {
 	clusters, err := self.store.GetClusters()
 	if nil != err {
-		log.PanicError(err, "Load clusters fail.")
+		log.WarnErrorf(err, "Load clusters fail.")
+		return
 	}
 
 	for _, cluster := range clusters {
@@ -487,7 +576,8 @@ func (self *RouteTable) loadClusters() {
 func (self *RouteTable) loadServers() {
 	servers, err := self.store.GetServers()
 	if nil != err {
-		log.PanicError(err, "Load servers from etcd fail.")
+		log.WarnErrorf(err, "Load servers from etcd fail.")
+		return
 	}
 
 	for _, server := range servers {
@@ -499,10 +589,26 @@ func (self *RouteTable) loadServers() {
 	}
 }
 
+func (self *RouteTable) loadRoutings() {
+	routings, err := self.store.GetRoutings()
+	if nil != err {
+		log.WarnErrorf(err, "Load routings from etcd fail.")
+		return
+	}
+
+	for _, r := range routings {
+		err := self.AddNewRouting(r)
+		if nil != err {
+			log.PanicError(err, "Routing <%s> add fail.", r.Cfg)
+		}
+	}
+}
+
 func (self *RouteTable) loadBinds() {
 	binds, err := self.store.GetBinds()
 	if nil != err {
-		log.PanicError(err, "Load binds from etcd fail.")
+		log.WarnErrorf(err, "Load binds from etcd fail.")
+		return
 	}
 
 	for _, b := range binds {
@@ -516,7 +622,8 @@ func (self *RouteTable) loadBinds() {
 func (self *RouteTable) loadAggregations() {
 	angs, err := self.store.GetAggregations()
 	if nil != err {
-		log.PanicError(err, "Load aggregations from etcd fail.")
+		log.WarnErrorf(err, "Load aggregations from etcd fail.")
+		return
 	}
 
 	for _, ang := range angs {

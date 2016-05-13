@@ -13,7 +13,8 @@ const (
 	EVT_SRC_CLUSTER     = EvtSrc(0)
 	EVT_SRC_SERVER      = EvtSrc(1)
 	EVT_SRC_BIND        = EvtSrc(2)
-	EVT_STC_AGGREGATION = EvtSrc(3)
+	EVT_SRC_AGGREGATION = EvtSrc(3)
+	EVT_SRC_ROUTING     = EvtSrc(4)
 )
 
 type Evt struct {
@@ -46,6 +47,9 @@ type Store interface {
 	UpdateAggregation(agn *Aggregation) error
 	DeleteAggregation(url string) error
 	GetAggregations() ([]*Aggregation, error)
+
+	SaveRouting(routing *Routing) error
+	GetRoutings() ([]*Routing, error)
 
 	Watch(evtCh chan *Evt, stopCh chan bool) error
 

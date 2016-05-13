@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	ETCD_ADDR   = "http://192.168.159.130:2379"
-	ETCD_PREFIX = "/gateway1"
+	ETCD_ADDR   = "http://192.168.70.13:2379"
+	ETCD_PREFIX = "/gateway2"
 )
 
 var (
@@ -55,7 +55,7 @@ func createLocalServer() {
 }
 
 func waitNotify() {
-	time.Sleep(time.Microsecond * 500)
+	time.Sleep(time.Second * 1)
 }
 
 func TestCreateRouteTable(t *testing.T) {
@@ -371,4 +371,53 @@ func TestEtcdWatchDeleteAggregation(t *testing.T) {
 		t.Errorf("aggregations expect:<0>, acture:<%d>", len(rt.aggregations))
 		return
 	}
+}
+
+func TestEtcdWatchNewRouting(t *testing.T) {
+	r, err := NewRouting(`desc = "test"; deadline = 100; rule = ["$query_abc == 10", "$query_123 == 20"];`, clusterName)
+
+	if nil != err {
+		t.Error("add routing err.")
+		return
+	}
+
+	err = rt.store.SaveRouting(r)
+
+	if nil != err {
+		t.Error("add routing err.")
+		return
+	}
+
+	waitNotify()
+
+	if len(rt.routings) == 1 {
+		delete(rt.routings, r.Id)
+		return
+	}
+
+	t.Errorf("expect:<1>, acture:<%d>", len(rt.routings))
+}
+
+func TestEtcdWatchDeleteRouting(t *testing.T) {
+	r, err := NewRouting(`desc = "test"; deadline = 3; rule = ["$query_abc == 10", "$query_123 == 20"];`, clusterName)
+
+	if nil != err {
+		t.Error("add routing err.")
+		return
+	}
+
+	err = rt.store.SaveRouting(r)
+
+	if nil != err {
+		t.Error("add routing err.")
+		return
+	}
+
+	time.Sleep(time.Second * 30)
+
+	if len(rt.routings) == 0 {
+		return
+	}
+
+	t.Errorf("expect:<0>, acture:<%d>", len(rt.routings))
 }

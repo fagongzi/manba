@@ -17,6 +17,7 @@ type EtcdStore struct {
 	bindsDir              string
 	aggregationsDir       string
 	proxiesDir            string
+	routingsDir           string
 	deleteServersDir      string
 	deleteClustersDir     string
 	deleteAggregationsDir string
@@ -37,6 +38,7 @@ func NewEtcdStore(etcdAddrs []string, prefix string) (Store, error) {
 		bindsDir:              fmt.Sprintf("%s/binds", prefix),
 		aggregationsDir:       fmt.Sprintf("%s/aggregations", prefix),
 		proxiesDir:            fmt.Sprintf("%s/proxy", prefix),
+		routingsDir:           fmt.Sprintf("%s/routings", prefix),
 		deleteServersDir:      fmt.Sprintf("%s/delete/servers", prefix),
 		deleteClustersDir:     fmt.Sprintf("%s/delete/clusters", prefix),
 		deleteAggregationsDir: fmt.Sprintf("%s/delete/aggregations", prefix),
@@ -278,6 +280,30 @@ func (self EtcdStore) GetBinds() ([]*Bind, error) {
 	return values, nil
 }
 
+func (self EtcdStore) SaveRouting(routing *Routing) error {
+	key := fmt.Sprintf("%s/%s", self.routingsDir, routing.Id)
+	_, err := self.cli.Create(key, string(routing.Marshal()), uint64(routing.deadline))
+
+	return err
+}
+
+func (self EtcdStore) GetRoutings() ([]*Routing, error) {
+	rsp, err := self.cli.Get(self.routingsDir, true, false)
+
+	if nil != err {
+		return nil, err
+	}
+
+	l := rsp.Node.Nodes.Len()
+	routings := make([]*Routing, l)
+
+	for i := 0; i < l; i++ {
+		routings[i] = UnMarshalRouting([]byte(rsp.Node.Nodes[i].Value))
+	}
+
+	return routings, nil
+}
+
 func (self EtcdStore) Clean() error {
 	_, err := self.cli.Delete(self.prefix, true)
 
@@ -393,7 +419,9 @@ func (self EtcdStore) doWatch() {
 		} else if strings.HasPrefix(key, self.bindsDir) {
 			evtSrc = EVT_SRC_BIND
 		} else if strings.HasPrefix(key, self.aggregationsDir) {
-			evtSrc = EVT_STC_AGGREGATION
+			evtSrc = EVT_SRC_AGGREGATION
+		} else if strings.HasPrefix(key, self.routingsDir) {
+			evtSrc = EVT_SRC_ROUTING
 		} else {
 			continue
 		}
@@ -408,7 +436,7 @@ func (self EtcdStore) doWatch() {
 			}
 		} else if rsp.Action == "create" {
 			evtType = EVT_TYPE_NEW
-		} else if rsp.Action == "delete" {
+		} else if rsp.Action == "delete" || rsp.Action == "expire" {
 			evtType = EVT_TYPE_DELETE
 		} else {
 			// unknow not support
@@ -461,44 +489,28 @@ func (self EtcdStore) doWatchWithAggregation(evtType EvtType, rsp *etcd.Response
 	value, _ := url.QueryUnescape(strings.Replace(rsp.Node.Key, fmt.Sprintf("%s/", self.aggregationsDir), "", 1))
 
 	return &Evt{
-		Src:   EVT_STC_AGGREGATION,
+		Src:   EVT_SRC_AGGREGATION,
 		Type:  evtType,
 		Key:   value,
 		Value: ang,
 	}
 }
 
-func (self EtcdStore) init() error {
+func (self EtcdStore) doWatchWithRouting(evtType EvtType, rsp *etcd.Response) *Evt {
+	routing := UnMarshalRouting([]byte(rsp.Node.Value))
+
+	return &Evt{
+		Src:   EVT_SRC_ROUTING,
+		Type:  evtType,
+		Key:   strings.Replace(rsp.Node.Key, fmt.Sprintf("%s/", self.routingsDir), "", 1),
+		Value: routing,
+	}
+}
+
+func (self EtcdStore) init() {
 	self.watchMethodMapping[EVT_SRC_BIND] = self.doWatchWithBind
 	self.watchMethodMapping[EVT_SRC_SERVER] = self.doWatchWithServer
 	self.watchMethodMapping[EVT_SRC_CLUSTER] = self.doWatchWithCluster
-	self.watchMethodMapping[EVT_STC_AGGREGATION] = self.doWatchWithAggregation
-
-	var err error
-	_, err = self.cli.SetDir(self.clustersDir, 0)
-	if nil != err {
-		return err
-	}
-
-	_, err = self.cli.SetDir(self.serversDir, 0)
-	if nil != err {
-		return err
-	}
-
-	_, err = self.cli.SetDir(self.bindsDir, 0)
-	if nil != err {
-		return err
-	}
-
-	_, err = self.cli.SetDir(self.aggregationsDir, 0)
-	if nil != err {
-		return err
-	}
-
-	_, err = self.cli.SetDir(self.proxiesDir, 0)
-	if nil != err {
-		return err
-	}
-
-	return nil
+	self.watchMethodMapping[EVT_SRC_AGGREGATION] = self.doWatchWithAggregation
+	self.watchMethodMapping[EVT_SRC_ROUTING] = self.doWatchWithRouting
 }

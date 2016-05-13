@@ -9,7 +9,7 @@ import (
 )
 
 type Result struct {
-	Code  int         `json:"code"`
+	Code  int         `json:"code, omitempty"`
 	Error string      `json:"error"`
 	Value interface{} `json:"value"`
 }
@@ -41,8 +41,6 @@ func NewAdminServer(addr string, etcdAddrs []string, etcdPrefix string, user str
 }
 
 func (self *AdminServer) initHTTPServer() {
-	self.e.SetDebug(true)
-
 	self.e.Use(mw.Logger())
 	self.e.Use(mw.Recover())
 	self.e.Use(mw.Gzip())
@@ -62,6 +60,6 @@ func (self *AdminServer) initHTTPServer() {
 }
 
 func (self *AdminServer) Start() {
-	fmt.Println("start at 8080")
+	fmt.Printf("start at %s\n", self.addr)
 	self.e.Run(sd.New(self.addr))
 }

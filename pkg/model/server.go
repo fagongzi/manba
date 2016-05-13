@@ -89,6 +89,11 @@ func UnMarshalServerFromReader(r io.Reader) (*Server, error) {
 	return v, err
 }
 
+func (self *Server) Marshal() []byte {
+	v, _ := json.Marshal(self)
+	return v
+}
+
 func (self *Server) updateFrom(svr *Server) {
 	if self.lock != nil {
 		self.Lock()
@@ -101,11 +106,6 @@ func (self *Server) updateFrom(svr *Server) {
 	self.CloseCount = svr.CloseCount
 
 	log.Infof("Server <%s> updated, %+v", self.Addr, self)
-}
-
-func (self *Server) Marshal() []byte {
-	v, _ := json.Marshal(self)
-	return v
 }
 
 func (self *Server) GetCircuit() Circuit {
