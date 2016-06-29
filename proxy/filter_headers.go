@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"github.com/fagongzi/gateway/conf"
-	"net/http"
 )
 
 // Hop-by-hop headers. These are removed when sent to the backend.
@@ -41,23 +40,13 @@ func (self HeadersFilter) Pre(c *filterContext) (statusCode int, err error) {
 	c.outreq.ProtoMinor = 1
 	c.outreq.Close = false
 
-	// Remove hop-by-hop headers to the backend.  Especially
-	// important is "Connection" because we want a persistent
-	// connection, regardless of what the client sent to us.  This
-	// is modifying the same underlying map from req (shallow
-	// copied above) so we only copy it if necessary.
-	copiedHeaders := false
+	copyHeader(c.outreq.Header, c.req.Header)
+
 	for _, h := range hopHeaders {
-		if c.outreq.Header.Get(h) != "" {
-			if !copiedHeaders {
-				c.outreq.Header = make(http.Header)
-				copyHeader(c.outreq.Header, c.req.Header)
-				copiedHeaders = true
-			}
-			c.outreq.Header.Del(h)
-		}
+		c.outreq.Header.Del(h)
 	}
 
+	c.outreq.Host = c.req.Host
 	self.setRuntimeVals(c)
 
 	return self.baseFilter.Pre(c)
