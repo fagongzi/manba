@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/brettlangdon/forge"
-	"github.com/fagongzi/net"
+	"github.com/fagongzi/goetty"
 	"io"
 	"net/http"
 	"net/url"
@@ -84,7 +84,7 @@ func UnMarshalRoutingFromReader(r io.Reader) (*Routing, error) {
 	err := decoder.Decode(v)
 
 	if v.Id == "" {
-		v.Id = net.NewKey()
+		v.Id = goetty.NewV4UUID()
 	}
 
 	return v, err
@@ -104,7 +104,7 @@ func NewRouting(cfgString string, clusterName string, url string) (*Routing, err
 	r.Cfg = cfgString
 	r.ClusterName = clusterName
 	r.Url = url
-	r.Id = net.NewKey()
+	r.Id = goetty.NewV4UUID()
 
 	return r, r.init()
 }

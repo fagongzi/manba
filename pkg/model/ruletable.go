@@ -3,7 +3,7 @@ package model
 import (
 	"errors"
 	"github.com/CodisLabs/codis/pkg/utils/log"
-	"github.com/fagongzi/net"
+	"github.com/fagongzi/goetty"
 	"net/http"
 	"sync"
 	"time"
@@ -41,7 +41,7 @@ type RouteTable struct {
 	aggregations map[string]*Aggregation
 	routings     map[string]*Routing
 
-	tw             *net.HashedTimeWheel
+	tw             *goetty.HashedTimeWheel
 	evtChan        chan *Server
 	store          Store
 	watchStopCh    chan bool
@@ -51,7 +51,7 @@ type RouteTable struct {
 }
 
 func NewRouteTable(store Store) *RouteTable {
-	tw := net.NewHashedTimeWheel(time.Second, 60, 3)
+	tw := goetty.NewHashedTimeWheel(time.Second, 60, 3)
 	tw.Start()
 
 	rt := &RouteTable{
@@ -459,7 +459,7 @@ func (self *RouteTable) GetAnalysis() *Analysis {
 	return self.analysiser
 }
 
-func (self *RouteTable) GetTimeWheel() *net.HashedTimeWheel {
+func (self *RouteTable) GetTimeWheel() *goetty.HashedTimeWheel {
 	return self.tw
 }
 

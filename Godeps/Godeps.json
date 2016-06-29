@@ -1,6 +1,7 @@
 {
 	"ImportPath": "github.com/fagongzi/gateway",
-	"GoVersion": "go1.5",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
 	],
@@ -36,6 +37,11 @@
 			"Rev": "a0685525343b856f2f42569c7a5aac9007b29da4"
 		},
 		{
+			"ImportPath": "github.com/brettlangdon/forge/token",
+			"Comment": "v0.2.0",
+			"Rev": "a0685525343b856f2f42569c7a5aac9007b29da4"
+		},
+		{
 			"ImportPath": "github.com/coreos/go-etcd/etcd",
 			"Comment": "v2.0.0-38-g003851b",
 			"Rev": "003851be7bb0694fe3cc457a49529a19388ee7cf"
@@ -46,8 +52,8 @@
 			"Rev": "40bd0f3b4891a9d7f121bfb7b8e8b0525625e262"
 		},
 		{
-			"ImportPath": "github.com/fagongzi/net",
-			"Rev": "52150ea05e03c8561df161a3861e312a979a3409"
+			"ImportPath": "github.com/fagongzi/goetty",
+			"Rev": "164a4974789b65b3aefc0adc2b4afe9cdce3f7b1"
 		},
 		{
 			"ImportPath": "github.com/fgrid/uuid",
@@ -55,6 +61,21 @@
 		},
 		{
 			"ImportPath": "github.com/labstack/echo",
+			"Comment": "v2.0.0-beta.2-93-g986338c",
+			"Rev": "986338c805dcaf0aea0ffe2da2b3a57e1c6741b9"
+		},
+		{
+			"ImportPath": "github.com/labstack/echo/engine",
+			"Comment": "v2.0.0-beta.2-93-g986338c",
+			"Rev": "986338c805dcaf0aea0ffe2da2b3a57e1c6741b9"
+		},
+		{
+			"ImportPath": "github.com/labstack/echo/engine/standard",
+			"Comment": "v2.0.0-beta.2-93-g986338c",
+			"Rev": "986338c805dcaf0aea0ffe2da2b3a57e1c6741b9"
+		},
+		{
+			"ImportPath": "github.com/labstack/echo/middleware",
 			"Comment": "v2.0.0-beta.2-93-g986338c",
 			"Rev": "986338c805dcaf0aea0ffe2da2b3a57e1c6741b9"
 		},
@@ -82,6 +103,11 @@
 			"Rev": "56b76bdf51f7708750eac80fa38b952bb9f32639"
 		},
 		{
+			"ImportPath": "github.com/satori/go.uuid",
+			"Comment": "v1.0.0",
+			"Rev": "f9ab0dce87d815821e221626b772e3475a0d2749"
+		},
+		{
 			"ImportPath": "github.com/toolkits/net",
 			"Rev": "d60cc35d68b7c7a319278619e961d8208d667277"
 		},
@@ -99,7 +125,7 @@
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",
-			"Rev": "58e54f396d28b990640c591986da915ef5a8cbd3"
+			"Rev": "62bee037599929a6e9146f29d10dd5208c43507d"
 		}
 	]
 }
