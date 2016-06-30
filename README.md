@@ -19,18 +19,13 @@ Gateway自身有2个组件
 * admin 管理后台
 
 ###通过源码安装
+建议使用go1.6
 ```
 git clone https://github.com/fagongzi.git
-cd golang/gateway
-godep restore
+cd $GOPATH/src/github.com/fagongzi/gateway
 go build gateway.go
 go build admin/admin.go
 ```
-
-###二进制包
-
-* [admin-linux64.tar.gz](http://7xtbpp.com2.z0.glb.clouddn.com/admin-linux64.tar.gz)
-* [gateway-linux64.tar.gz](http://7xtbpp.com2.z0.glb.clouddn.com/gateway-linux64.tar.gz)
 
 流控
 ----
@@ -92,6 +87,6 @@ go build admin/admin.go
 ---------
 提供webUI的方式管理网关的配置，例如后端server、集群、服务聚合、流控、熔断等所有功能
 
-提供网关上单个server的各项指标的监控页面
+提供网关上单个server的各项指标的查看页面
 
 
