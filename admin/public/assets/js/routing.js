@@ -1,4 +1,4 @@
-function routeAggregation($routeProvider) {
+function routeRouting($routeProvider) {
     $routeProvider.when("/routings", {
         "templateUrl" : "html/routing/list.html",
         "controller" : RoutingController
