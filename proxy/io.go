@@ -77,12 +77,12 @@ func (c *runOnFirstRead) Read(bs []byte) (int, error) {
 	return c.Reader.Read(bs)
 }
 
-func (self *Proxy) copyResponse(dst io.Writer, src io.Reader) {
-	if self.flushInterval != 0 {
+func (p *Proxy) copyResponse(dst io.Writer, src io.Reader) {
+	if p.flushInterval != 0 {
 		if wf, ok := dst.(writeFlusher); ok {
 			mlw := &maxLatencyWriter{
 				dst:     wf,
-				latency: self.flushInterval,
+				latency: p.flushInterval,
 				done:    make(chan bool),
 			}
 			go mlw.flushLoop()

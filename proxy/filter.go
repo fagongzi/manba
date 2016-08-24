@@ -1,12 +1,14 @@
 package proxy
 
 import (
-	"github.com/fagongzi/gateway/pkg/model"
 	"net/http"
+
+	"github.com/fagongzi/gateway/pkg/model"
 )
 
 var (
-	SUPPORT_FILTERS = []string{"Log", "Headers", "XForwardFor"}
+	// SupportFilters support filters
+	SupportFilters = []string{"Log", "Headers", "XForwardFor"}
 )
 
 type filterContext struct {
@@ -20,6 +22,7 @@ type filterContext struct {
 	runtimeVar map[string]string
 }
 
+// Filter filter interface
 type Filter interface {
 	Name() string
 
@@ -30,20 +33,23 @@ type Filter interface {
 
 type baseFilter struct{}
 
-func (self baseFilter) Pre(c *filterContext) (statusCode int, err error) {
+// Pre execute before proxy
+func (f baseFilter) Pre(c *filterContext) (statusCode int, err error) {
 	return http.StatusOK, nil
 }
 
-func (self baseFilter) Post(c *filterContext) (statusCode int, err error) {
+// Post execute after proxy
+func (f baseFilter) Post(c *filterContext) (statusCode int, err error) {
 	return http.StatusOK, nil
 }
 
-func (self baseFilter) PostErr(c *filterContext) {
+// PostErr execute proxy has errors
+func (f baseFilter) PostErr(c *filterContext) {
 
 }
 
-func (self *Proxy) doPreFilters(c *filterContext) (filterName string, statusCode int, err error) {
-	for iter := self.filters.Front(); iter != nil; iter = iter.Next() {
+func (f *Proxy) doPreFilters(c *filterContext) (filterName string, statusCode int, err error) {
+	for iter := f.filters.Front(); iter != nil; iter = iter.Next() {
 		f, _ := iter.Value.(Filter)
 		filterName = f.Name()
 
@@ -56,8 +62,8 @@ func (self *Proxy) doPreFilters(c *filterContext) (filterName string, statusCode
 	return "", http.StatusOK, nil
 }
 
-func (self *Proxy) doPostFilters(c *filterContext) (filterName string, statusCode int, err error) {
-	for iter := self.filters.Back(); iter != nil; iter = iter.Prev() {
+func (f *Proxy) doPostFilters(c *filterContext) (filterName string, statusCode int, err error) {
+	for iter := f.filters.Back(); iter != nil; iter = iter.Prev() {
 		f, _ := iter.Value.(Filter)
 
 		statusCode, err = f.Post(c)
@@ -69,8 +75,8 @@ func (self *Proxy) doPostFilters(c *filterContext) (filterName string, statusCod
 	return "", http.StatusOK, nil
 }
 
-func (self *Proxy) doPostErrFilters(c *filterContext) {
-	for iter := self.filters.Back(); iter != nil; iter = iter.Prev() {
+func (f *Proxy) doPostErrFilters(c *filterContext) {
+	for iter := f.filters.Back(); iter != nil; iter = iter.Prev() {
 		f, _ := iter.Value.(Filter)
 
 		f.PostErr(c)

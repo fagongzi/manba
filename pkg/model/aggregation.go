@@ -6,24 +6,29 @@ import (
 	"net/url"
 )
 
+// Node aggregation node struct
 type Node struct {
 	ClusterName string `json:"clusterName,omitempty"`
-	Url         string `json:"url,omitempty"`
+	URL         string `json:"url,omitempty"`
 	AttrName    string `json:"attrName,omitempty"`
 }
 
+// Aggregation aggregation struct
+// a aggregation container a url and some nodes
 type Aggregation struct {
-	Url   string  `json:"url"`
+	URL   string  `json:"url"`
 	Nodes []*Node `json:"nodes"`
 }
 
+// UnMarshalAggregation unmarshal
 func UnMarshalAggregation(data []byte) *Aggregation {
 	v := &Aggregation{}
 	json.Unmarshal(data, v)
-	v.Url, _ = url.QueryUnescape(v.Url)
+	v.URL, _ = url.QueryUnescape(v.URL)
 	return v
 }
 
+// UnMarshalAggregationFromReader unmarshal from reader
 func UnMarshalAggregationFromReader(r io.Reader) (*Aggregation, error) {
 	v := &Aggregation{}
 
@@ -33,19 +38,21 @@ func UnMarshalAggregationFromReader(r io.Reader) (*Aggregation, error) {
 	return v, err
 }
 
+// NewAggregation create a Aggregation
 func NewAggregation(url string, nodes []*Node) *Aggregation {
 	return &Aggregation{
-		Url:   url,
+		URL:   url,
 		Nodes: nodes,
 	}
 }
 
-func (self *Aggregation) Marshal() []byte {
-	v, _ := json.Marshal(self)
+// Marshal marshal
+func (a *Aggregation) Marshal() []byte {
+	v, _ := json.Marshal(a)
 	return v
 }
 
-func (self *Aggregation) updateFrom(ang *Aggregation) {
-	self.Url = ang.Url
-	self.Nodes = ang.Nodes
+func (a *Aggregation) updateFrom(ang *Aggregation) {
+	a.URL = ang.URL
+	a.Nodes = ang.Nodes
 }

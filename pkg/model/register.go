@@ -1,5 +1,6 @@
 package model
 
+// Register register
 type Register interface {
 	Registry(proxyInfo *ProxyInfo) error
 

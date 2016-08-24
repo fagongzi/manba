@@ -1,14 +1,14 @@
 package proxy
 
 import (
+	"time"
+
 	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/conf"
-	"time"
 )
 
-// record the http access log
+// AccessFilter record the http access log
 // log format: $remoteip "$method $path HTTP/$proto" $code "$agent" $svr $cost
-
 type AccessFilter struct {
 	baseFilter
 	config *conf.Conf
@@ -22,11 +22,13 @@ func newAccessFilter(config *conf.Conf, proxy *Proxy) Filter {
 	}
 }
 
-func (self AccessFilter) Name() string {
-	return FILTER_HTTP_ACCESS
+// Name return name of this filter
+func (f AccessFilter) Name() string {
+	return FilterHTTPAccess
 }
 
-func (self AccessFilter) Post(c *filterContext) (statusCode int, err error) {
+// Post execute after proxy
+func (f AccessFilter) Post(c *filterContext) (statusCode int, err error) {
 	cost := (c.endAt - c.startAt)
 
 	log.Infof("%s \"%s %s %s\" %d \"%s\" %s %s",
@@ -39,5 +41,5 @@ func (self AccessFilter) Post(c *filterContext) (statusCode int, err error) {
 		c.result.Svr.Addr,
 		time.Duration(cost))
 
-	return self.baseFilter.Post(c)
+	return f.baseFilter.Post(c)
 }

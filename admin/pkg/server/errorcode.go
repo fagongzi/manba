@@ -1,6 +1,8 @@
 package server
 
 const (
-	CODE_SUCCESS = 0
-	CODE_ERROR   = 1
+	// CodeSuccess success code
+	CodeSuccess = 0
+	// CodeError error code
+	CodeError = 1
 )

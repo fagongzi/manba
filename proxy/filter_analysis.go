@@ -4,6 +4,7 @@ import (
 	"github.com/fagongzi/gateway/conf"
 )
 
+// AnalysisFilter analysis filter
 type AnalysisFilter struct {
 	baseFilter
 	proxy  *Proxy
@@ -17,20 +18,24 @@ func newAnalysisFilter(config *conf.Conf, proxy *Proxy) Filter {
 	}
 }
 
-func (self AnalysisFilter) Name() string {
-	return FILTER_ANALYSIS
+// Name return name of this filter
+func (f AnalysisFilter) Name() string {
+	return FilterAnalysis
 }
 
-func (self AnalysisFilter) Pre(c *filterContext) (statusCode int, err error) {
+// Pre execute before proxy
+func (f AnalysisFilter) Pre(c *filterContext) (statusCode int, err error) {
 	c.rb.GetAnalysis().Request(c.result.Svr.Addr)
-	return self.baseFilter.Pre(c)
+	return f.baseFilter.Pre(c)
 }
 
-func (self AnalysisFilter) Post(c *filterContext) (statusCode int, err error) {
+// Post execute after proxy
+func (f AnalysisFilter) Post(c *filterContext) (statusCode int, err error) {
 	c.rb.GetAnalysis().Response(c.result.Svr.Addr, c.endAt-c.startAt)
-	return self.baseFilter.Post(c)
+	return f.baseFilter.Post(c)
 }
 
-func (self AnalysisFilter) PostErr(c *filterContext) {
+// PostErr execute proxy has errors
+func (f AnalysisFilter) PostErr(c *filterContext) {
 	c.rb.GetAnalysis().Failure(c.result.Svr.Addr)
 }

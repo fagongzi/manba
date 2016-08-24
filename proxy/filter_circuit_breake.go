@@ -3,27 +3,33 @@ package proxy
 import (
 	"errors"
 	"fmt"
-	"github.com/CodisLabs/codis/pkg/utils/log"
-	"github.com/fagongzi/gateway/conf"
-	"github.com/fagongzi/gateway/pkg/model"
 	"math/rand"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/fagongzi/gateway/conf"
+	"github.com/fagongzi/gateway/pkg/model"
 )
 
 const (
-	RATE_BASE = 100
+	// RateBase base rate
+	RateBase = 100
 )
 
 const (
-	TIMER_PREFIX = "Circuit-"
+	// TimerPrefix timer prefix
+	TimerPrefix = "Circuit-"
 )
 
 var (
-	ERR_CIRCUIT_CLOSE        = errors.New("server is in circuit close")
-	ERR_CIRCUIT_HALF         = errors.New("server is in circuit half")
-	ERR_CIRCUIT_HALF_LIMITED = errors.New("server is in circuit half, traffic limit")
+	// ErrCircuitClose server is in circuit close
+	ErrCircuitClose = errors.New("server is in circuit close")
+	// ErrCircuitHalf server is in circuit half
+	ErrCircuitHalf = errors.New("server is in circuit half")
+	// ErrCircuitHalfLimited server is in circuit half, traffic limit
+	ErrCircuitHalfLimited = errors.New("server is in circuit half, traffic limit")
 )
 
 type evt struct {
@@ -31,6 +37,7 @@ type evt struct {
 	server *model.Server
 }
 
+// CircuitBreakeFilter CircuitBreakeFilter
 type CircuitBreakeFilter struct {
 	baseFilter
 	proxy  *Proxy
@@ -44,51 +51,55 @@ func newCircuitBreakeFilter(config *conf.Conf, proxy *Proxy) Filter {
 	}
 }
 
-func (self CircuitBreakeFilter) Name() string {
-	return FILTER_CIRCUIT_BREAKE
+// Name return name of this filter
+func (f CircuitBreakeFilter) Name() string {
+	return FilterCircuitBreake
 }
 
-func (self CircuitBreakeFilter) Pre(c *filterContext) (statusCode int, err error) {
+// Pre execute before proxy
+func (f CircuitBreakeFilter) Pre(c *filterContext) (statusCode int, err error) {
 	status := c.result.Svr.GetCircuit()
 	count := c.rb.GetAnalysis().GetContinuousFailureCount(c.result.Svr.Addr)
 
 	if status == model.CIRCUIT_OPEN {
 		if count > c.result.Svr.CloseCount {
-			self.changeToClose(c.result.Svr)
-			return http.StatusServiceUnavailable, ERR_CIRCUIT_CLOSE
+			f.changeToClose(c.result.Svr)
+			return http.StatusServiceUnavailable, ErrCircuitClose
 		}
 
 		return http.StatusOK, nil
 	} else if status == model.CIRCUIT_HALF {
 		if limitAllow(c.result.Svr.HalfTrafficRate) {
-			return self.baseFilter.Pre(c)
+			return f.baseFilter.Pre(c)
 		}
 
-		return http.StatusServiceUnavailable, ERR_CIRCUIT_HALF_LIMITED
+		return http.StatusServiceUnavailable, ErrCircuitHalfLimited
 	} else {
-		return http.StatusServiceUnavailable, ERR_CIRCUIT_CLOSE
+		return http.StatusServiceUnavailable, ErrCircuitClose
 	}
 }
 
-func (self CircuitBreakeFilter) Post(c *filterContext) (statusCode int, err error) {
+// Post execute after proxy
+func (f CircuitBreakeFilter) Post(c *filterContext) (statusCode int, err error) {
 	status := c.result.Svr.GetCircuit()
 
 	if status == model.CIRCUIT_HALF {
-		self.changeToOpen(c.result.Svr)
+		f.changeToOpen(c.result.Svr)
 	}
 
-	return self.baseFilter.Post(c)
+	return f.baseFilter.Post(c)
 }
 
-func (self CircuitBreakeFilter) PostErr(c *filterContext) {
+// PostErr execute proxy has errors
+func (f CircuitBreakeFilter) PostErr(c *filterContext) {
 	status := c.result.Svr.GetCircuit()
 
 	if status == model.CIRCUIT_HALF {
-		self.changeToClose(c.result.Svr)
+		f.changeToClose(c.result.Svr)
 	}
 }
 
-func (self CircuitBreakeFilter) changeToClose(server *model.Server) {
+func (f CircuitBreakeFilter) changeToClose(server *model.Server) {
 	server.Lock()
 	defer server.UnLock()
 
@@ -100,10 +111,10 @@ func (self CircuitBreakeFilter) changeToClose(server *model.Server) {
 
 	log.Warnf("Circuit Server <%s> change to close.", server.Addr)
 
-	self.proxy.routeTable.GetTimeWheel().AddWithId(time.Second*time.Duration(server.HalfToOpen), getKey(server.Addr), self.changeToHalf)
+	f.proxy.routeTable.GetTimeWheel().AddWithId(time.Second*time.Duration(server.HalfToOpen), getKey(server.Addr), f.changeToHalf)
 }
 
-func (self CircuitBreakeFilter) changeToOpen(server *model.Server) {
+func (f CircuitBreakeFilter) changeToOpen(server *model.Server) {
 	server.Lock()
 	defer server.UnLock()
 
@@ -116,9 +127,9 @@ func (self CircuitBreakeFilter) changeToOpen(server *model.Server) {
 	log.Warnf("Circuit Server <%s> change to open.", server.Addr)
 }
 
-func (self CircuitBreakeFilter) changeToHalf(key string) {
+func (f CircuitBreakeFilter) changeToHalf(key string) {
 	addr := getAddr(key)
-	server := self.proxy.routeTable.GetServer(addr)
+	server := f.proxy.routeTable.GetServer(addr)
 
 	if nil != server {
 		server.HalfCircuit()
@@ -128,7 +139,7 @@ func (self CircuitBreakeFilter) changeToHalf(key string) {
 }
 
 func getKey(addr string) string {
-	return fmt.Sprintf("%s%s", TIMER_PREFIX, addr)
+	return fmt.Sprintf("%s%s", TimerPrefix, addr)
 }
 
 func getAddr(key string) string {
@@ -137,6 +148,6 @@ func getAddr(key string) string {
 }
 
 func limitAllow(rate int) bool {
-	randValue := rand.Intn(RATE_BASE)
+	randValue := rand.Intn(RateBase)
 	return randValue < rate
 }

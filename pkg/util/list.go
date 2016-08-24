@@ -4,6 +4,7 @@ import (
 	"container/list"
 )
 
+// Get return element at index of list
 func Get(l *list.List, index int) *list.Element {
 	if nil == l || l.Len() == 0 {
 		return nil
@@ -15,12 +16,13 @@ func Get(l *list.List, index int) *list.Element {
 			return iter
 		}
 
-		i += 1
+		i++
 	}
 
 	return nil
 }
 
+// IndexOf return index of element in list
 func IndexOf(l *list.List, value interface{}) int {
 	i := 0
 	for iter := l.Front(); iter != nil; iter = iter.Next() {
@@ -28,12 +30,13 @@ func IndexOf(l *list.List, value interface{}) int {
 			return i
 		}
 
-		i += 1
+		i++
 	}
 
 	return -1
 }
 
+// Remove remove from list
 func Remove(l *list.List, value interface{}) {
 	var e *list.Element
 
@@ -49,6 +52,7 @@ func Remove(l *list.List, value interface{}) {
 	}
 }
 
+// ToStringArray return string array
 func ToStringArray(l *list.List) []string {
 	if nil == l {
 		return nil
@@ -61,7 +65,7 @@ func ToStringArray(l *list.List) []string {
 		s, _ := iter.Value.(string)
 		values[i] = s
 
-		i += 1
+		i++
 	}
 
 	return values

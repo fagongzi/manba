@@ -6,21 +6,21 @@ import (
 	"net/http"
 )
 
-func (self *AdminServer) newBind() echo.HandlerFunc {
+func (server *AdminServer) newBind() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		bind, err := model.UnMarshalBindFromReader(c.Request().Body())
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		} else {
-			err := self.store.SaveBind(bind)
+			err := server.store.SaveBind(bind)
 			if nil != err {
 				errstr = err.Error()
-				code = CODE_ERROR
+				code = CodeError
 			}
 		}
 
@@ -31,21 +31,21 @@ func (self *AdminServer) newBind() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) unBind() echo.HandlerFunc {
+func (server *AdminServer) unBind() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		bind, err := model.UnMarshalBindFromReader(c.Request().Body())
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		} else {
-			err := self.store.UnBind(bind)
+			err := server.store.UnBind(bind)
 			if nil != err {
 				errstr = err.Error()
-				code = CODE_ERROR
+				code = CodeError
 			}
 		}
 

@@ -2,13 +2,15 @@ package server
 
 import (
 	"encoding/json"
-	"github.com/fagongzi/gateway/pkg/model"
-	"github.com/labstack/echo"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/labstack/echo"
 )
 
+// AnalysisPoint analysis point
 type AnalysisPoint struct {
 	ProxyAddr  string `json:"proxyAddr,omitempty"`
 	ServerAddr string `json:"serverAddr,omitempty"`
@@ -24,10 +26,10 @@ func unMarshalAnalysisPointFromReader(r io.Reader) (*AnalysisPoint, error) {
 	return v, err
 }
 
-func (self *AdminServer) getAnalysis() echo.HandlerFunc {
+func (server *AdminServer) getAnalysis() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		proxyAddr := c.Param("proxy")
 		serverAddr := c.Param("server")
@@ -40,12 +42,12 @@ func (self *AdminServer) getAnalysis() echo.HandlerFunc {
 			})
 		}
 
-		registor, _ := self.store.(model.Register)
+		registor, _ := server.store.(model.Register)
 
 		data, err := registor.GetAnalysisPoint(proxyAddr, serverAddr, secs)
 		if err != nil {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		}
 
 		return c.JSON(http.StatusOK, &Result{
@@ -56,23 +58,23 @@ func (self *AdminServer) getAnalysis() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) newAnalysis() echo.HandlerFunc {
+func (server *AdminServer) newAnalysis() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		point, err := unMarshalAnalysisPointFromReader(c.Request().Body())
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		} else {
-			registor, _ := self.store.(model.Register)
+			registor, _ := server.store.(model.Register)
 
 			err := registor.AddAnalysisPoint(point.ProxyAddr, point.ServerAddr, point.Secs)
 			if nil != err {
 				errstr = err.Error()
-				code = CODE_ERROR
+				code = CodeError
 			}
 		}
 

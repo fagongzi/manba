@@ -3,36 +3,42 @@ package proxy
 import (
 	"container/list"
 	"errors"
-	"github.com/CodisLabs/codis/pkg/utils/log"
-	"github.com/fagongzi/gateway/conf"
-	"github.com/fagongzi/gateway/pkg/model"
 	"io"
 	"net"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/fagongzi/gateway/conf"
+	"github.com/fagongzi/gateway/pkg/model"
 )
 
 const (
-	PREFIX_REQUEST_CANCEL_ERR = "request canceled"
+	// ErrPrefixRequestCancel user cancel request error
+	ErrPrefixRequestCancel = "request canceled"
 )
 
 var (
-	ERR_NO_SERVER = errors.New("has no server.")
+	// ErrNoServer no server
+	ErrNoServer = errors.New("has no server")
 )
 
 var (
-	HEADER_CONTENT_TYPE = "Content-Type"
-	MERGE_CONTENT_TYPE  = "application/json; charset=utf-8"
-
-	MERGE_REMOVE_HEADES = []string{
+	// HeaderContentType content-type header
+	HeaderContentType = "Content-Type"
+	// MergeContentType merge operation using content-type
+	MergeContentType = "application/json; charset=utf-8"
+	// MergeRemoveHeaders merge operation need to remove headers
+	MergeRemoveHeaders = []string{
 		"Content-Length",
 		"Content-Type",
 		"Date",
 	}
 )
 
+// Proxy Proxy
 type Proxy struct {
 	config        *conf.Conf
 	routeTable    *model.RouteTable
@@ -41,6 +47,7 @@ type Proxy struct {
 	filters       *list.List
 }
 
+// NewProxy create a new proxy
 func NewProxy(config *conf.Conf, routeTable *model.RouteTable) *Proxy {
 	p := &Proxy{
 		config:     config,
@@ -60,27 +67,30 @@ func NewProxy(config *conf.Conf, routeTable *model.RouteTable) *Proxy {
 	return p
 }
 
-func (self *Proxy) RegistryFilter(name string) {
-	f, err := newFilter(name, self.config, self)
+// RegistryFilter registry a filter
+func (p *Proxy) RegistryFilter(name string) {
+	f, err := newFilter(name, p.config, p)
 	if nil != err {
 		log.Panicf("Proxy unknow filter <%s>.", name)
 	}
 
-	self.filters.PushBack(f)
+	p.filters.PushBack(f)
 }
 
-func (self *Proxy) Start() {
-	err := self.startRpcServer()
+// Start start proxy
+func (p *Proxy) Start() {
+	err := p.startRPCServer()
 
 	if nil != err {
-		log.PanicErrorf(err, "Proxy start rpc at <%s> fail.", self.config.MgrAddr)
+		log.PanicErrorf(err, "Proxy start rpc at <%s> fail.", p.config.MgrAddr)
 	}
 
-	log.ErrorErrorf(http.ListenAndServe(self.config.Addr, self), "Proxy exit at %s", self.config.Addr)
+	log.ErrorErrorf(http.ListenAndServe(p.config.Addr, p), "Proxy exit at %s", p.config.Addr)
 }
 
-func (self *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	results := self.routeTable.Select(req)
+// ServeHTTP start http serve
+func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	results := p.routeTable.Select(req)
 
 	if nil == results || len(results) == 0 {
 		rw.WriteHeader(http.StatusServiceUnavailable)
@@ -98,35 +108,35 @@ func (self *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			result.Merge = merge
 
 			go func(result *model.RouteResult) {
-				self.doProxy(rw, req, wg, result)
+				p.doProxy(rw, req, wg, result)
 			}(result)
 		}
 
 		wg.Wait()
 	} else {
-		self.doProxy(rw, req, nil, results[0])
+		p.doProxy(rw, req, nil, results[0])
 	}
 
 	for _, result := range results {
 		if result.Err != nil {
 			rw.WriteHeader(result.Code)
 			return
-		} else {
-			if !merge {
-				self.writeResult(rw, result.Res)
-				return
-			}
+		}
+
+		if !merge {
+			p.writeResult(rw, result.Res)
+			return
 		}
 	}
 
 	for _, result := range results {
-		for _, h := range MERGE_REMOVE_HEADES {
+		for _, h := range MergeRemoveHeaders {
 			result.Res.Header.Del(h)
 		}
 		copyHeader(rw.Header(), result.Res.Header)
 	}
 
-	rw.Header().Add(HEADER_CONTENT_TYPE, MERGE_CONTENT_TYPE)
+	rw.Header().Add(HeaderContentType, MergeContentType)
 
 	rw.WriteHeader(http.StatusOK)
 
@@ -136,7 +146,7 @@ func (self *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		rw.Write([]byte("\""))
 		rw.Write([]byte(result.Node.AttrName))
 		rw.Write([]byte("\":"))
-		self.copyResponse(rw, result.Res.Body)
+		p.copyResponse(rw, result.Res.Body)
 		result.Res.Body.Close() // close now, instead of defer, to populate res.Trailer
 		if index < count-1 {
 			rw.Write([]byte(","))
@@ -146,7 +156,7 @@ func (self *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	rw.Write([]byte("}"))
 }
 
-func (self *Proxy) doProxy(rw http.ResponseWriter, req *http.Request, wg *sync.WaitGroup, result *model.RouteResult) {
+func (p *Proxy) doProxy(rw http.ResponseWriter, req *http.Request, wg *sync.WaitGroup, result *model.RouteResult) {
 	if nil != wg {
 		defer wg.Done()
 	}
@@ -154,12 +164,12 @@ func (self *Proxy) doProxy(rw http.ResponseWriter, req *http.Request, wg *sync.W
 	svr := result.Svr
 
 	if nil == svr {
-		result.Err = ERR_NO_SERVER
+		result.Err = ErrNoServer
 		result.Code = http.StatusServiceUnavailable
 		return
 	}
 
-	transport := self.transport
+	transport := p.transport
 
 	outreq, err := copyRequest(req)
 	if err != nil {
@@ -198,7 +208,7 @@ func (self *Proxy) doProxy(rw http.ResponseWriter, req *http.Request, wg *sync.W
 	path := req.URL.Path
 	// change url
 	if result.Node != nil {
-		path = result.Node.Url
+		path = result.Node.URL
 	}
 
 	outreq.URL.Scheme = svr.Schema
@@ -212,12 +222,12 @@ func (self *Proxy) doProxy(rw http.ResponseWriter, req *http.Request, wg *sync.W
 		req:        req,
 		outreq:     outreq,
 		result:     result,
-		rb:         self.routeTable,
+		rb:         p.routeTable,
 		runtimeVar: make(map[string]string),
 	}
 
 	// pre filters
-	filterName, code, err := self.doPreFilters(c)
+	filterName, code, err := p.doPreFilters(c)
 	if nil != err {
 		log.WarnErrorf(err, "Proxy Filter-Pre<%s> fail", filterName)
 		result.Err = err
@@ -242,8 +252,8 @@ func (self *Proxy) doProxy(rw http.ResponseWriter, req *http.Request, wg *sync.W
 		}
 
 		// 用户取消，不计算为错误
-		if nil == err || !strings.HasPrefix(err.Error(), PREFIX_REQUEST_CANCEL_ERR) {
-			self.doPostErrFilters(c)
+		if nil == err || !strings.HasPrefix(err.Error(), ErrPrefixRequestCancel) {
+			p.doPostErrFilters(c)
 		}
 
 		result.Err = err
@@ -252,7 +262,7 @@ func (self *Proxy) doProxy(rw http.ResponseWriter, req *http.Request, wg *sync.W
 	}
 
 	// post filters
-	filterName, code, err = self.doPostFilters(c)
+	filterName, code, err = p.doPostFilters(c)
 	if nil != err {
 		log.InfoErrorf(err, "Proxy Filter-Post<%s> fail: %s ", filterName, err.Error())
 
@@ -262,7 +272,7 @@ func (self *Proxy) doProxy(rw http.ResponseWriter, req *http.Request, wg *sync.W
 	}
 }
 
-func (self *Proxy) writeResult(rw http.ResponseWriter, res *http.Response) {
+func (p *Proxy) writeResult(rw http.ResponseWriter, res *http.Response) {
 	rw.WriteHeader(res.StatusCode)
 	if len(res.Trailer) > 0 {
 		// Force chunking if we saw a response trailer.
@@ -273,7 +283,7 @@ func (self *Proxy) writeResult(rw http.ResponseWriter, res *http.Response) {
 		}
 	}
 
-	self.copyResponse(rw, res.Body)
+	p.copyResponse(rw, res.Body)
 	res.Body.Close() // close now, instead of defer, to populate res.Trailer
 	copyHeader(rw.Header(), res.Trailer)
 }

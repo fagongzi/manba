@@ -3,19 +3,23 @@ package model
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/CodisLabs/codis/pkg/utils/log"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/CodisLabs/codis/pkg/utils/log"
 )
 
 const (
 	CHECK_SUCCESS = "OK"
 )
 
+// Status status
 type Status int
+
+// Circuit circuit status
 type Circuit int
 
 const (
@@ -36,6 +40,7 @@ const (
 	THRESHOLD_MAX_FAIED_COUNT = 10
 )
 
+// Server server
 type Server struct {
 	Schema string `json:"schema,omitempty"`
 	Addr   string `json:"addr,omitempty"` // ip:port
@@ -63,6 +68,7 @@ type Server struct {
 	checkStopped bool
 }
 
+// UnMarshalServer unmarshal
 func UnMarshalServer(data []byte) *Server {
 	v := &Server{}
 	json.Unmarshal(data, v)
@@ -74,6 +80,7 @@ func UnMarshalServer(data []byte) *Server {
 	return v
 }
 
+// UnMarshalServerFromReader unmarshal
 func UnMarshalServerFromReader(r io.Reader) (*Server, error) {
 	v := &Server{}
 
@@ -89,98 +96,105 @@ func UnMarshalServerFromReader(r io.Reader) (*Server, error) {
 	return v, err
 }
 
-func (self *Server) Marshal() []byte {
-	v, _ := json.Marshal(self)
+// Marshal marshal
+func (s *Server) Marshal() []byte {
+	v, _ := json.Marshal(s)
 	return v
 }
 
-func (self *Server) updateFrom(svr *Server) {
-	if self.lock != nil {
-		self.Lock()
-		defer self.UnLock()
+func (s *Server) updateFrom(svr *Server) {
+	if s.lock != nil {
+		s.Lock()
+		defer s.UnLock()
 	}
 
-	self.MaxQPS = svr.MaxQPS
-	self.HalfToOpen = svr.HalfToOpen
-	self.HalfTrafficRate = svr.HalfTrafficRate
-	self.CloseCount = svr.CloseCount
+	s.MaxQPS = svr.MaxQPS
+	s.HalfToOpen = svr.HalfToOpen
+	s.HalfTrafficRate = svr.HalfTrafficRate
+	s.CloseCount = svr.CloseCount
 
-	log.Infof("Server <%s> updated, %+v", self.Addr, self)
+	log.Infof("Server <%s> updated, %+v", s.Addr, s)
 }
 
-func (self *Server) GetCircuit() Circuit {
-	return self.circuit
+// GetCircuit return circuit status
+func (s *Server) GetCircuit() Circuit {
+	return s.circuit
 }
 
-func (self *Server) OpenCircuit() {
-	self.circuit = CIRCUIT_OPEN
+// OpenCircuit set circuit open status
+func (s *Server) OpenCircuit() {
+	s.circuit = CIRCUIT_OPEN
 }
 
-func (self *Server) CloseCircuit() {
-	self.circuit = CIRCUIT_CLOSE
+// CloseCircuit set circuit close status
+func (s *Server) CloseCircuit() {
+	s.circuit = CIRCUIT_CLOSE
 }
 
-func (self *Server) HalfCircuit() {
-	self.circuit = CIRCUIT_HALF
+// HalfCircuit set circuit half status
+func (s *Server) HalfCircuit() {
+	s.circuit = CIRCUIT_HALF
 }
 
-func (self *Server) Lock() {
-	self.lock.Lock()
+// Lock lock
+func (s *Server) Lock() {
+	s.lock.Lock()
 }
 
-func (self *Server) UnLock() {
-	self.lock.Unlock()
+// UnLock unlock
+func (s *Server) UnLock() {
+	s.lock.Unlock()
 }
 
-func (self *Server) init() {
-	self.httpClient = &http.Client{
-		Timeout: time.Second * self.getCheckTimeout(),
+func (s *Server) init() {
+	s.httpClient = &http.Client{
+		Timeout: time.Second * s.getCheckTimeout(),
 	}
 
-	self.circuit = CIRCUIT_OPEN
-	self.lock = &sync.Mutex{}
-	self.checkStopped = false
+	s.circuit = CIRCUIT_OPEN
+	s.lock = &sync.Mutex{}
+	s.checkStopped = false
 }
 
-func (self *Server) stopCheck() {
-	self.checkStopped = true
+func (s *Server) stopCheck() {
+	s.checkStopped = true
 }
 
-func (self *Server) getCheckTimeout() time.Duration {
-	if self.CheckTimeout == 0 {
+func (s *Server) getCheckTimeout() time.Duration {
+	if s.CheckTimeout == 0 {
 		return time.Duration(DEFAULT_CHECK_TIMEOUT)
-	} else {
-		return time.Duration(self.CheckTimeout)
 	}
+
+	return time.Duration(s.CheckTimeout)
 }
 
-func (self *Server) check(cb func(*Server)) bool {
+func (s *Server) check(cb func(*Server)) bool {
 	succ := false
 	defer func() {
 		if succ {
-			self.reset()
+			s.reset()
 		} else {
-			self.fail()
+			s.fail()
 		}
 
-		if !self.checkStopped {
-			cb(self)
+		if !s.checkStopped {
+			cb(s)
 		}
 	}()
 
-	log.Debugf("Server <%s, %s> start check.", self.Addr, self.CheckPath)
+	log.Debugf("Server <%s, %s> start check.", s.Addr, s.CheckPath)
 
-	resp, err := self.httpClient.Get(self.getCheckURL())
+	resp, err := s.httpClient.Get(s.getCheckURL())
 
 	if err != nil {
-		log.Warnf("Server <%s, %s, %d> check fail.", self.Addr, self.CheckPath, self.checkFailCount+1)
+		log.Warnf("Server <%s, %s, %d> check fail.", s.Addr, s.CheckPath, s.checkFailCount+1)
 		return succ
 	}
 
 	defer resp.Body.Close()
 
 	if http.StatusOK != resp.StatusCode {
-		log.Warnf("Server <%s, %s, %d, %d> check fail.", self.Addr, self.CheckPath, resp.StatusCode, self.checkFailCount+1)
+		log.Warnf("Server <%s, %s, %d, %d> check fail.", s.Addr, s.CheckPath, resp.StatusCode, s.checkFailCount+1)
 		return succ
 	}
 
@@ -193,25 +207,25 @@ func (self *Server) check(cb func(*Server)) bool {
 	return succ
 }
 
-func (self *Server) getCheckURL() string {
-	return fmt.Sprintf("%s://%s%s", self.Schema, self.Addr, self.CheckPath)
+func (s *Server) getCheckURL() string {
+	return fmt.Sprintf("%s://%s%s", s.Schema, s.Addr, s.CheckPath)
 }
 
-func (self *Server) fail() {
-	self.checkFailCount += 1
-	self.useCheckDuration += self.useCheckDuration / 2
+func (s *Server) fail() {
+	s.checkFailCount++
+	s.useCheckDuration += s.useCheckDuration / 2
 }
 
-func (self *Server) reset() {
-	self.checkFailCount = 0
-	self.useCheckDuration = self.CheckDuration
+func (s *Server) reset() {
+	s.checkFailCount = 0
+	s.useCheckDuration = s.CheckDuration
 }
 
-func (self *Server) changeTo(status Status) {
-	self.prevStatus = self.Status
-	self.Status = status
+func (s *Server) changeTo(status Status) {
+	s.prevStatus = s.Status
+	s.Status = status
 }
 
-func (self *Server) statusChanged() bool {
-	return self.prevStatus != self.Status
+func (s *Server) statusChanged() bool {
+	return s.prevStatus != s.Status
 }

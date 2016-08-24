@@ -1,14 +1,13 @@
 package proxy
 
 import (
-	"github.com/fagongzi/gateway/conf"
 	"net"
 	"strings"
+
+	"github.com/fagongzi/gateway/conf"
 )
 
-// record the http access log
-// log format: $remoteip "$method $path HTTP/$proto" $code "$agent"
-
+// XForwardForFilter XForwardForFilter
 type XForwardForFilter struct {
 	baseFilter
 	config *conf.Conf
@@ -22,11 +21,13 @@ func newXForwardForFilter(config *conf.Conf, proxy *Proxy) Filter {
 	}
 }
 
-func (self XForwardForFilter) Name() string {
-	return FILTER_XFORWARD
+// Name return name of this filter
+func (f XForwardForFilter) Name() string {
+	return FilterXForward
 }
 
-func (self XForwardForFilter) Pre(c *filterContext) (statusCode int, err error) {
+// Pre execute before proxy
+func (f XForwardForFilter) Pre(c *filterContext) (statusCode int, err error) {
 	if clientIP, _, err := net.SplitHostPort(c.req.RemoteAddr); err == nil {
 		// If we aren't the first proxy retain prior
 		// X-Forwarded-For information as a comma+space
@@ -37,5 +38,5 @@ func (self XForwardForFilter) Pre(c *filterContext) (statusCode int, err error) 
 		c.outreq.Header.Set("X-Forwarded-For", clientIP)
 	}
 
-	return self.baseFilter.Pre(c)
+	return f.baseFilter.Pre(c)
 }

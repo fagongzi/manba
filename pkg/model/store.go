@@ -1,22 +1,34 @@
 package model
 
+// EvtType event type
 type EvtType int
+
+// EvtSrc event src
 type EvtSrc int
 
 const (
-	EVT_TYPE_NEW    = EvtType(0)
-	EVT_TYPE_UPDATE = EvtType(1)
-	EVT_TYPE_DELETE = EvtType(2)
+	// EventTypeNew event type new
+	EventTypeNew = EvtType(0)
+	// EventTypeUpdate event type update
+	EventTypeUpdate = EvtType(1)
+	// EventTypeDelete event type delete
+	EventTypeDelete = EvtType(2)
 )
 
 const (
-	EVT_SRC_CLUSTER     = EvtSrc(0)
-	EVT_SRC_SERVER      = EvtSrc(1)
-	EVT_SRC_BIND        = EvtSrc(2)
-	EVT_SRC_AGGREGATION = EvtSrc(3)
-	EVT_SRC_ROUTING     = EvtSrc(4)
+	// EventSrcCluster cluster event
+	EventSrcCluster = EvtSrc(0)
+	// EventSrcServer server event
+	EventSrcServer = EvtSrc(1)
+	// EventSrcBind bind event
+	EventSrcBind = EvtSrc(2)
+	// EventSrcAggregation aggregation event
+	EventSrcAggregation = EvtSrc(3)
+	// EventSrcRouting routing event
+	EventSrcRouting = EvtSrc(4)
 )
 
+// Evt event
 type Evt struct {
 	Src   EvtSrc
 	Type  EvtType
@@ -24,6 +36,7 @@ type Evt struct {
 	Value interface{}
 }
 
+// Store store interface
 type Store interface {
 	SaveBind(bind *Bind) error
 	UnBind(bind *Bind) error

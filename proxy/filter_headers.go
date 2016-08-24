@@ -17,6 +17,7 @@ var hopHeaders = []string{
 	"Upgrade",
 }
 
+// HeadersFilter HeadersFilter
 type HeadersFilter struct {
 	baseFilter
 	config *conf.Conf
@@ -30,11 +31,13 @@ func newHeadersFilter(config *conf.Conf, proxy *Proxy) Filter {
 	}
 }
 
-func (self HeadersFilter) Name() string {
-	return FILTER_HEAD
+// Name return name of this filter
+func (f HeadersFilter) Name() string {
+	return FilterHeader
 }
 
-func (self HeadersFilter) Pre(c *filterContext) (statusCode int, err error) {
+// Pre execute before proxy
+func (f HeadersFilter) Pre(c *filterContext) (statusCode int, err error) {
 	c.outreq.Proto = "HTTP/1.1"
 	c.outreq.ProtoMajor = 1
 	c.outreq.ProtoMinor = 1
@@ -47,12 +50,12 @@ func (self HeadersFilter) Pre(c *filterContext) (statusCode int, err error) {
 	}
 
 	c.outreq.Host = c.req.Host
-	self.setRuntimeVals(c)
 
-	return self.baseFilter.Pre(c)
+	return f.baseFilter.Pre(c)
 }
 
-func (self HeadersFilter) Post(c *filterContext) (statusCode int, err error) {
+// Post execute after proxy
+func (f HeadersFilter) Post(c *filterContext) (statusCode int, err error) {
 	for _, h := range hopHeaders {
 		c.result.Res.Header.Del(h)
 	}
@@ -60,8 +63,7 @@ func (self HeadersFilter) Post(c *filterContext) (statusCode int, err error) {
 	// 需要合并处理的，不做header的复制，由proxy做合并
 	if !c.result.Merge {
 		copyHeader(c.rw.Header(), c.result.Res.Header)
-		self.setRuntimeVals(c)
 	}
 
-	return self.baseFilter.Post(c)
+	return f.baseFilter.Post(c)
 }

@@ -1,9 +1,10 @@
 package model
 
 import (
+	"time"
+
 	"github.com/CodisLabs/codis/pkg/utils/atomic2"
 	"github.com/CodisLabs/codis/pkg/utils/log"
-	"time"
 )
 
 type point struct {
@@ -18,24 +19,26 @@ type point struct {
 	min   atomic2.Int64
 }
 
-func (self *point) dump(target *point) {
-	target.requests.Set(self.requests.Get())
-	target.rejects.Set(self.rejects.Get())
-	target.failure.Set(self.failure.Get())
-	target.successed.Set(self.successed.Get())
-	target.max.Set(self.max.Get())
-	target.min.Set(self.min.Get())
-	target.costs.Set(self.costs.Get())
+func (p *point) dump(target *point) {
+	target.requests.Set(p.requests.Get())
+	target.rejects.Set(p.rejects.Get())
+	target.failure.Set(p.failure.Get())
+	target.successed.Set(p.successed.Get())
+	target.max.Set(p.max.Get())
+	target.min.Set(p.min.Get())
+	target.costs.Set(p.costs.Get())
 
-	self.min.Set(0)
-	self.max.Set(0)
+	p.min.Set(0)
+	p.max.Set(0)
 }
 
+// Analysis analysis struct
 type Analysis struct {
 	points         map[string]*point
 	recentlyPoints map[string]map[int]*Recently
 }
 
+// Recently recently point data
 type Recently struct {
 	period    int64
 	prev      *point
@@ -70,84 +73,84 @@ func newAnalysis() *Analysis {
 	}
 }
 
-func (self *Recently) record(p *point) {
-	if self.dumpCurr {
-		p.dump(self.current)
-		self.calc()
+func (r *Recently) record(p *point) {
+	if r.dumpCurr {
+		p.dump(r.current)
+		r.calc()
 	} else {
-		p.dump(self.prev)
+		p.dump(r.prev)
 	}
 
-	self.dumpCurr = !self.dumpCurr
+	r.dumpCurr = !r.dumpCurr
 }
 
-func (self *Recently) calc() {
+func (r *Recently) calc() {
+	r.requests = r.current.requests.Get() - r.prev.requests.Get()
 
-	self.requests = self.current.requests.Get() - self.prev.requests.Get()
-
-	if self.requests < 0 {
-		self.requests = 0
+	if r.requests < 0 {
+		r.requests = 0
 	}
 
-	self.successed = self.current.successed.Get() - self.prev.successed.Get()
+	r.successed = r.current.successed.Get() - r.prev.successed.Get()
 
-	if self.successed < 0 {
-		self.successed = 0
+	if r.successed < 0 {
+		r.successed = 0
 	}
 
-	self.failure = self.current.failure.Get() - self.prev.failure.Get()
+	r.failure = r.current.failure.Get() - r.prev.failure.Get()
 
-	if self.failure < 0 {
-		self.failure = 0
+	if r.failure < 0 {
+		r.failure = 0
 	}
 
-	self.rejects = self.current.rejects.Get() - self.prev.rejects.Get()
+	r.rejects = r.current.rejects.Get() - r.prev.rejects.Get()
 
-	if self.rejects < 0 {
-		self.rejects = 0
+	if r.rejects < 0 {
+		r.rejects = 0
 	}
 
-	self.max = self.current.max.Get()
+	r.max = r.current.max.Get()
 
-	if self.max < 0 {
-		self.max = 0
+	if r.max < 0 {
+		r.max = 0
 	} else {
-		self.max = int64(self.max / 1000 / 1000)
+		r.max = int64(r.max / 1000 / 1000)
 	}
 
-	self.min = self.current.min.Get()
+	r.min = r.current.min.Get()
 
-	if self.min < 0 {
-		self.min = 0
+	if r.min < 0 {
+		r.min = 0
 	} else {
-		self.min = int64(self.min / 1000 / 1000)
+		r.min = int64(r.min / 1000 / 1000)
 	}
 
-	costs := self.current.costs.Get() - self.prev.costs.Get()
+	costs := r.current.costs.Get() - r.prev.costs.Get()
 
-	if self.requests == 0 {
-		self.avg = 0
+	if r.requests == 0 {
+		r.avg = 0
 	} else {
-		self.avg = int64(costs / 1000 / 1000 / self.requests)
+		r.avg = int64(costs / 1000 / 1000 / r.requests)
 	}
 
-	if self.successed > self.requests {
-		self.qps = int(self.requests / self.period)
+	if r.successed > r.requests {
+		r.qps = int(r.requests / r.period)
 	} else {
-		self.qps = int(self.successed / self.period)
+		r.qps = int(r.successed / r.period)
 	}
 
 }
 
-func (self *Analysis) AddRecentCount(key string, secs int) {
-	_, ok := self.recentlyPoints[key][secs]
+// AddRecentCount add analysis point on a key
+func (a *Analysis) AddRecentCount(key string, secs int) {
+	_, ok := a.recentlyPoints[key][secs]
 	if ok {
 		log.Infof("Analysis already <%s,%d> added", key, secs)
 		return
 	}
 
 	recently := newRecently(int64(secs))
-	self.recentlyPoints[key][secs] = recently
+	a.recentlyPoints[key][secs] = recently
 	timer := time.NewTicker(time.Duration(secs) * time.Second)
 
 	go func() {
@@ -155,7 +158,7 @@ func (self *Analysis) AddRecentCount(key string, secs int) {
 			// TODO: remove
 			<-timer.C
 
-			p, ok := self.points[key]
+			p, ok := a.points[key]
 
 			if ok {
 				recently.record(p)
@@ -166,13 +169,14 @@ func (self *Analysis) AddRecentCount(key string, secs int) {
 	log.Infof("Analysis <%s,%d> added", key, secs)
 }
 
-func (self *Analysis) addNewAnalysis(key string) {
-	self.points[key] = &point{}
-	self.recentlyPoints[key] = make(map[int]*Recently)
+func (a *Analysis) addNewAnalysis(key string) {
+	a.points[key] = &point{}
+	a.recentlyPoints[key] = make(map[int]*Recently)
 }
 
-func (self *Analysis) GetRecentlyRequestCount(server string, secs int) int {
-	points, ok := self.recentlyPoints[server]
+// GetRecentlyRequestCount return the server request count in spec seconds
+func (a *Analysis) GetRecentlyRequestCount(server string, secs int) int {
+	points, ok := a.recentlyPoints[server]
 
 	if !ok {
 		return 0
@@ -187,8 +191,9 @@ func (self *Analysis) GetRecentlyRequestCount(server string, secs int) int {
 	return int(point.requests)
 }
 
-func (self *Analysis) GetRecentlyMax(server string, secs int) int {
-	points, ok := self.recentlyPoints[server]
+// GetRecentlyMax return max latency in spec secs
+func (a *Analysis) GetRecentlyMax(server string, secs int) int {
+	points, ok := a.recentlyPoints[server]
 
 	if !ok {
 		return 0
@@ -203,8 +208,9 @@ func (self *Analysis) GetRecentlyMax(server string, secs int) int {
 	return int(point.max)
 }
 
-func (self *Analysis) GetRecentlyMin(server string, secs int) int {
-	points, ok := self.recentlyPoints[server]
+// GetRecentlyMin return min latency in spec secs
+func (a *Analysis) GetRecentlyMin(server string, secs int) int {
+	points, ok := a.recentlyPoints[server]
 
 	if !ok {
 		return 0
@@ -219,8 +225,9 @@ func (self *Analysis) GetRecentlyMin(server string, secs int) int {
 	return int(point.min)
 }
 
-func (self *Analysis) GetRecentlyAvg(server string, secs int) int {
-	points, ok := self.recentlyPoints[server]
+// GetRecentlyAvg return avg latency in spec secs
+func (a *Analysis) GetRecentlyAvg(server string, secs int) int {
+	points, ok := a.recentlyPoints[server]
 
 	if !ok {
 		return 0
@@ -235,8 +242,9 @@ func (self *Analysis) GetRecentlyAvg(server string, secs int) int {
 	return int(point.avg)
 }
 
-func (self *Analysis) GetQPS(server string, secs int) int {
-	points, ok := self.recentlyPoints[server]
+// GetQPS return qps in spec secs
+func (a *Analysis) GetQPS(server string, secs int) int {
+	points, ok := a.recentlyPoints[server]
 
 	if !ok {
 		return 0
@@ -251,8 +259,9 @@ func (self *Analysis) GetQPS(server string, secs int) int {
 	return int(point.qps)
 }
 
-func (self *Analysis) GetRecentlyRejectCount(server string, secs int) int {
-	points, ok := self.recentlyPoints[server]
+// GetRecentlyRejectCount return reject count in spec secs
+func (a *Analysis) GetRecentlyRejectCount(server string, secs int) int {
+	points, ok := a.recentlyPoints[server]
 
 	if !ok {
 		return 0
@@ -267,8 +276,9 @@ func (self *Analysis) GetRecentlyRejectCount(server string, secs int) int {
 	return int(point.rejects)
 }
 
-func (self *Analysis) GetRecentlyRequestSuccessedCount(server string, secs int) int {
-	points, ok := self.recentlyPoints[server]
+// GetRecentlyRequestSuccessedCount return successed request count in spec secs
+func (a *Analysis) GetRecentlyRequestSuccessedCount(server string, secs int) int {
+	points, ok := a.recentlyPoints[server]
 
 	if !ok {
 		return 0
@@ -283,8 +293,9 @@ func (self *Analysis) GetRecentlyRequestSuccessedCount(server string, secs int) 
 	return int(point.successed)
 }
 
-func (self *Analysis) GetRecentlyRequestFailureCount(server string, secs int) int {
-	points, ok := self.recentlyPoints[server]
+// GetRecentlyRequestFailureCount return failure request count in spec secs
+func (a *Analysis) GetRecentlyRequestFailureCount(server string, secs int) int {
+	points, ok := a.recentlyPoints[server]
 
 	if !ok {
 		return 0
@@ -299,8 +310,9 @@ func (self *Analysis) GetRecentlyRequestFailureCount(server string, secs int) in
 	return int(point.failure)
 }
 
-func (self *Analysis) GetContinuousFailureCount(server string) int {
-	p, ok := self.points[server]
+// GetContinuousFailureCount return Continuous failure request count in spec secs
+func (a *Analysis) GetContinuousFailureCount(server string) int {
+	p, ok := a.points[server]
 
 	if !ok {
 		return 0
@@ -309,24 +321,28 @@ func (self *Analysis) GetContinuousFailureCount(server string) int {
 	return int(p.continuousFailure.Get())
 }
 
-func (self *Analysis) Reject(key string) {
-	p := self.points[key]
+// Reject incr reject count
+func (a *Analysis) Reject(key string) {
+	p := a.points[key]
 	p.rejects.Incr()
 }
 
-func (self *Analysis) Failure(key string) {
-	p := self.points[key]
+// Failure incr failure count
+func (a *Analysis) Failure(key string) {
+	p := a.points[key]
 	p.failure.Incr()
 	p.continuousFailure.Incr()
 }
 
-func (self *Analysis) Request(key string) {
-	p := self.points[key]
+// Request incr request count
+func (a *Analysis) Request(key string) {
+	p := a.points[key]
 	p.requests.Incr()
 }
 
-func (self *Analysis) Response(key string, cost int64) {
-	p := self.points[key]
+// Response incr successed count
+func (a *Analysis) Response(key string, cost int64) {
+	p := a.points[key]
 	p.successed.Incr()
 	p.costs.Add(cost)
 	p.continuousFailure.Set(0)

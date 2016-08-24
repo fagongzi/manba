@@ -2,13 +2,16 @@ package model
 
 import (
 	"encoding/json"
+
 	"github.com/fagongzi/gateway/conf"
 )
 
+// ProxyInfo proxy info
 type ProxyInfo struct {
 	Conf *conf.Conf `json:"conf,omitempty"`
 }
 
+// UnMarshalProxyInfo unmarshal
 func UnMarshalProxyInfo(data []byte) *ProxyInfo {
 	v := &ProxyInfo{}
 	json.Unmarshal(data, v)
@@ -16,7 +19,8 @@ func UnMarshalProxyInfo(data []byte) *ProxyInfo {
 	return v
 }
 
-func (self *ProxyInfo) Marshal() string {
-	v, _ := json.Marshal(self)
+// Marshal marshal
+func (p *ProxyInfo) Marshal() string {
+	v, _ := json.Marshal(p)
 	return string(v)
 }

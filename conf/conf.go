@@ -1,5 +1,6 @@
 package conf
 
+// Conf config struct
 type Conf struct {
 	Addr       string `json:"addr,omitempty"`
 	MgrAddr    string `json:"mgrAddr,omitempty"`

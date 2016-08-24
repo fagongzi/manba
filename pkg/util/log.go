@@ -1,9 +1,10 @@
 package util
 
 import (
+	"strings"
+
 	"github.com/CodisLabs/codis/pkg/utils/bytesize"
 	"github.com/CodisLabs/codis/pkg/utils/log"
-	"strings"
 )
 
 var (
@@ -11,6 +12,7 @@ var (
 	maxFragSize int64 = bytesize.GB * 1
 )
 
+// SetLogLevel set log level
 func SetLogLevel(level string) string {
 	level = strings.ToLower(level)
 	var l = log.LEVEL_INFO
@@ -33,6 +35,7 @@ func SetLogLevel(level string) string {
 	return level
 }
 
+// InitLog init log
 func InitLog(file string) {
 	// set output log file
 	if "" != file {

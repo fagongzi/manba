@@ -6,15 +6,15 @@ import (
 	"net/http"
 )
 
-func (self *AdminServer) getAggregations() echo.HandlerFunc {
+func (server *AdminServer) getAggregations() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
-		aggregations, err := self.store.GetAggregations()
+		aggregations, err := server.store.GetAggregations()
 		if err != nil {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		}
 
 		return c.JSON(http.StatusOK, &Result{
@@ -25,21 +25,21 @@ func (self *AdminServer) getAggregations() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) newAggregation() echo.HandlerFunc {
+func (server *AdminServer) newAggregation() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		ang, err := model.UnMarshalAggregationFromReader(c.Request().Body())
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		} else {
-			err := self.store.SaveAggregation(ang)
+			err := server.store.SaveAggregation(ang)
 			if nil != err {
 				errstr = err.Error()
-				code = CODE_ERROR
+				code = CodeError
 			}
 		}
 
@@ -50,17 +50,17 @@ func (self *AdminServer) newAggregation() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) deleteAggregation() echo.HandlerFunc {
+func (server *AdminServer) deleteAggregation() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		url := c.QueryParam("url")
-		err := self.store.DeleteAggregation(url)
+		err := server.store.DeleteAggregation(url)
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		}
 
 		return c.JSON(http.StatusOK, &Result{

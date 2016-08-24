@@ -1,20 +1,21 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/labstack/echo"
-	"net/http"
 )
 
-func (self *AdminServer) getServers() echo.HandlerFunc {
+func (server *AdminServer) getServers() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
-		servers, err := self.store.GetServers()
+		servers, err := server.store.GetServers()
 		if err != nil {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		}
 
 		return c.JSON(http.StatusOK, &Result{
@@ -25,17 +26,17 @@ func (self *AdminServer) getServers() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) getServer() echo.HandlerFunc {
+func (server *AdminServer) getServer() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		id := c.Param("id")
-		server, err := self.store.GetServer(id, true)
+		server, err := server.store.GetServer(id, true)
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		}
 
 		return c.JSON(http.StatusOK, &Result{
@@ -46,21 +47,21 @@ func (self *AdminServer) getServer() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) updateServer() echo.HandlerFunc {
+func (server *AdminServer) updateServer() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
-		server, err := model.UnMarshalServerFromReader(c.Request().Body())
+		svr, err := model.UnMarshalServerFromReader(c.Request().Body())
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		} else {
-			err := self.store.UpdateServer(server)
+			err := server.store.UpdateServer(svr)
 			if nil != err {
 				errstr = err.Error()
-				code = CODE_ERROR
+				code = CodeError
 			}
 		}
 
@@ -71,21 +72,21 @@ func (self *AdminServer) updateServer() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) newServer() echo.HandlerFunc {
+func (server *AdminServer) newServer() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
-		server, err := model.UnMarshalServerFromReader(c.Request().Body())
+		svr, err := model.UnMarshalServerFromReader(c.Request().Body())
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		} else {
-			err := self.store.SaveServer(server)
+			err := server.store.SaveServer(svr)
 			if nil != err {
 				errstr = err.Error()
-				code = CODE_ERROR
+				code = CodeError
 			}
 		}
 
@@ -96,17 +97,17 @@ func (self *AdminServer) newServer() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) deleteServer() echo.HandlerFunc {
+func (server *AdminServer) deleteServer() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		id := c.Param("id")
-		err := self.store.DeleteServer(id)
+		err := server.store.DeleteServer(id)
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		}
 
 		return c.JSON(http.StatusOK, &Result{

@@ -2,44 +2,52 @@ package proxy
 
 import (
 	"errors"
-	"github.com/fagongzi/gateway/conf"
 	"strings"
+
+	"github.com/fagongzi/gateway/conf"
 )
 
 var (
-	ERR_KNOWN_FILTER = errors.New("unknow filter")
+	// ErrKnownFilter known filter error
+	ErrKnownFilter = errors.New("unknow filter")
 )
 
 const (
-	FILTER_HTTP_ACCESS = "HTTP-ACCESS" // 日志
-	FILTER_HEAD        = "HEAD"        // 处理head
-	FILTER_XFORWARD    = "XFORWARD"    // xforward
-	FILTER_BLACKLIST   = "BLACKLIST"   // 黑名单
-	// FILTER_WHITELIST      = "WHITELIST"      // 白名单
-	FILTER_ANALYSIS       = "ANALYSIS"       // 分析数据
-	FILTER_RATE_LIMITING  = "RATE-LIMITING"  // 限流
-	FILTER_CIRCUIT_BREAKE = "CIRCUIT-BREAKE" // 断路保护
+	// FilterHTTPAccess log filter
+	FilterHTTPAccess = "HTTP-ACCESS"
+	// FilterHeader header filter
+	FilterHeader = "HEAD" // 处理head
+	// FilterXForward xforward fiter
+	FilterXForward = "XFORWARD"
+	// FilterBlackList blacklist filter
+	FilterBlackList = "BLACKLIST"
+	// FilterAnalysis analysis filter
+	FilterAnalysis = "ANALYSIS"
+	// FilterRateLimiting limit filter
+	FilterRateLimiting = "RATE-LIMITING"
+	// FilterCircuitBreake circuit breake filter
+	FilterCircuitBreake = "CIRCUIT-BREAKE"
 )
 
 func newFilter(name string, config *conf.Conf, proxy *Proxy) (Filter, error) {
 	input := strings.ToUpper(name)
 
 	switch input {
-	case FILTER_HTTP_ACCESS:
+	case FilterHTTPAccess:
 		return newAccessFilter(config, proxy), nil
-	case FILTER_HEAD:
+	case FilterHeader:
 		return newHeadersFilter(config, proxy), nil
-	case FILTER_XFORWARD:
+	case FilterXForward:
 		return newXForwardForFilter(config, proxy), nil
-	case FILTER_ANALYSIS:
+	case FilterAnalysis:
 		return newAnalysisFilter(config, proxy), nil
-	case FILTER_BLACKLIST:
+	case FilterBlackList:
 		return newBlackListFilter(config, proxy), nil
-	case FILTER_RATE_LIMITING:
+	case FilterRateLimiting:
 		return newRateLimitingFilter(config, proxy), nil
-	case FILTER_CIRCUIT_BREAKE:
+	case FilterCircuitBreake:
 		return newCircuitBreakeFilter(config, proxy), nil
 	default:
-		return nil, ERR_KNOWN_FILTER
+		return nil, ErrKnownFilter
 	}
 }

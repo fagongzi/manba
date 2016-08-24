@@ -7,15 +7,15 @@ import (
 	"net/http"
 )
 
-func (self *AdminServer) getRoutings() echo.HandlerFunc {
+func (server *AdminServer) getRoutings() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
-		routings, err := self.store.GetRoutings()
+		routings, err := server.store.GetRoutings()
 		if err != nil {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		}
 
 		return c.JSON(http.StatusOK, &Result{
@@ -26,10 +26,10 @@ func (self *AdminServer) getRoutings() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) newRouting() echo.HandlerFunc {
+func (server *AdminServer) newRouting() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		routing, err := model.UnMarshalRoutingFromReader(c.Request().Body())
 
@@ -43,12 +43,12 @@ func (self *AdminServer) newRouting() echo.HandlerFunc {
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		} else {
-			err := self.store.SaveRouting(routing)
+			err := server.store.SaveRouting(routing)
 			if nil != err {
 				errstr = err.Error()
-				code = CODE_ERROR
+				code = CodeError
 			}
 		}
 

@@ -2,18 +2,21 @@ package server
 
 import (
 	"fmt"
+
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/labstack/echo"
 	sd "github.com/labstack/echo/engine/standard"
 	mw "github.com/labstack/echo/middleware"
 )
 
+// Result http interface return json
 type Result struct {
 	Code  int         `json:"code, omitempty"`
 	Error string      `json:"error"`
 	Value interface{} `json:"value"`
 }
 
+// AdminServer http interface server
 type AdminServer struct {
 	user  string
 	pwd   string
@@ -22,6 +25,7 @@ type AdminServer struct {
 	store model.Store
 }
 
+// NewAdminServer create a AdminServer
 func NewAdminServer(addr string, etcdAddrs []string, etcdPrefix string, user string, pwd string) *AdminServer {
 	st, _ := model.NewEtcdStore(etcdAddrs, etcdPrefix)
 
@@ -40,26 +44,26 @@ func NewAdminServer(addr string, etcdAddrs []string, etcdPrefix string, user str
 	return server
 }
 
-func (self *AdminServer) initHTTPServer() {
-	self.e.Use(mw.Logger())
-	self.e.Use(mw.Recover())
-	self.e.Use(mw.Gzip())
-	self.e.Use(mw.BasicAuth(func(inputUser string, inputPwd string) bool {
-		if inputUser == self.user && self.pwd == inputPwd {
+func (server *AdminServer) initHTTPServer() {
+	server.e.Use(mw.Logger())
+	server.e.Use(mw.Recover())
+	server.e.Use(mw.Gzip())
+	server.e.Use(mw.BasicAuth(func(inputUser string, inputPwd string) bool {
+		if inputUser == server.user && server.pwd == inputPwd {
 			return true
 		}
 		return false
 	}))
 
-	self.e.Static("/assets", "public/assets")
-	self.e.Static("/html", "public/html") // angular html template
+	server.e.Static("/assets", "public/assets")
+	server.e.Static("/html", "public/html") // angular html template
 
-	self.e.File("/", "public/html/base.html")
+	server.e.File("/", "public/html/base.html")
 
-	self.initApiRoute()
+	server.initAPIRoute()
 }
 
-func (self *AdminServer) Start() {
-	fmt.Printf("start at %s\n", self.addr)
-	self.e.Run(sd.New(self.addr))
+func (server *AdminServer) Start() {
+	fmt.Printf("start at %s\n", server.addr)
+	server.e.Run(sd.New(server.addr))
 }

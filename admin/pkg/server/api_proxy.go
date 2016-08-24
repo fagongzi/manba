@@ -1,22 +1,23 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/labstack/echo"
-	"net/http"
 )
 
-func (self *AdminServer) getProxies() echo.HandlerFunc {
+func (server *AdminServer) getProxies() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
-		registor, _ := self.store.(model.Register)
+		registor, _ := server.store.(model.Register)
 
 		proxies, err := registor.GetProxies()
 		if err != nil {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		}
 
 		return c.JSON(http.StatusOK, &Result{
@@ -27,21 +28,21 @@ func (self *AdminServer) getProxies() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) changeLogLevel() echo.HandlerFunc {
+func (server *AdminServer) changeLogLevel() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		addr := c.Param("addr")
 		level := c.Param("level")
 
-		registor, _ := self.store.(model.Register)
+		registor, _ := server.store.(model.Register)
 
 		err := registor.ChangeLogLevel(addr, level)
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		}
 
 		return c.JSON(http.StatusOK, &Result{

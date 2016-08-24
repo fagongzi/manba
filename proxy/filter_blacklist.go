@@ -1,10 +1,10 @@
 package proxy
 
 import (
-	_ "github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/conf"
 )
 
+// BlackListFilter blacklist filter
 type BlackListFilter struct {
 	baseFilter
 	proxy  *Proxy
@@ -18,6 +18,7 @@ func newBlackListFilter(config *conf.Conf, proxy *Proxy) Filter {
 	}
 }
 
-func (self BlackListFilter) Name() string {
-	return FILTER_BLACKLIST
+// Name return name of this filter
+func (f BlackListFilter) Name() string {
+	return FilterBlackList
 }

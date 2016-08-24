@@ -6,6 +6,7 @@ import (
 )
 
 const (
+	// ROUNDROBIN round robin
 	ROUNDROBIN = "ROUNDROBIN"
 )
 
@@ -14,19 +15,23 @@ var (
 )
 
 var (
+	// LBS map loadBalance name and process function
 	LBS = map[string]func() LoadBalance{
 		ROUNDROBIN: NewRoundRobin,
 	}
 )
 
+// LoadBalance loadBalance interface
 type LoadBalance interface {
 	Select(req *http.Request, servers *list.List) int
 }
 
+// GetSupportLBS return supported loadBalances
 func GetSupportLBS() []string {
 	return supportLbs
 }
 
+// NewLoadBalance create a LoadBalance
 func NewLoadBalance(name string) LoadBalance {
 	return LBS[name]()
 }

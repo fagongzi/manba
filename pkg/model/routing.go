@@ -4,47 +4,67 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/brettlangdon/forge"
-	"github.com/fagongzi/goetty"
 	"io"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/brettlangdon/forge"
+	"github.com/fagongzi/goetty"
 )
 
 var (
-	CFG_GLOBAL_DESC     = "desc"
-	CFG_GLOBAL_ORDER    = "order"
-	CFG_GLOBAL_DEADLINE = "deadline"
-	CFG_GLOBAL_RULES    = "rule"
-	CFG_GLOBAL_OR       = "or"
+	// GlobalCfgDesc global desc cfg
+	GlobalCfgDesc = "desc"
+	// GlobalCfgOrder global order cfg
+	GlobalCfgOrder = "order"
+	// GlobalCfgDeadline global deadline cfg
+	GlobalCfgDeadline = "deadline"
+	// GlobalCfgRule global rule cfg
+	GlobalCfgRule = "rule"
+	// GlobalCfgOr global or cfg
+	GlobalCfgOr = "or"
 )
 
 // rule: left [==,>,<=,>=,in,~] right
 // can use var: $header_, $cookie_, $query_
 var (
-	VALUE_HEADER = "$HEADER"
-	VALUE_COOKIE = "$COOKIE"
-	VALUE_QUERY  = "$QUERY"
+	// ValueHeader value of header prefix
+	ValueHeader = "$HEADER"
+	// ValueCookie value of cookie prefix
+	ValueCookie = "$COOKIE"
+	// ValueQuery value of query string prefix
+	ValueQuery = "$QUERY"
 )
 
 var (
-	EQ      = "=="
-	LT      = "<"
-	LE      = "<="
-	GT      = ">"
-	GE      = ">="
-	IN      = "in"
-	MATCH   = "~"
+	// EQ ==
+	EQ = "=="
+	// LT <
+	LT = "<"
+	// LE <=
+	LE = "<="
+	// GT >
+	GT = ">"
+	// GE >=
+	GE = ">="
+	// IN in
+	IN = "in"
+	// MATCH reg matches
+	MATCH = "~"
+
+	// PATTERN reg pattern for expression
 	PATTERN = regexp.MustCompile(fmt.Sprintf("^(?U)(.+)(%s|%s|%s|%s|%s|%s|%s)(.+)$", EQ, LE, LT, GE, GT, IN, MATCH))
 )
 
 var (
-	ERR_SYNTAX = errors.New("Syntax error")
+	// ErrSyntax Syntax error
+	ErrSyntax = errors.New("Syntax error")
 )
 
+// RoutingItem routing item
 type RoutingItem struct {
 	rule string
 
@@ -54,11 +74,12 @@ type RoutingItem struct {
 	targetValue    string
 }
 
+// Routing routing
 type Routing struct {
 	ClusterName string `json:"clusterName, omitempty"`
-	Id          string `json:"id,omitempty"`
+	ID          string `json:"id,omitempty"`
 	Cfg         string `json:"cfg,omitempty"`
-	Url         string `json:"url,omitempty"`
+	URL         string `json:"url,omitempty"`
 
 	desc     string
 	deadline int64
@@ -68,6 +89,7 @@ type Routing struct {
 	orItems  []*RoutingItem
 }
 
+// UnMarshalRouting unmarshal
 func UnMarshalRouting(data []byte) *Routing {
 	v := &Routing{}
 	json.Unmarshal(data, v)
@@ -77,40 +99,44 @@ func UnMarshalRouting(data []byte) *Routing {
 	return v
 }
 
+// UnMarshalRoutingFromReader unmarshal
 func UnMarshalRoutingFromReader(r io.Reader) (*Routing, error) {
 	v := &Routing{}
 
 	decoder := json.NewDecoder(r)
 	err := decoder.Decode(v)
 
-	if v.Id == "" {
-		v.Id = goetty.NewV4UUID()
+	if v.ID == "" {
+		v.ID = goetty.NewV4UUID()
 	}
 
 	return v, err
 }
 
-func (self *Routing) Marshal() []byte {
-	v, _ := json.Marshal(self)
+// Marshal marshal
+func (r *Routing) Marshal() []byte {
+	v, _ := json.Marshal(r)
 	return v
 }
 
-func (self *Routing) Check() error {
-	return self.init()
+// Check check config
+func (r *Routing) Check() error {
+	return r.init()
 }
 
+// NewRouting create a new Routing
 func NewRouting(cfgString string, clusterName string, url string) (*Routing, error) {
 	r := &Routing{}
 	r.Cfg = cfgString
 	r.ClusterName = clusterName
-	r.Url = url
-	r.Id = goetty.NewV4UUID()
+	r.URL = url
+	r.ID = goetty.NewV4UUID()
 
 	return r, r.init()
 }
 
 func (r *Routing) init() error {
-	reg, err := regexp.Compile(r.Url)
+	reg, err := regexp.Compile(r.URL)
 
 	if nil != err {
 		return err
@@ -124,19 +150,19 @@ func (r *Routing) init() error {
 		return err
 	}
 
-	desc, err := cfg.GetString(CFG_GLOBAL_DESC)
+	desc, err := cfg.GetString(GlobalCfgDesc)
 	if nil != err {
 		return err
 	}
 	r.desc = desc
 
-	deadline, err := cfg.GetInteger(CFG_GLOBAL_DEADLINE)
+	deadline, err := cfg.GetInteger(GlobalCfgDeadline)
 	if nil != err {
 		return err
 	}
 	r.deadline = deadline
 
-	andRules, err := cfg.GetList(CFG_GLOBAL_RULES)
+	andRules, err := cfg.GetList(GlobalCfgRule)
 	if nil != err {
 		return err
 	}
@@ -146,8 +172,8 @@ func (r *Routing) init() error {
 	}
 	r.andItems = items
 
-	if cfg.Exists(CFG_GLOBAL_OR) {
-		orRules, err := cfg.GetList(CFG_GLOBAL_OR)
+	if cfg.Exists(GlobalCfgOr) {
+		orRules, err := cfg.GetList(GlobalCfgOr)
 		if nil != err {
 			return err
 		}
@@ -161,24 +187,25 @@ func (r *Routing) init() error {
 	return nil
 }
 
-func (self *Routing) Matches(req *http.Request) bool {
-	if !self.regexp.MatchString(req.URL.Path) {
+// Matches return true if req matches
+func (r *Routing) Matches(req *http.Request) bool {
+	if !r.regexp.MatchString(req.URL.Path) {
 		return false
 	}
 
-	for _, r := range self.andItems {
-		if !r.matches(req) {
-			return self.matchesOr(req)
+	for _, item := range r.andItems {
+		if !item.matches(req) {
+			return r.matchesOr(req)
 		}
 	}
 
 	return true
 }
 
-func (self *Routing) matchesOr(req *http.Request) bool {
-	if nil != self.orItems {
-		for _, r := range self.orItems {
-			if r.matches(req) {
+func (r *Routing) matchesOr(req *http.Request) bool {
+	if nil != r.orItems {
+		for _, item := range r.orItems {
+			if item.matches(req) {
 				return true
 			}
 		}
@@ -213,71 +240,71 @@ func newRoutingItem(rule string) (*RoutingItem, error) {
 	return item, err
 }
 
-func (self *RoutingItem) parse() error {
-	mg := PATTERN.FindStringSubmatch(self.rule)
+func (r *RoutingItem) parse() error {
+	mg := PATTERN.FindStringSubmatch(r.rule)
 	if len(mg) != 4 {
-		return ERR_SYNTAX
+		return ErrSyntax
 	}
 
 	infos := mg[1:]
 	op := strings.TrimSpace(infos[1])
 	switch op {
 	case EQ:
-		self.opFun = self.eq
+		r.opFun = r.eq
 		break
 	case LT:
-		self.opFun = self.lt
+		r.opFun = r.lt
 		break
 	case LE:
-		self.opFun = self.le
+		r.opFun = r.le
 		break
 	case GT:
-		self.opFun = self.gt
+		r.opFun = r.gt
 		break
 	case GE:
-		self.opFun = self.ge
+		r.opFun = r.ge
 		break
 	case IN:
-		self.opFun = self.in
+		r.opFun = r.in
 		break
 	case MATCH:
-		self.opFun = self.reg
+		r.opFun = r.reg
 		break
 	default:
-		return ERR_SYNTAX
+		return ErrSyntax
 	}
 
 	attr := strings.TrimSpace(infos[0])
 	attrInfos := strings.SplitN(attr, "_", 2)
 	if len(attrInfos) != 2 {
-		return ERR_SYNTAX
+		return ErrSyntax
 	}
 	prefix := strings.ToUpper(strings.TrimSpace(attrInfos[0]))
 	switch prefix {
-	case VALUE_HEADER:
-		self.sourceValueFun = self.getHeaderValue
+	case ValueHeader:
+		r.sourceValueFun = r.getHeaderValue
 		break
-	case VALUE_COOKIE:
-		self.sourceValueFun = self.getCookieValue
+	case ValueCookie:
+		r.sourceValueFun = r.getCookieValue
 		break
-	case VALUE_QUERY:
-		self.sourceValueFun = self.getQueryValue
+	case ValueQuery:
+		r.sourceValueFun = r.getQueryValue
 	default:
-		return ERR_SYNTAX
+		return ErrSyntax
 	}
 
-	self.attrName = strings.TrimSpace(attrInfos[1])
-	self.targetValue = strings.TrimSpace(infos[2])
+	r.attrName = strings.TrimSpace(attrInfos[1])
+	r.targetValue = strings.TrimSpace(infos[2])
 
 	return nil
 }
 
-func (self *RoutingItem) matches(req *http.Request) bool {
-	return self.opFun(self.sourceValueFun(req))
+func (r *RoutingItem) matches(req *http.Request) bool {
+	return r.opFun(r.sourceValueFun(req))
 }
 
-func (self *RoutingItem) getCookieValue(req *http.Request) string {
-	value, err := req.Cookie(self.attrName)
+func (r *RoutingItem) getCookieValue(req *http.Request) string {
+	value, err := req.Cookie(r.attrName)
 
 	if err != nil {
 		return ""
@@ -286,26 +313,26 @@ func (self *RoutingItem) getCookieValue(req *http.Request) string {
 	return value.Value
 }
 
-func (self *RoutingItem) getHeaderValue(req *http.Request) string {
-	return req.Header.Get(self.attrName)
+func (r *RoutingItem) getHeaderValue(req *http.Request) string {
+	return req.Header.Get(r.attrName)
 }
 
-func (self *RoutingItem) getQueryValue(req *http.Request) string {
-	v, _ := url.QueryUnescape(req.URL.Query().Get(self.attrName))
+func (r *RoutingItem) getQueryValue(req *http.Request) string {
+	v, _ := url.QueryUnescape(req.URL.Query().Get(r.attrName))
 	return v
 }
 
-func (self *RoutingItem) eq(srvValue string) bool {
-	return srvValue == self.targetValue
+func (r *RoutingItem) eq(srvValue string) bool {
+	return srvValue == r.targetValue
 }
 
-func (self *RoutingItem) lt(srvValue string) bool {
+func (r *RoutingItem) lt(srvValue string) bool {
 	s, err := strconv.Atoi(srvValue)
 	if err != nil {
 		return false
 	}
 
-	t, err := strconv.Atoi(self.targetValue)
+	t, err := strconv.Atoi(r.targetValue)
 	if err != nil {
 		return false
 	}
@@ -313,13 +340,13 @@ func (self *RoutingItem) lt(srvValue string) bool {
 	return s < t
 }
 
-func (self *RoutingItem) le(srvValue string) bool {
+func (r *RoutingItem) le(srvValue string) bool {
 	s, err := strconv.Atoi(srvValue)
 	if err != nil {
 		return false
 	}
 
-	t, err := strconv.Atoi(self.targetValue)
+	t, err := strconv.Atoi(r.targetValue)
 	if err != nil {
 		return false
 	}
@@ -327,13 +354,13 @@ func (self *RoutingItem) le(srvValue string) bool {
 	return s <= t
 }
 
-func (self *RoutingItem) gt(srvValue string) bool {
+func (r *RoutingItem) gt(srvValue string) bool {
 	s, err := strconv.Atoi(srvValue)
 	if err != nil {
 		return false
 	}
 
-	t, err := strconv.Atoi(self.targetValue)
+	t, err := strconv.Atoi(r.targetValue)
 	if err != nil {
 		return false
 	}
@@ -341,13 +368,13 @@ func (self *RoutingItem) gt(srvValue string) bool {
 	return s > t
 }
 
-func (self *RoutingItem) ge(srvValue string) bool {
+func (r *RoutingItem) ge(srvValue string) bool {
 	s, err := strconv.Atoi(srvValue)
 	if err != nil {
 		return false
 	}
 
-	t, err := strconv.Atoi(self.targetValue)
+	t, err := strconv.Atoi(r.targetValue)
 	if err != nil {
 		return false
 	}
@@ -355,11 +382,11 @@ func (self *RoutingItem) ge(srvValue string) bool {
 	return s >= t
 }
 
-func (self *RoutingItem) in(srvValue string) bool {
-	return strings.Index(srvValue, self.targetValue) != -1
+func (r *RoutingItem) in(srvValue string) bool {
+	return strings.Index(srvValue, r.targetValue) != -1
 }
 
-func (self *RoutingItem) reg(srvValue string) bool {
-	matches, err := regexp.MatchString(self.targetValue, srvValue)
+func (r *RoutingItem) reg(srvValue string) bool {
+	matches, err := regexp.MatchString(r.targetValue, srvValue)
 	return err == nil && matches
 }

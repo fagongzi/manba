@@ -1,16 +1,17 @@
 package model
 
 import (
-	"github.com/labstack/echo"
-	sd "github.com/labstack/echo/engine/standard"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/labstack/echo"
+	sd "github.com/labstack/echo/engine/standard"
 )
 
 const (
-	ETCD_ADDR   = "http://192.168.70.13:2379"
-	ETCD_PREFIX = "/gateway2"
+	etcdAddr   = "http://192.168.70.13:2379"
+	etcdPrefix = "/gateway2"
 )
 
 var (
@@ -26,7 +27,7 @@ var (
 var rt *RouteTable
 
 func createRouteTable(t *testing.T) {
-	store, err := NewEtcdStore([]string{ETCD_ADDR}, ETCD_PREFIX)
+	store, err := NewEtcdStore([]string{etcdAddr}, etcdPrefix)
 
 	if nil != err {
 		t.Fatalf("create etcd store err.addr:<%s>", err)
@@ -176,12 +177,12 @@ func TestEtcdWatchNewBind(t *testing.T) {
 func TestEtcdWatchNewAggregation(t *testing.T) {
 	n := &Node{
 		AttrName:    "test",
-		Url:         "/api/node/test",
+		URL:         "/api/node/test",
 		ClusterName: clusterName,
 	}
 
 	err := rt.store.SaveAggregation(&Aggregation{
-		Url:   angUrl,
+		URL:   angUrl,
 		Nodes: []*Node{n},
 	})
 
@@ -281,18 +282,18 @@ func TestEtcdWatchUpdateCluster(t *testing.T) {
 func TestEtcdWatchUpdateAggregation(t *testing.T) {
 	n := &Node{
 		AttrName:    "test",
-		Url:         "/api/node/test",
+		URL:         "/api/node/test",
 		ClusterName: clusterName,
 	}
 
 	n2 := &Node{
 		AttrName:    "tes2t",
-		Url:         "/api/node/test2",
+		URL:         "/api/node/test2",
 		ClusterName: clusterName,
 	}
 
 	ang := &Aggregation{
-		Url:   angUrl,
+		URL:   angUrl,
 		Nodes: []*Node{n, n2},
 	}
 
@@ -305,7 +306,7 @@ func TestEtcdWatchUpdateAggregation(t *testing.T) {
 
 	waitNotify()
 
-	existAng, _ := rt.aggregations[ang.Url]
+	existAng, _ := rt.aggregations[ang.URL]
 
 	if len(existAng.Nodes) != len(ang.Nodes) {
 		t.Errorf("Nodes expect:<%s>, acture:<%s>. ", len(existAng.Nodes), len(ang.Nodes))
@@ -374,7 +375,7 @@ func TestEtcdWatchDeleteAggregation(t *testing.T) {
 }
 
 func TestEtcdWatchNewRouting(t *testing.T) {
-	r, err := NewRouting(`desc = "test"; deadline = 100; rule = ["$query_abc == 10", "$query_123 == 20"];`, clusterName)
+	r, err := NewRouting(`desc = "test"; deadline = 100; rule = ["$query_abc == 10", "$query_123 == 20"];`, clusterName, "")
 
 	if nil != err {
 		t.Error("add routing err.")
@@ -391,7 +392,7 @@ func TestEtcdWatchNewRouting(t *testing.T) {
 	waitNotify()
 
 	if len(rt.routings) == 1 {
-		delete(rt.routings, r.Id)
+		delete(rt.routings, r.ID)
 		return
 	}
 
@@ -399,7 +400,7 @@ func TestEtcdWatchNewRouting(t *testing.T) {
 }
 
 func TestEtcdWatchDeleteRouting(t *testing.T) {
-	r, err := NewRouting(`desc = "test"; deadline = 3; rule = ["$query_abc == 10", "$query_123 == 20"];`, clusterName)
+	r, err := NewRouting(`desc = "test"; deadline = 3; rule = ["$query_abc == 10", "$query_123 == 20"];`, clusterName, "")
 
 	if nil != err {
 		t.Error("add routing err.")

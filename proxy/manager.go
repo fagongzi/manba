@@ -1,13 +1,15 @@
 package proxy
 
 import (
+	"net"
+	"net/rpc"
+
 	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/fagongzi/gateway/pkg/util"
-	"net"
-	"net/rpc"
 )
 
+// Manager support runtime remote interface
 type Manager struct {
 	proxy *Proxy
 }
@@ -16,30 +18,34 @@ func newManager(proxy *Proxy) *Manager {
 	return &Manager{proxy: proxy}
 }
 
-func (self *Manager) SetLogLevel(req model.SetLogReq, rsp *model.SetLogRsp) error {
+// SetLogLevel set log level
+func (m *Manager) SetLogLevel(req model.SetLogReq, rsp *model.SetLogRsp) error {
 	level := util.SetLogLevel(req.Level)
-	self.proxy.config.LogLevel = level
+	m.proxy.config.LogLevel = level
 
 	rsp.Code = 0
 	return nil
 }
 
-func (self *Manager) SetReqHeadStaticMapping(req model.SetReqHeadStaticMappingReq, rsp *model.SetReqHeadStaticMappingRsp) error {
-	self.proxy.config.ReqHeadStaticMapping[req.Name] = req.Value
+// SetReqHeadStaticMapping SetReqHeadStaticMapping
+func (m *Manager) SetReqHeadStaticMapping(req model.SetReqHeadStaticMappingReq, rsp *model.SetReqHeadStaticMappingRsp) error {
+	m.proxy.config.ReqHeadStaticMapping[req.Name] = req.Value
 
 	rsp.Code = 0
 	return nil
 }
 
-func (self *Manager) AddAnalysisPoint(req model.AddAnalysisPointReq, rsp *model.AddAnalysisPointRsp) error {
-	self.proxy.routeTable.GetAnalysis().AddRecentCount(req.Addr, req.Secs)
+// AddAnalysisPoint add a point to analysis
+func (m *Manager) AddAnalysisPoint(req model.AddAnalysisPointReq, rsp *model.AddAnalysisPointRsp) error {
+	m.proxy.routeTable.GetAnalysis().AddRecentCount(req.Addr, req.Secs)
 
 	rsp.Code = 0
 	return nil
 }
 
-func (self *Manager) GetAnalysisPoint(req model.GetAnalysisPointReq, rsp *model.GetAnalysisPointRsp) error {
-	analysisor := self.proxy.routeTable.GetAnalysis()
+// GetAnalysisPoint return analysis point data
+func (m *Manager) GetAnalysisPoint(req model.GetAnalysisPointReq, rsp *model.GetAnalysisPointRsp) error {
+	analysisor := m.proxy.routeTable.GetAnalysis()
 
 	rsp.Code = 0
 	rsp.RequestCount = analysisor.GetRecentlyRequestCount(req.Addr, req.Secs)
@@ -57,8 +63,8 @@ func (self *Manager) GetAnalysisPoint(req model.GetAnalysisPointReq, rsp *model.
 	return nil
 }
 
-func (self *Proxy) startRpcServer() error {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", self.config.MgrAddr)
+func (p *Proxy) startRPCServer() error {
+	tcpAddr, err := net.ResolveTCPAddr("tcp", p.config.MgrAddr)
 
 	if err != nil {
 		return err
@@ -69,11 +75,11 @@ func (self *Proxy) startRpcServer() error {
 		return err
 	}
 
-	log.Infof("Mgr listen at %s.", self.config.MgrAddr)
+	log.Infof("Mgr listen at %s.", p.config.MgrAddr)
 
 	server := rpc.NewServer()
 
-	mgrService := newManager(self)
+	mgrService := newManager(p)
 	server.Register(mgrService)
 
 	go func() {

@@ -7,23 +7,23 @@ import (
 	"net/http"
 )
 
-func (self *AdminServer) getLbs() echo.HandlerFunc {
+func (server *AdminServer) getLbs() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		return c.JSON(http.StatusOK, lb.GetSupportLBS())
 	}
 }
 
-func (self *AdminServer) getCluster() echo.HandlerFunc {
+func (server *AdminServer) getCluster() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		id := c.Param("id")
-		cluster, err := self.store.GetCluster(id, true)
+		cluster, err := server.store.GetCluster(id, true)
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		}
 
 		return c.JSON(http.StatusOK, &Result{
@@ -34,15 +34,15 @@ func (self *AdminServer) getCluster() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) getClusters() echo.HandlerFunc {
+func (server *AdminServer) getClusters() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
-		clusters, err := self.store.GetClusters()
+		clusters, err := server.store.GetClusters()
 		if err != nil {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		}
 
 		return c.JSON(http.StatusOK, &Result{
@@ -53,21 +53,21 @@ func (self *AdminServer) getClusters() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) newCluster() echo.HandlerFunc {
+func (server *AdminServer) newCluster() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		cluster, err := model.UnMarshalClusterFromReader(c.Request().Body())
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		} else {
-			err := self.store.SaveCluster(cluster)
+			err := server.store.SaveCluster(cluster)
 			if nil != err {
 				errstr = err.Error()
-				code = CODE_ERROR
+				code = CodeError
 			}
 		}
 
@@ -78,21 +78,21 @@ func (self *AdminServer) newCluster() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) updateCluster() echo.HandlerFunc {
+func (server *AdminServer) updateCluster() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		cluster, err := model.UnMarshalClusterFromReader(c.Request().Body())
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		} else {
-			err := self.store.UpdateCluster(cluster)
+			err := server.store.UpdateCluster(cluster)
 			if nil != err {
 				errstr = err.Error()
-				code = CODE_ERROR
+				code = CodeError
 			}
 		}
 
@@ -103,17 +103,17 @@ func (self *AdminServer) updateCluster() echo.HandlerFunc {
 	}
 }
 
-func (self *AdminServer) deleteCluster() echo.HandlerFunc {
+func (server *AdminServer) deleteCluster() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
-		code := CODE_SUCCESS
+		code := CodeSuccess
 
 		id := c.Param("id")
-		err := self.store.DeleteCluster(id)
+		err := server.store.DeleteCluster(id)
 
 		if nil != err {
 			errstr = err.Error()
-			code = CODE_ERROR
+			code = CodeError
 		}
 
 		return c.JSON(http.StatusOK, &Result{

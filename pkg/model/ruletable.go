@@ -2,11 +2,12 @@ package model
 
 import (
 	"errors"
-	"github.com/CodisLabs/codis/pkg/utils/log"
-	"github.com/fagongzi/goetty"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/fagongzi/goetty"
 )
 
 var (
@@ -23,6 +24,7 @@ var (
 	ERR_ROUTING_NOT_FOUND     = errors.New("Routing not found")
 )
 
+// RouteResult RouteResult
 type RouteResult struct {
 	Node  *Node
 	Svr   *Server
@@ -32,6 +34,7 @@ type RouteResult struct {
 	Merge bool
 }
 
+// RouteTable route table
 type RouteTable struct {
 	rwLock *sync.RWMutex
 
@@ -50,6 +53,7 @@ type RouteTable struct {
 	analysiser *Analysis
 }
 
+// NewRouteTable create a new RouteTable
 func NewRouteTable(store Store) *RouteTable {
 	tw := goetty.NewHashedTimeWheel(time.Second, 60, 3)
 	tw.Start()
@@ -78,13 +82,15 @@ func NewRouteTable(store Store) *RouteTable {
 	return rt
 }
 
-func (self *RouteTable) GetServer(addr string) *Server {
-	return self.svrs[addr]
+// GetServer return server
+func (r *RouteTable) GetServer(addr string) *Server {
+	return r.svrs[addr]
 }
 
-func (self *RouteTable) AddNewRouting(routing *Routing) error {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+// AddNewRouting add a new route
+func (r *RouteTable) AddNewRouting(routing *Routing) error {
+	r.rwLock.Lock()
+	defer r.rwLock.Unlock()
 
 	err := routing.Check()
 
@@ -92,58 +98,61 @@ func (self *RouteTable) AddNewRouting(routing *Routing) error {
 		return err
 	}
 
-	_, ok := self.routings[routing.Id]
+	_, ok := r.routings[routing.ID]
 
 	if ok {
 		return ERR_ROUTING_EXISTS
 	}
 
-	self.routings[routing.Id] = routing
+	r.routings[routing.ID] = routing
 
 	log.Infof("Routing <%s> added", routing.Cfg)
 
 	return nil
 }
 
-func (self *RouteTable) DeleteRouting(id string) error {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+// DeleteRouting delete a route
+func (r *RouteTable) DeleteRouting(id string) error {
+	r.rwLock.Lock()
+	defer r.rwLock.Unlock()
 
-	r, ok := self.routings[id]
+	route, ok := r.routings[id]
 
 	if !ok {
 		return ERR_ROUTING_NOT_FOUND
 	}
 
-	delete(self.routings, id)
+	delete(r.routings, id)
 
-	log.Infof("Routing <%s> deleted", r.Cfg)
+	log.Infof("Routing <%s> deleted", route.Cfg)
 
 	return nil
 }
 
-func (self *RouteTable) AddNewAggregation(ang *Aggregation) error {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+// AddNewAggregation add a new aggregation
+func (r *RouteTable) AddNewAggregation(ang *Aggregation) error {
+	r.rwLock.Lock()
+	defer r.rwLock.Unlock()
 
-	_, ok := self.aggregations[ang.Url]
+	_, ok := r.aggregations[ang.URL]
 
 	if ok {
 		return ERR_AGGREGATION_EXISTS
 	}
 
-	self.aggregations[ang.Url] = ang
+	r.aggregations[ang.URL] = ang
 
-	log.Infof("Aggregation <%s> added", ang.Url)
+	log.Infof("Aggregation <%s> added", ang.URL)
 
 	return nil
 }
 
-func (self *RouteTable) UpdateAggregation(ang *Aggregation) error {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+// UpdateAggregation update aggregation
+func (r *RouteTable) UpdateAggregation(ang *Aggregation) error {
+	r.rwLock.Lock()
+	defer r.rwLock.Unlock()
 
-	old, ok := self.aggregations[ang.Url]
+	old, ok := r.aggregations[ang.URL]
 
 	if !ok {
 		return ERR_AGGREGATION_NOT_FOUND
@@ -151,33 +160,35 @@ func (self *RouteTable) UpdateAggregation(ang *Aggregation) error {
 
 	old.updateFrom(ang)
 
-	log.Infof("Aggregation <%s> updated", ang.Url)
+	log.Infof("Aggregation <%s> updated", ang.URL)
 
 	return nil
 }
 
-func (self *RouteTable) DeleteAggregation(url string) error {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+// DeleteAggregation delete a aggregation using url
+func (r *RouteTable) DeleteAggregation(url string) error {
+	r.rwLock.Lock()
+	defer r.rwLock.Unlock()
 
-	_, ok := self.aggregations[url]
+	_, ok := r.aggregations[url]
 
 	if !ok {
 		return ERR_AGGREGATION_NOT_FOUND
 	}
 
-	delete(self.aggregations, url)
+	delete(r.aggregations, url)
 
 	log.Infof("Aggregation <%s> deleted", url)
 
 	return nil
 }
 
-func (self *RouteTable) UpdateServer(svr *Server) error {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+// UpdateServer update server
+func (r *RouteTable) UpdateServer(svr *Server) error {
+	r.rwLock.Lock()
+	defer r.rwLock.Unlock()
 
-	old, ok := self.svrs[svr.Addr]
+	old, ok := r.svrs[svr.Addr]
 
 	if !ok {
 		return ERR_SERVER_NOT_FOUND
@@ -190,25 +201,26 @@ func (self *RouteTable) UpdateServer(svr *Server) error {
 	return nil
 }
 
-func (self *RouteTable) DeleteServer(serverAddr string) error {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+// DeleteServer delete a server
+func (r *RouteTable) DeleteServer(serverAddr string) error {
+	r.rwLock.Lock()
+	defer r.rwLock.Unlock()
 
-	svr, ok := self.svrs[serverAddr]
+	svr, ok := r.svrs[serverAddr]
 
 	if !ok {
 		return ERR_SERVER_NOT_FOUND
 	}
 
-	delete(self.svrs, serverAddr)
+	delete(r.svrs, serverAddr)
 
 	// TODO: delete aggregations
 
 	svr.stopCheck()
-	self.removeFromCheck(svr)
+	r.removeFromCheck(svr)
 
-	binded, _ := self.mapping[svr.Addr]
-	delete(self.mapping, svr.Addr)
+	binded, _ := r.mapping[svr.Addr]
+	delete(r.mapping, svr.Addr)
 	log.Infof("Bind <%s> stored all removed.", svr.Addr)
 
 	for _, cluster := range binded {
@@ -220,11 +232,12 @@ func (self *RouteTable) DeleteServer(serverAddr string) error {
 	return nil
 }
 
-func (self *RouteTable) AddNewServer(svr *Server) error {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+// AddNewServer add a new server
+func (r *RouteTable) AddNewServer(svr *Server) error {
+	r.rwLock.Lock()
+	defer r.rwLock.Unlock()
 
-	_, ok := self.svrs[svr.Addr]
+	_, ok := r.svrs[svr.Addr]
 
 	if ok {
 		return ERR_SERVER_EXISTS
@@ -233,30 +246,31 @@ func (self *RouteTable) AddNewServer(svr *Server) error {
 	svr.prevStatus = DOWN
 	svr.Status = DOWN
 	svr.useCheckDuration = svr.CheckDuration
-	self.svrs[svr.Addr] = svr
+	r.svrs[svr.Addr] = svr
 
 	binded := make(map[string]*Cluster)
-	self.mapping[svr.Addr] = binded
+	r.mapping[svr.Addr] = binded
 
 	svr.init()
 
 	// start check
-	self.addToCheck(svr)
+	r.addToCheck(svr)
 
-	self.analysiser.addNewAnalysis(svr.Addr)
+	r.analysiser.addNewAnalysis(svr.Addr)
 	// 1 secs default add to use
-	self.analysiser.AddRecentCount(svr.Addr, 1)
+	r.analysiser.AddRecentCount(svr.Addr, 1)
 
 	log.Infof("Server <%s> added", svr.Addr)
 
 	return nil
 }
 
-func (self *RouteTable) UpdateCluster(cluster *Cluster) error {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+// UpdateCluster update cluster
+func (r *RouteTable) UpdateCluster(cluster *Cluster) error {
+	r.rwLock.Lock()
+	defer r.rwLock.Unlock()
 
-	old, ok := self.clusters[cluster.Name]
+	old, ok := r.clusters[cluster.Name]
 
 	if !ok {
 		return ERR_CLUSTER_NOT_FOUND
@@ -269,24 +283,25 @@ func (self *RouteTable) UpdateCluster(cluster *Cluster) error {
 	return nil
 }
 
-func (self *RouteTable) DeleteCluster(clusterName string) error {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+// DeleteCluster delete a cluster
+func (r *RouteTable) DeleteCluster(clusterName string) error {
+	r.rwLock.Lock()
+	defer r.rwLock.Unlock()
 
-	cluster, ok := self.clusters[clusterName]
+	cluster, ok := r.clusters[clusterName]
 
 	if !ok {
 		return ERR_CLUSTER_NOT_FOUND
 	}
 
 	cluster.doInEveryBindServers(func(addr string) {
-		svr, ok := self.svrs[addr]
+		svr, ok := r.svrs[addr]
 		if ok {
-			self.doUnBind(svr, cluster, false)
+			r.doUnBind(svr, cluster, false)
 		}
 	})
 
-	delete(self.clusters, cluster.Name)
+	delete(r.clusters, cluster.Name)
 
 	// TODO: Aggregation node loose cluster
 
@@ -295,43 +310,45 @@ func (self *RouteTable) DeleteCluster(clusterName string) error {
 	return nil
 }
 
-func (self *RouteTable) AddNewCluster(cluster *Cluster) error {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+// AddNewCluster add new cluster
+func (r *RouteTable) AddNewCluster(cluster *Cluster) error {
+	r.rwLock.Lock()
+	defer r.rwLock.Unlock()
 
-	_, ok := self.clusters[cluster.Name]
+	_, ok := r.clusters[cluster.Name]
 
 	if ok {
 		log.Errorf("Cluster <%v> added fail: %s", cluster, ERR_CLUSTER_EXISTS.Error())
 		return ERR_CLUSTER_EXISTS
 	}
 
-	self.clusters[cluster.Name] = cluster
+	r.clusters[cluster.Name] = cluster
 
 	log.Infof("Cluster <%s> added", cluster.Name)
 
 	return nil
 }
 
-func (self *RouteTable) Bind(svrAddr string, clusterName string) error {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+// Bind bind server and cluster
+func (r *RouteTable) Bind(svrAddr string, clusterName string) error {
+	r.rwLock.Lock()
+	defer r.rwLock.Unlock()
 
-	svr, ok := self.svrs[svrAddr]
+	svr, ok := r.svrs[svrAddr]
 	if !ok {
 		log.Errorf("Bind <%s,%s> fail: %s", svrAddr, clusterName, ERR_SERVER_NOT_FOUND.Error())
 
 		return ERR_SERVER_NOT_FOUND
 	}
 
-	cluster, ok := self.clusters[clusterName]
+	cluster, ok := r.clusters[clusterName]
 	if !ok {
 		log.Errorf("Bind <%s,%s> fail: %s", svrAddr, clusterName, ERR_CLUSTER_NOT_FOUND.Error())
 
 		return ERR_CLUSTER_NOT_FOUND
 	}
 
-	binded, _ := self.mapping[svr.Addr]
+	binded, _ := r.mapping[svr.Addr]
 	bindCluster, ok := binded[cluster.Name]
 
 	if ok && bindCluster.Name == clusterName {
@@ -351,31 +368,32 @@ func (self *RouteTable) Bind(svrAddr string, clusterName string) error {
 	return nil
 }
 
-func (self *RouteTable) UnBind(svrAddr string, clusterName string) error {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+// UnBind unbind cluster and server
+func (r *RouteTable) UnBind(svrAddr string, clusterName string) error {
+	r.rwLock.Lock()
+	defer r.rwLock.Unlock()
 
-	svr, ok := self.svrs[svrAddr]
+	svr, ok := r.svrs[svrAddr]
 	if !ok {
 		log.Errorf("UnBind <%s,%s> fail: %s", svrAddr, clusterName, ERR_SERVER_NOT_FOUND.Error())
 
 		return ERR_SERVER_NOT_FOUND
 	}
 
-	cluster, ok := self.clusters[clusterName]
+	cluster, ok := r.clusters[clusterName]
 	if !ok {
 		log.Errorf("UnBind <%s,%s> fail: %s", svrAddr, clusterName, ERR_CLUSTER_NOT_FOUND.Error())
 
 		return ERR_CLUSTER_NOT_FOUND
 	}
 
-	self.doUnBind(svr, cluster, true)
+	r.doUnBind(svr, cluster, true)
 
 	return nil
 }
 
-func (self *RouteTable) doUnBind(svr *Server, cluster *Cluster, withLock bool) {
-	binded, ok := self.mapping[svr.Addr]
+func (r *RouteTable) doUnBind(svr *Server, cluster *Cluster, withLock bool) {
+	binded, ok := r.mapping[svr.Addr]
 	if ok {
 		delete(binded, cluster.Name)
 		log.Infof("Bind <%s,%s> stored removed.", svr.Addr, cluster.Name)
@@ -387,11 +405,12 @@ func (self *RouteTable) doUnBind(svr *Server, cluster *Cluster, withLock bool) {
 	}
 }
 
-func (self *RouteTable) Select(req *http.Request) []*RouteResult {
-	self.rwLock.RLock()
-	defer self.rwLock.RUnlock()
+// Select return route result
+func (r *RouteTable) Select(req *http.Request) []*RouteResult {
+	r.rwLock.RLock()
+	defer r.rwLock.RUnlock()
 
-	matches, results := self.selectAggregation(req)
+	matches, results := r.selectAggregation(req)
 
 	if matches {
 		return results
@@ -399,19 +418,19 @@ func (self *RouteTable) Select(req *http.Request) []*RouteResult {
 
 	var targetCluster *Cluster
 
-	for _, routing := range self.routings {
+	for _, routing := range r.routings {
 		if routing.Matches(req) {
-			targetCluster = self.clusters[routing.ClusterName]
+			targetCluster = r.clusters[routing.ClusterName]
 			break
 		}
 	}
 
 	if nil != targetCluster {
-		return []*RouteResult{&RouteResult{Svr: self.doSelectServer(req, targetCluster)}}
+		return []*RouteResult{&RouteResult{Svr: r.doSelectServer(req, targetCluster)}}
 	}
 
-	for _, cluster := range self.clusters {
-		svr := self.selectServer(req, cluster)
+	for _, cluster := range r.clusters {
+		svr := r.selectServer(req, cluster)
 
 		if nil != svr {
 			return []*RouteResult{&RouteResult{Svr: svr}}
@@ -421,10 +440,10 @@ func (self *RouteTable) Select(req *http.Request) []*RouteResult {
 	return nil
 }
 
-func (self *RouteTable) selectAggregation(req *http.Request) (matches bool, results []*RouteResult) {
+func (r *RouteTable) selectAggregation(req *http.Request) (matches bool, results []*RouteResult) {
 	matches = false
 
-	for url, agn := range self.aggregations {
+	for url, agn := range r.aggregations {
 		if url == req.URL.Path {
 			matches = true
 			results = make([]*RouteResult, len(agn.Nodes))
@@ -432,7 +451,7 @@ func (self *RouteTable) selectAggregation(req *http.Request) (matches bool, resu
 			for index, node := range agn.Nodes {
 				results[index] = &RouteResult{
 					Node: node,
-					Svr:  self.selectServer(req, self.clusters[node.ClusterName]),
+					Svr:  r.selectServer(req, r.clusters[node.ClusterName]),
 				}
 			}
 		}
@@ -441,147 +460,150 @@ func (self *RouteTable) selectAggregation(req *http.Request) (matches bool, resu
 	return matches, results
 }
 
-func (self *RouteTable) selectServer(req *http.Request, cluster *Cluster) *Server {
+func (r *RouteTable) selectServer(req *http.Request, cluster *Cluster) *Server {
 	if cluster.Matches(req) {
-		return self.doSelectServer(req, cluster)
+		return r.doSelectServer(req, cluster)
 	}
 
 	return nil
 }
 
-func (self *RouteTable) doSelectServer(req *http.Request, cluster *Cluster) *Server {
+func (r *RouteTable) doSelectServer(req *http.Request, cluster *Cluster) *Server {
 	addr := cluster.Select(req) // 这里有可能会被锁住，会被正在修改bind关系的cluster锁住
-	svr, _ := self.svrs[addr]
+	svr, _ := r.svrs[addr]
 	return svr
 }
 
-func (self *RouteTable) GetAnalysis() *Analysis {
-	return self.analysiser
+// GetAnalysis return analysis
+func (r *RouteTable) GetAnalysis() *Analysis {
+	return r.analysiser
 }
 
-func (self *RouteTable) GetTimeWheel() *goetty.HashedTimeWheel {
-	return self.tw
+// GetTimeWheel return time wheel
+func (r *RouteTable) GetTimeWheel() *goetty.HashedTimeWheel {
+	return r.tw
 }
 
-func (self *RouteTable) watch() {
+func (r *RouteTable) watch() {
 	log.Info("RouteTable start watch.")
 
-	go self.doEvtReceive()
-	err := self.store.Watch(self.watchReceiveCh, self.watchStopCh)
+	go r.doEvtReceive()
+	err := r.store.Watch(r.watchReceiveCh, r.watchStopCh)
 
 	log.Errorf("RouteTable watch err: %s", err)
 }
 
-func (self *RouteTable) doEvtReceive() {
+func (r *RouteTable) doEvtReceive() {
 	for {
-		evt := <-self.watchReceiveCh
+		evt := <-r.watchReceiveCh
 
-		if evt.Src == EVT_SRC_CLUSTER {
-			self.doReceiveCluster(evt)
-		} else if evt.Src == EVT_SRC_SERVER {
-			self.doReceiveServer(evt)
-		} else if evt.Src == EVT_SRC_BIND {
-			self.doReceiveBind(evt)
-		} else if evt.Src == EVT_SRC_AGGREGATION {
-			self.doReceiveAggregation(evt)
-		} else if evt.Src == EVT_SRC_ROUTING {
-			self.doReceiveRouting(evt)
+		if evt.Src == EventSrcCluster {
+			r.doReceiveCluster(evt)
+		} else if evt.Src == EventSrcServer {
+			r.doReceiveServer(evt)
+		} else if evt.Src == EventSrcBind {
+			r.doReceiveBind(evt)
+		} else if evt.Src == EventSrcAggregation {
+			r.doReceiveAggregation(evt)
+		} else if evt.Src == EventSrcRouting {
+			r.doReceiveRouting(evt)
 		} else {
 			log.Warnf("EVT unknown <%+v>", evt)
 		}
 	}
 }
 
-func (self *RouteTable) doReceiveRouting(evt *Evt) {
+func (r *RouteTable) doReceiveRouting(evt *Evt) {
 	routing, _ := evt.Value.(*Routing)
 
-	if evt.Type == EVT_TYPE_NEW {
-		self.AddNewRouting(routing)
-	} else if evt.Type == EVT_TYPE_DELETE {
-		self.DeleteRouting(evt.Key)
-	} else if evt.Type == EVT_TYPE_UPDATE {
+	if evt.Type == EventTypeNew {
+		r.AddNewRouting(routing)
+	} else if evt.Type == EventTypeDelete {
+		r.DeleteRouting(evt.Key)
+	} else if evt.Type == EventTypeUpdate {
 		// TODO: impl
 	}
 }
 
-func (self *RouteTable) doReceiveAggregation(evt *Evt) {
+func (r *RouteTable) doReceiveAggregation(evt *Evt) {
 	ang, _ := evt.Value.(*Aggregation)
 
-	if evt.Type == EVT_TYPE_NEW {
-		self.AddNewAggregation(ang)
-	} else if evt.Type == EVT_TYPE_DELETE {
-		self.DeleteAggregation(evt.Key)
-	} else if evt.Type == EVT_TYPE_UPDATE {
-		self.UpdateAggregation(ang)
+	if evt.Type == EventTypeNew {
+		r.AddNewAggregation(ang)
+	} else if evt.Type == EventTypeDelete {
+		r.DeleteAggregation(evt.Key)
+	} else if evt.Type == EventTypeUpdate {
+		r.UpdateAggregation(ang)
 	}
 }
 
-func (self *RouteTable) doReceiveCluster(evt *Evt) {
+func (r *RouteTable) doReceiveCluster(evt *Evt) {
 	cluster, _ := evt.Value.(*Cluster)
 
-	if evt.Type == EVT_TYPE_NEW {
-		self.AddNewCluster(cluster)
-	} else if evt.Type == EVT_TYPE_DELETE {
-		self.DeleteCluster(evt.Key)
-	} else if evt.Type == EVT_TYPE_UPDATE {
-		self.UpdateCluster(cluster)
+	if evt.Type == EventTypeNew {
+		r.AddNewCluster(cluster)
+	} else if evt.Type == EventTypeDelete {
+		r.DeleteCluster(evt.Key)
+	} else if evt.Type == EventTypeUpdate {
+		r.UpdateCluster(cluster)
 	}
 }
 
-func (self *RouteTable) doReceiveServer(evt *Evt) {
+func (r *RouteTable) doReceiveServer(evt *Evt) {
 	svr, _ := evt.Value.(*Server)
 
-	if evt.Type == EVT_TYPE_NEW {
-		self.AddNewServer(svr)
-	} else if evt.Type == EVT_TYPE_DELETE {
-		self.DeleteServer(evt.Key)
-	} else if evt.Type == EVT_TYPE_UPDATE {
-		self.UpdateServer(svr)
+	if evt.Type == EventTypeNew {
+		r.AddNewServer(svr)
+	} else if evt.Type == EventTypeDelete {
+		r.DeleteServer(evt.Key)
+	} else if evt.Type == EventTypeUpdate {
+		r.UpdateServer(svr)
 	}
 }
 
-func (self *RouteTable) doReceiveBind(evt *Evt) {
+func (r *RouteTable) doReceiveBind(evt *Evt) {
 	bind, _ := evt.Value.(*Bind)
 
-	if evt.Type == EVT_TYPE_NEW {
-		self.Bind(bind.ServerAddr, bind.ClusterName)
-	} else if evt.Type == EVT_TYPE_DELETE {
-		self.UnBind(bind.ServerAddr, bind.ClusterName)
+	if evt.Type == EventTypeNew {
+		r.Bind(bind.ServerAddr, bind.ClusterName)
+	} else if evt.Type == EventTypeDelete {
+		r.UnBind(bind.ServerAddr, bind.ClusterName)
 	}
 }
 
-func (self *RouteTable) Load() {
-	self.loadClusters()
-	self.loadServers()
-	self.loadBinds()
-	self.loadAggregations()
-	self.loadRoutings()
+// Load load info from store
+func (r *RouteTable) Load() {
+	r.loadClusters()
+	r.loadServers()
+	r.loadBinds()
+	r.loadAggregations()
+	r.loadRoutings()
 }
 
-func (self *RouteTable) loadClusters() {
-	clusters, err := self.store.GetClusters()
+func (r *RouteTable) loadClusters() {
+	clusters, err := r.store.GetClusters()
 	if nil != err {
 		log.WarnErrorf(err, "Load clusters fail.")
 		return
 	}
 
 	for _, cluster := range clusters {
-		err := self.AddNewCluster(cluster)
+		err := r.AddNewCluster(cluster)
 		if nil != err {
 			log.PanicErrorf(err, "Server <%s> add fail.", cluster.Name)
 		}
 	}
 }
 
-func (self *RouteTable) loadServers() {
-	servers, err := self.store.GetServers()
+func (r *RouteTable) loadServers() {
+	servers, err := r.store.GetServers()
 	if nil != err {
 		log.WarnErrorf(err, "Load servers from etcd fail.")
 		return
 	}
 
 	for _, server := range servers {
-		err := self.AddNewServer(server)
+		err := r.AddNewServer(server)
 
 		if nil != err {
 			log.PanicErrorf(err, "Server <%s> add fail.", server.Addr)
@@ -589,63 +611,63 @@ func (self *RouteTable) loadServers() {
 	}
 }
 
-func (self *RouteTable) loadRoutings() {
-	routings, err := self.store.GetRoutings()
+func (r *RouteTable) loadRoutings() {
+	routings, err := r.store.GetRoutings()
 	if nil != err {
 		log.WarnErrorf(err, "Load routings from etcd fail.")
 		return
 	}
 
-	for _, r := range routings {
-		err := self.AddNewRouting(r)
+	for _, route := range routings {
+		err := r.AddNewRouting(route)
 		if nil != err {
-			log.PanicError(err, "Routing <%s> add fail.", r.Cfg)
+			log.PanicError(err, "Routing <%s> add fail.", route.Cfg)
 		}
 	}
 }
 
-func (self *RouteTable) loadBinds() {
-	binds, err := self.store.GetBinds()
+func (r *RouteTable) loadBinds() {
+	binds, err := r.store.GetBinds()
 	if nil != err {
 		log.WarnErrorf(err, "Load binds from etcd fail.")
 		return
 	}
 
 	for _, b := range binds {
-		err := self.Bind(b.ServerAddr, b.ClusterName)
+		err := r.Bind(b.ServerAddr, b.ClusterName)
 		if nil != err {
 			log.PanicError(err, "Bind <%s, %s> add fail.", b.ServerAddr, b.ClusterName)
 		}
 	}
 }
 
-func (self *RouteTable) loadAggregations() {
-	angs, err := self.store.GetAggregations()
+func (r *RouteTable) loadAggregations() {
+	angs, err := r.store.GetAggregations()
 	if nil != err {
 		log.WarnErrorf(err, "Load aggregations from etcd fail.")
 		return
 	}
 
 	for _, ang := range angs {
-		err := self.AddNewAggregation(ang)
+		err := r.AddNewAggregation(ang)
 		if nil != err {
-			log.PanicError(err, "Aggregation <%s> add fail.", ang.Url)
+			log.PanicError(err, "Aggregation <%s> add fail.", ang.URL)
 		}
 	}
 }
 
-func (self *RouteTable) removeFromCheck(svr *Server) {
-	self.tw.Cancel(svr.Addr)
+func (r *RouteTable) removeFromCheck(svr *Server) {
+	r.tw.Cancel(svr.Addr)
 }
 
-func (self *RouteTable) addToCheck(svr *Server) {
-	self.tw.AddWithId(time.Duration(svr.useCheckDuration)*time.Second, svr.Addr, self.check)
+func (r *RouteTable) addToCheck(svr *Server) {
+	r.tw.AddWithId(time.Duration(svr.useCheckDuration)*time.Second, svr.Addr, r.check)
 }
 
-func (self *RouteTable) check(addr string) {
-	svr, _ := self.svrs[addr]
+func (r *RouteTable) check(addr string) {
+	svr, _ := r.svrs[addr]
 
-	if svr.check(self.addToCheck) {
+	if svr.check(r.addToCheck) {
 		svr.changeTo(UP)
 
 		if svr.statusChanged() {
@@ -659,15 +681,15 @@ func (self *RouteTable) check(addr string) {
 		}
 	}
 
-	self.evtChan <- svr
+	r.evtChan <- svr
 }
 
-func (self *RouteTable) changed() {
+func (r *RouteTable) changed() {
 	for {
-		svr := <-self.evtChan
+		svr := <-r.evtChan
 
 		if svr.statusChanged() {
-			binded := self.mapping[svr.Addr]
+			binded := r.mapping[svr.Addr]
 
 			if svr.Status == UP {
 				for _, c := range binded {

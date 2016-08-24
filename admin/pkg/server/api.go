@@ -1,33 +1,33 @@
 package server
 
-func (self *AdminServer) initApiRoute() {
-	self.e.Get("/api/lbs", self.getLbs())
+func (server *AdminServer) initAPIRoute() {
+	server.e.Get("/api/lbs", server.getLbs())
 
-	self.e.Get("/api/proxies", self.getProxies())
-	self.e.Post("/api/proxies/:addr/:level", self.changeLogLevel())
+	server.e.Get("/api/proxies", server.getProxies())
+	server.e.Post("/api/proxies/:addr/:level", server.changeLogLevel())
 
-	self.e.Get("/api/clusters", self.getClusters())
-	self.e.Get("/api/clusters/:id", self.getCluster())
-	self.e.Delete("/api/clusters/:id", self.deleteCluster())
-	self.e.Post("/api/clusters", self.newCluster())
-	self.e.Put("/api/clusters", self.updateCluster())
+	server.e.Get("/api/clusters", server.getClusters())
+	server.e.Get("/api/clusters/:id", server.getCluster())
+	server.e.Delete("/api/clusters/:id", server.deleteCluster())
+	server.e.Post("/api/clusters", server.newCluster())
+	server.e.Put("/api/clusters", server.updateCluster())
 
-	self.e.Get("/api/servers", self.getServers())
-	self.e.Get("/api/servers/:id", self.getServer())
-	self.e.Delete("/api/servers/:id", self.deleteServer())
-	self.e.Post("/api/servers", self.newServer())
-	self.e.Put("/api/servers", self.updateServer())
+	server.e.Get("/api/servers", server.getServers())
+	server.e.Get("/api/servers/:id", server.getServer())
+	server.e.Delete("/api/servers/:id", server.deleteServer())
+	server.e.Post("/api/servers", server.newServer())
+	server.e.Put("/api/servers", server.updateServer())
 
-	self.e.Post("/api/binds", self.newBind())
-	self.e.Delete("/api/binds", self.unBind())
+	server.e.Post("/api/binds", server.newBind())
+	server.e.Delete("/api/binds", server.unBind())
 
-	self.e.Get("/api/aggregations", self.getAggregations())
-	self.e.Post("/api/aggregations", self.newAggregation())
-	self.e.Delete("/api/aggregations", self.deleteAggregation())
+	server.e.Get("/api/aggregations", server.getAggregations())
+	server.e.Post("/api/aggregations", server.newAggregation())
+	server.e.Delete("/api/aggregations", server.deleteAggregation())
 
-	self.e.Get("/api/routings", self.getRoutings())
-	self.e.Post("/api/routings", self.newRouting())
+	server.e.Get("/api/routings", server.getRoutings())
+	server.e.Post("/api/routings", server.newRouting())
 
-	self.e.Get("/api/analysis/:proxy/:server/:secs", self.getAnalysis())
-	self.e.Post("/api/analysis", self.newAnalysis())
+	server.e.Get("/api/analysis/:proxy/:server/:secs", server.getAnalysis())
+	server.e.Post("/api/analysis", server.newAnalysis())
 }

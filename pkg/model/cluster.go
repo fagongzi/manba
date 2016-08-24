@@ -3,15 +3,17 @@ package model
 import (
 	"container/list"
 	"encoding/json"
-	"github.com/CodisLabs/codis/pkg/utils/log"
-	"github.com/fagongzi/gateway/pkg/lb"
-	"github.com/fagongzi/gateway/pkg/util"
 	"io"
 	"net/http"
 	"regexp"
 	"sync"
+
+	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/fagongzi/gateway/pkg/lb"
+	"github.com/fagongzi/gateway/pkg/util"
 )
 
+// Cluster cluster
 type Cluster struct {
 	Name        string   `json:"name,omitempty"`
 	Pattern     string   `json:"pattern,omitempty"`
@@ -24,6 +26,7 @@ type Cluster struct {
 	lb     lb.LoadBalance
 }
 
+// UnMarshalCluster unmarshal
 func UnMarshalCluster(data []byte) *Cluster {
 	v := &Cluster{}
 	err := json.Unmarshal(data, v)
@@ -37,6 +40,7 @@ func UnMarshalCluster(data []byte) *Cluster {
 	return c
 }
 
+// UnMarshalClusterFromReader unmarshal from reader
 func UnMarshalClusterFromReader(r io.Reader) (*Cluster, error) {
 	v := &Cluster{}
 
@@ -50,6 +54,7 @@ func UnMarshalClusterFromReader(r io.Reader) (*Cluster, error) {
 	return v, v.init()
 }
 
+// NewCluster create a cluster
 func NewCluster(name string, pattern string, lbName string) (*Cluster, error) {
 	c := &Cluster{
 		Name:    name,
@@ -60,83 +65,84 @@ func NewCluster(name string, pattern string, lbName string) (*Cluster, error) {
 	return c, c.init()
 }
 
-func (self *Cluster) init() error {
-	reg, err := regexp.Compile(self.Pattern)
+func (c *Cluster) init() error {
+	reg, err := regexp.Compile(c.Pattern)
 
 	if nil != err {
 		return err
 	}
 
-	self.regexp = reg
-	self.svrs = list.New()
-	self.lb = lb.NewLoadBalance(self.LbName)
-	self.rwLock = &sync.RWMutex{}
+	c.regexp = reg
+	c.svrs = list.New()
+	c.lb = lb.NewLoadBalance(c.LbName)
+	c.rwLock = &sync.RWMutex{}
 
 	return nil
 }
 
-func (self *Cluster) updateFrom(cluster *Cluster) {
-	if self.rwLock != nil {
-		self.rwLock.Lock()
-		defer self.rwLock.Unlock()
+func (c *Cluster) updateFrom(cluster *Cluster) {
+	if c.rwLock != nil {
+		c.rwLock.Lock()
+		defer c.rwLock.Unlock()
 	}
 
-	self.Pattern = cluster.Pattern
-	self.LbName = cluster.LbName
+	c.Pattern = cluster.Pattern
+	c.LbName = cluster.LbName
 
-	self.regexp, _ = regexp.Compile(self.Pattern)
-	self.lb = lb.NewLoadBalance(self.LbName)
+	c.regexp, _ = regexp.Compile(c.Pattern)
+	c.lb = lb.NewLoadBalance(c.LbName)
 
-	log.Infof("Cluster <%s> updated, %+v", self.Name, self)
+	log.Infof("Cluster <%s> updated, %+v", c.Name, c)
 }
 
-func (self *Cluster) doInEveryBindServers(callback func(string)) {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+func (c *Cluster) doInEveryBindServers(callback func(string)) {
+	c.rwLock.Lock()
+	defer c.rwLock.Unlock()
 
-	for iter := self.svrs.Back(); iter != nil; iter = iter.Prev() {
+	for iter := c.svrs.Back(); iter != nil; iter = iter.Prev() {
 		addr, _ := iter.Value.(string)
 		callback(addr)
 	}
 }
 
-func (self *Cluster) unbind(svr *Server) {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+func (c *Cluster) unbind(svr *Server) {
+	c.rwLock.Lock()
+	defer c.rwLock.Unlock()
 
-	self.doUnBind(svr)
+	c.doUnBind(svr)
 }
 
-func (self *Cluster) doUnBind(svr *Server) {
-	util.Remove(self.svrs, svr.Addr)
-	log.Infof("UnBind <%s,%s> succ.", svr.Addr, self.Name)
+func (c *Cluster) doUnBind(svr *Server) {
+	util.Remove(c.svrs, svr.Addr)
+	log.Infof("UnBind <%s,%s> succ.", svr.Addr, c.Name)
 }
 
-func (self *Cluster) bind(svr *Server) {
-	self.rwLock.Lock()
-	defer self.rwLock.Unlock()
+func (c *Cluster) bind(svr *Server) {
+	c.rwLock.Lock()
+	defer c.rwLock.Unlock()
 
-	if util.IndexOf(self.svrs, svr.Addr) >= 0 {
-		log.Infof("Bind <%s,%s> already created.", svr.Addr, self.Name)
+	if util.IndexOf(c.svrs, svr.Addr) >= 0 {
+		log.Infof("Bind <%s,%s> already created.", svr.Addr, c.Name)
 		return
 	}
 
-	self.svrs.PushBack(svr.Addr)
+	c.svrs.PushBack(svr.Addr)
 
-	log.Infof("Bind <%s,%s> created.", svr.Addr, self.Name)
+	log.Infof("Bind <%s,%s> created.", svr.Addr, c.Name)
 }
 
-func (self *Cluster) Select(req *http.Request) string {
-	self.rwLock.RLock()
-	defer self.rwLock.RUnlock()
+// Select return a server using spec loadbalance
+func (c *Cluster) Select(req *http.Request) string {
+	c.rwLock.RLock()
+	defer c.rwLock.RUnlock()
 
-	index := self.lb.Select(req, self.svrs)
+	index := c.lb.Select(req, c.svrs)
 
 	if 0 > index {
 		return ""
 	}
 
-	e := util.Get(self.svrs, index)
+	e := util.Get(c.svrs, index)
 
 	if nil == e {
 		return ""
@@ -147,11 +153,13 @@ func (self *Cluster) Select(req *http.Request) string {
 	return s
 }
 
-func (self *Cluster) Matches(req *http.Request) bool {
-	return self.regexp.MatchString(req.URL.Path)
+// Matches return true if req matches
+func (c *Cluster) Matches(req *http.Request) bool {
+	return c.regexp.MatchString(req.URL.Path)
 }
 
-func (self *Cluster) Marshal() []byte {
-	v, _ := json.Marshal(self)
+// Marshal marshal
+func (c *Cluster) Marshal() []byte {
+	v, _ := json.Marshal(c)
 	return v
 }
