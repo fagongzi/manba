@@ -27,14 +27,6 @@ func (m *Manager) SetLogLevel(req model.SetLogReq, rsp *model.SetLogRsp) error {
 	return nil
 }
 
-// SetReqHeadStaticMapping SetReqHeadStaticMapping
-func (m *Manager) SetReqHeadStaticMapping(req model.SetReqHeadStaticMappingReq, rsp *model.SetReqHeadStaticMappingRsp) error {
-	m.proxy.config.ReqHeadStaticMapping[req.Name] = req.Value
-
-	rsp.Code = 0
-	return nil
-}
-
 // AddAnalysisPoint add a point to analysis
 func (m *Manager) AddAnalysisPoint(req model.AddAnalysisPointReq, rsp *model.AddAnalysisPointRsp) error {
 	m.proxy.routeTable.GetAnalysis().AddRecentCount(req.Addr, req.Secs)

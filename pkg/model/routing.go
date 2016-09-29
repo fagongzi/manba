@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/brettlangdon/forge"
 	"github.com/fagongzi/goetty"
+	"github.com/valyala/fasthttp"
 )
 
 var (
@@ -69,7 +69,7 @@ type RoutingItem struct {
 	rule string
 
 	attrName       string
-	sourceValueFun func(req *http.Request) string
+	sourceValueFun func(req *fasthttp.Request) string
 	opFun          func(srvValue string) bool
 	targetValue    string
 }
@@ -188,8 +188,8 @@ func (r *Routing) init() error {
 }
 
 // Matches return true if req matches
-func (r *Routing) Matches(req *http.Request) bool {
-	if !r.regexp.MatchString(req.URL.Path) {
+func (r *Routing) Matches(req *fasthttp.Request) bool {
+	if !r.regexp.MatchString(string(req.URI().Path())) {
 		return false
 	}
 
@@ -202,7 +202,7 @@ func (r *Routing) Matches(req *http.Request) bool {
 	return true
 }
 
-func (r *Routing) matchesOr(req *http.Request) bool {
+func (r *Routing) matchesOr(req *fasthttp.Request) bool {
 	if nil != r.orItems {
 		for _, item := range r.orItems {
 			if item.matches(req) {
@@ -299,26 +299,20 @@ func (r *RoutingItem) parse() error {
 	return nil
 }
 
-func (r *RoutingItem) matches(req *http.Request) bool {
+func (r *RoutingItem) matches(req *fasthttp.Request) bool {
 	return r.opFun(r.sourceValueFun(req))
 }
 
-func (r *RoutingItem) getCookieValue(req *http.Request) string {
-	value, err := req.Cookie(r.attrName)
-
-	if err != nil {
-		return ""
-	}
-
-	return value.Value
+func (r *RoutingItem) getCookieValue(req *fasthttp.Request) string {
+	return string(req.Header.Cookie(r.attrName))
 }
 
-func (r *RoutingItem) getHeaderValue(req *http.Request) string {
-	return req.Header.Get(r.attrName)
+func (r *RoutingItem) getHeaderValue(req *fasthttp.Request) string {
+	return string(req.Header.Peek(r.attrName))
 }
 
-func (r *RoutingItem) getQueryValue(req *http.Request) string {
-	v, _ := url.QueryUnescape(req.URL.Query().Get(r.attrName))
+func (r *RoutingItem) getQueryValue(req *fasthttp.Request) string {
+	v, _ := url.QueryUnescape(string(req.URI().QueryArgs().Peek("r.attrName")))
 	return v
 }
 

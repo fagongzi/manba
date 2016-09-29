@@ -1,0 +1,44 @@
+{
+    // proxy listen addr
+    "addr": "80",
+    // proxy api listen addr
+    "mgrAddr": "8081",
+
+    // etcd addr
+    "etcdAddrs": ["http://127.0.0.1:2379"],
+    // ectd prefix
+    "etcdPrefix": "",
+
+    // proxy filters, extended proxy functions
+    "filers": [
+        "analysis",
+        "rate-limiting",
+        "circuit-breake",
+        "http-access",
+        "head",
+        "xforward"
+    ],
+
+    // Maximum number of connections which may be established to server, default is 512
+    "maxConns": 512,
+    // Keep-alive connections are closed after this duration, default 10 seconds
+    "maxConnDuration": "10s",
+    // Idle keep-alive connections are closed after this duration, default 10 seconds
+    "maxIdleConnDuration": "10s",
+    // Per-connection buffer size for responses' reading, default is 4096
+    "readBufferSize": 4096,
+    // Per-connection buffer size for requests' writing, default is 4096
+    "writeBufferSize": 4096,
+    // Maximum duration for full response reading (including body), default is 30 second
+    "readTimeout": "30s",
+    // Maximum duration for full request writing (including body), default is 30 second
+    "writeTimeout": "30s",
+    // Maximum response body size, default is 1MB
+    "maxResponseBodySize": 1048576,
+
+
+    // enable pprof
+    "enablePPROF": false,
+    // pprof addr
+    "pprofAddr": ""
+}

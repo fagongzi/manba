@@ -2,7 +2,8 @@ package lb
 
 import (
 	"container/list"
-	"net/http"
+
+	"github.com/valyala/fasthttp"
 )
 
 const (
@@ -23,7 +24,7 @@ var (
 
 // LoadBalance loadBalance interface
 type LoadBalance interface {
-	Select(req *http.Request, servers *list.List) int
+	Select(req *fasthttp.Request, servers *list.List) int
 }
 
 // GetSupportLBS return supported loadBalances

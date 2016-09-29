@@ -2,8 +2,9 @@ package lb
 
 import (
 	"container/list"
-	"net/http"
 	"sync/atomic"
+
+	"github.com/valyala/fasthttp"
 )
 
 // RoundRobin round robin loadBalance impl
@@ -22,7 +23,7 @@ func NewRoundRobin() LoadBalance {
 }
 
 // Select select a server from servers using RoundRobin
-func (rr RoundRobin) Select(req *http.Request, servers *list.List) int {
+func (rr RoundRobin) Select(req *fasthttp.Request, servers *list.List) int {
 	l := uint64(servers.Len())
 
 	if 0 >= l {

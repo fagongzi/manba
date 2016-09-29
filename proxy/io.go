@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/valyala/fasthttp"
 )
 
 type writeFlusher interface {
@@ -94,10 +96,9 @@ func (p *Proxy) copyResponse(dst io.Writer, src io.Reader) {
 	io.Copy(dst, src)
 }
 
-func copy(dst io.Writer, src io.Reader) {
-	io.Copy(dst, src)
-}
-
-func copyRequest(req *http.Request) (*http.Request, error) {
-	return http.NewRequest(req.Method, req.RequestURI, req.Body)
+func copyRequest(req *fasthttp.Request) *fasthttp.Request {
+	newreq := fasthttp.AcquireRequest()
+	newreq.Reset()
+	req.CopyTo(newreq)
+	return newreq
 }

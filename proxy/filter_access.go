@@ -8,7 +8,7 @@ import (
 )
 
 // AccessFilter record the http access log
-// log format: $remoteip "$method $path HTTP/$proto" $code "$agent" $svr $cost
+// log format: $remoteip "$method $path" $code "$agent" $svr $cost
 type AccessFilter struct {
 	baseFilter
 	config *conf.Conf
@@ -31,13 +31,12 @@ func (f AccessFilter) Name() string {
 func (f AccessFilter) Post(c *filterContext) (statusCode int, err error) {
 	cost := (c.endAt - c.startAt)
 
-	log.Infof("%s \"%s %s %s\" %d \"%s\" %s %s",
-		c.req.RemoteAddr,
-		c.req.Method,
-		c.outreq.RequestURI,
-		c.req.Proto,
+	log.Infof("%s \"%s %s\" %d \"%s\" %s %s",
+		c.ctx.RemoteIP().String(),
+		c.ctx.Method(),
+		c.outreq.RequestURI(),
 		c.result.Res.StatusCode,
-		c.req.UserAgent(),
+		c.ctx.UserAgent(),
 		c.result.Svr.Addr,
 		time.Duration(cost))
 

@@ -3,7 +3,7 @@ package proxy
 import (
 	"container/list"
 	"errors"
-	"io"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -13,6 +13,7 @@ import (
 	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/conf"
 	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/valyala/fasthttp"
 )
 
 const (
@@ -40,16 +41,21 @@ var (
 
 // Proxy Proxy
 type Proxy struct {
-	config        *conf.Conf
-	routeTable    *model.RouteTable
-	flushInterval time.Duration
-	transport     http.RoundTripper
-	filters       *list.List
+	fastHTTPClient *FastHTTPClient
+	config         *conf.Conf
+	routeTable     *model.RouteTable
+	flushInterval  time.Duration
+	transport      http.RoundTripper
+	filters        *list.List
 }
 
 // NewProxy create a new proxy
 func NewProxy(config *conf.Conf, routeTable *model.RouteTable) *Proxy {
 	p := &Proxy{
+		// TODO: set client config
+		fastHTTPClient: &FastHTTPClient{
+			conf: config,
+		},
 		config:     config,
 		routeTable: routeTable,
 		transport: &http.Transport{
@@ -85,15 +91,15 @@ func (p *Proxy) Start() {
 		log.PanicErrorf(err, "Proxy start rpc at <%s> fail.", p.config.MgrAddr)
 	}
 
-	log.ErrorErrorf(http.ListenAndServe(p.config.Addr, p), "Proxy exit at %s", p.config.Addr)
+	log.ErrorErrorf(fasthttp.ListenAndServe(p.config.Addr, p.ReverseProxyHandler), "Proxy exit at %s", p.config.Addr)
 }
 
-// ServeHTTP start http serve
-func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	results := p.routeTable.Select(req)
+// ReverseProxyHandler http reverse handler
+func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
+	results := p.routeTable.Select(&ctx.Request)
 
 	if nil == results || len(results) == 0 {
-		rw.WriteHeader(http.StatusServiceUnavailable)
+		ctx.SetStatusCode(fasthttp.StatusServiceUnavailable)
 		return
 	}
 
@@ -108,23 +114,23 @@ func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			result.Merge = merge
 
 			go func(result *model.RouteResult) {
-				p.doProxy(rw, req, wg, result)
+				p.doProxy(ctx, wg, result)
 			}(result)
 		}
 
 		wg.Wait()
 	} else {
-		p.doProxy(rw, req, nil, results[0])
+		p.doProxy(ctx, nil, results[0])
 	}
 
 	for _, result := range results {
 		if result.Err != nil {
-			rw.WriteHeader(result.Code)
+			ctx.SetStatusCode(result.Code)
 			return
 		}
 
 		if !merge {
-			p.writeResult(rw, result.Res)
+			p.writeResult(ctx, result.Res)
 			return
 		}
 	}
@@ -133,30 +139,28 @@ func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		for _, h := range MergeRemoveHeaders {
 			result.Res.Header.Del(h)
 		}
-		copyHeader(rw.Header(), result.Res.Header)
+		result.Res.Header.CopyTo(&ctx.Response.Header)
 	}
 
-	rw.Header().Add(HeaderContentType, MergeContentType)
+	ctx.Response.Header.Add(HeaderContentType, MergeContentType)
+	ctx.SetStatusCode(fasthttp.StatusOK)
 
-	rw.WriteHeader(http.StatusOK)
-
-	rw.Write([]byte("{"))
+	ctx.WriteString("{")
 
 	for index, result := range results {
-		rw.Write([]byte("\""))
-		rw.Write([]byte(result.Node.AttrName))
-		rw.Write([]byte("\":"))
-		p.copyResponse(rw, result.Res.Body)
-		result.Res.Body.Close() // close now, instead of defer, to populate res.Trailer
+		ctx.WriteString("\"")
+		ctx.WriteString(result.Node.AttrName)
+		ctx.WriteString("\":")
+		ctx.Write(result.Res.Body())
 		if index < count-1 {
-			rw.Write([]byte(","))
+			ctx.WriteString(",")
 		}
 	}
 
-	rw.Write([]byte("}"))
+	ctx.WriteString("}")
 }
 
-func (p *Proxy) doProxy(rw http.ResponseWriter, req *http.Request, wg *sync.WaitGroup, result *model.RouteResult) {
+func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *model.RouteResult) {
 	if nil != wg {
 		defer wg.Done()
 	}
@@ -169,57 +173,18 @@ func (p *Proxy) doProxy(rw http.ResponseWriter, req *http.Request, wg *sync.Wait
 		return
 	}
 
-	transport := p.transport
+	outreq := copyRequest(&ctx.Request)
+	path := string(ctx.URI().Path())
 
-	outreq, err := copyRequest(req)
-	if err != nil {
-		log.ErrorError(err)
-	}
-
-	//process client connect has gone before backend responsed
-	if closeNotifier, ok := rw.(http.CloseNotifier); ok {
-		if requestCanceler, ok := transport.(requestCanceler); ok {
-			reqDone := make(chan struct{})
-			defer close(reqDone)
-
-			clientGone := closeNotifier.CloseNotify()
-
-			outreq.Body = struct {
-				io.Reader
-				io.Closer
-			}{
-				Reader: &runOnFirstRead{
-					Reader: outreq.Body,
-					fn: func() {
-						go func() {
-							select {
-							case <-clientGone:
-								requestCanceler.CancelRequest(outreq)
-							case <-reqDone:
-							}
-						}()
-					},
-				},
-				Closer: outreq.Body,
-			}
-		}
-	}
-
-	path := req.URL.Path
 	// change url
 	if result.Node != nil {
 		path = result.Node.URL
 	}
 
-	outreq.URL.Scheme = svr.Schema
-	outreq.URL.Host = svr.Addr
-	outreq.URL.Path = path
-
-	outreq.RequestURI = outreq.URL.RequestURI()
+	outreq.SetRequestURI(fmt.Sprintf("http://%s/%s", svr.Addr, path))
 
 	c := &filterContext{
-		rw:         rw,
-		req:        req,
+		ctx:        ctx,
 		outreq:     outreq,
 		result:     result,
 		rb:         p.routeTable,
@@ -236,18 +201,18 @@ func (p *Proxy) doProxy(rw http.ResponseWriter, req *http.Request, wg *sync.Wait
 	}
 
 	c.startAt = time.Now().UnixNano()
-	res, err := transport.RoundTrip(outreq)
+	res, err := p.fastHTTPClient.Do(outreq, svr.Addr)
 	c.endAt = time.Now().UnixNano()
 
 	result.Res = res
 
-	if err != nil || res.StatusCode >= http.StatusInternalServerError {
+	if err != nil || res.StatusCode() >= fasthttp.StatusInternalServerError {
 		resCode := http.StatusServiceUnavailable
 
 		if nil != err {
 			log.InfoErrorf(err, "Proxy Fail <%s>", svr.Addr)
 		} else {
-			resCode = res.StatusCode
+			resCode = res.StatusCode()
 			log.InfoErrorf(err, "Proxy Fail <%s>, Code <%d>", svr.Addr, res.StatusCode)
 		}
 
@@ -272,18 +237,7 @@ func (p *Proxy) doProxy(rw http.ResponseWriter, req *http.Request, wg *sync.Wait
 	}
 }
 
-func (p *Proxy) writeResult(rw http.ResponseWriter, res *http.Response) {
-	rw.WriteHeader(res.StatusCode)
-	if len(res.Trailer) > 0 {
-		// Force chunking if we saw a response trailer.
-		// This prevents net/http from calculating the length for short
-		// bodies and adding a Content-Length.
-		if fl, ok := rw.(http.Flusher); ok {
-			fl.Flush()
-		}
-	}
-
-	p.copyResponse(rw, res.Body)
-	res.Body.Close() // close now, instead of defer, to populate res.Trailer
-	copyHeader(rw.Header(), res.Trailer)
+func (p *Proxy) writeResult(ctx *fasthttp.RequestCtx, res *fasthttp.Response) {
+	ctx.SetStatusCode(res.StatusCode())
+	ctx.Write(res.Body())
 }
