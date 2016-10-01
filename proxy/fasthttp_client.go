@@ -24,6 +24,11 @@ var clientConnPool sync.Pool
 type FastHTTPClient struct {
 	conf *conf.Conf
 
+	MaxConnDuration     time.Duration `json:"maxConnDuration"`
+	MaxIdleConnDuration time.Duration `json:"maxIdleConnDuration"`
+	ReadTimeout         time.Duration `json:"readTimeout"`
+	WriteTimeout        time.Duration `json:"writeTimeout"`
+
 	clientName  atomic.Value
 	lastUseTime uint32
 
@@ -33,6 +38,17 @@ type FastHTTPClient struct {
 
 	readerPool sync.Pool
 	writerPool sync.Pool
+}
+
+// NewFastHTTPClient create FastHTTPClient instance
+func NewFastHTTPClient(conf *conf.Conf) *FastHTTPClient {
+	return &FastHTTPClient{
+		conf:                conf,
+		MaxConnDuration:     time.Duration(conf.MaxConnDuration) * time.Second,
+		MaxIdleConnDuration: time.Duration(conf.MaxIdleConnDuration) * time.Second,
+		ReadTimeout:         time.Duration(conf.ReadTimeout) * time.Second,
+		WriteTimeout:        time.Duration(conf.WriteTimeout) * time.Second,
+	}
 }
 
 type clientConn struct {
@@ -61,8 +77,6 @@ func (c *FastHTTPClient) do(req *fasthttp.Request, addr string) (*fasthttp.Respo
 	resp := fasthttp.AcquireResponse()
 
 	ok, err := c.doNonNilReqResp(req, resp, addr)
-
-	fasthttp.ReleaseResponse(resp)
 
 	return resp, ok, err
 }
@@ -93,8 +107,8 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 		// of the last write deadline exceeded.
 		// See https://github.com/golang/go/issues/15133 for details.
 		currentTime := time.Now()
-		if currentTime.Sub(cc.lastWriteDeadlineTime) > (c.conf.WriteTimeout >> 2) {
-			if err = conn.SetWriteDeadline(currentTime.Add(c.conf.WriteTimeout)); err != nil {
+		if currentTime.Sub(cc.lastWriteDeadlineTime) > (c.WriteTimeout >> 2) {
+			if err = conn.SetWriteDeadline(currentTime.Add(c.WriteTimeout)); err != nil {
 				c.closeConn(cc)
 				return true, err
 			}
@@ -103,7 +117,7 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 	}
 
 	resetConnection := false
-	if c.conf.MaxConnDuration > 0 && time.Since(cc.createdTime) > c.conf.MaxConnDuration && !req.ConnectionClose() {
+	if c.conf.MaxConnDuration > 0 && time.Since(cc.createdTime) > c.MaxConnDuration && !req.ConnectionClose() {
 		req.SetConnectionClose()
 		resetConnection = true
 	}
@@ -131,8 +145,8 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 		// of the last read deadline exceeded.
 		// See https://github.com/golang/go/issues/15133 for details.
 		currentTime := time.Now()
-		if currentTime.Sub(cc.lastReadDeadlineTime) > (c.conf.ReadTimeout >> 2) {
-			if err = conn.SetReadDeadline(currentTime.Add(c.conf.ReadTimeout)); err != nil {
+		if currentTime.Sub(cc.lastReadDeadlineTime) > (c.ReadTimeout >> 2) {
+			if err = conn.SetReadDeadline(currentTime.Add(c.ReadTimeout)); err != nil {
 				c.closeConn(cc)
 				return true, err
 			}
@@ -222,12 +236,8 @@ func (c *FastHTTPClient) connsCleaner() {
 	var (
 		scratch             []*clientConn
 		mustStop            bool
-		maxIdleConnDuration = c.conf.MaxIdleConnDuration
+		maxIdleConnDuration = c.MaxIdleConnDuration
 	)
-
-	if maxIdleConnDuration <= 0 {
-		maxIdleConnDuration = fasthttp.DefaultMaxIdleConnDuration
-	}
 
 	for {
 		currentTime := time.Now()

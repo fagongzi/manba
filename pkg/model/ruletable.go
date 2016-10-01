@@ -35,6 +35,13 @@ type RouteResult struct {
 	Merge bool
 }
 
+// Release release resp
+func (result *RouteResult) Release() {
+	if nil != result.Res {
+		fasthttp.ReleaseResponse(result.Res)
+	}
+}
+
 // RouteTable route table
 type RouteTable struct {
 	rwLock *sync.RWMutex

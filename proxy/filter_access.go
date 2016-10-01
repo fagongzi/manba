@@ -31,11 +31,11 @@ func (f AccessFilter) Name() string {
 func (f AccessFilter) Post(c *filterContext) (statusCode int, err error) {
 	cost := (c.endAt - c.startAt)
 
-	log.Infof("%s \"%s %s\" %d \"%s\" %s %s",
+	log.Infof("%s %s \"%s\" %d \"%s\" %s %s",
 		c.ctx.RemoteIP().String(),
 		c.ctx.Method(),
 		c.outreq.RequestURI(),
-		c.result.Res.StatusCode,
+		c.result.Res.StatusCode(),
 		c.ctx.UserAgent(),
 		c.result.Svr.Addr,
 		time.Duration(cost))

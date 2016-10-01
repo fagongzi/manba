@@ -3,8 +3,6 @@ package proxy
 import (
 	"container/list"
 	"errors"
-	"fmt"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -45,29 +43,16 @@ type Proxy struct {
 	config         *conf.Conf
 	routeTable     *model.RouteTable
 	flushInterval  time.Duration
-	transport      http.RoundTripper
 	filters        *list.List
 }
 
 // NewProxy create a new proxy
 func NewProxy(config *conf.Conf, routeTable *model.RouteTable) *Proxy {
 	p := &Proxy{
-		// TODO: set client config
-		fastHTTPClient: &FastHTTPClient{
-			conf: config,
-		},
-		config:     config,
-		routeTable: routeTable,
-		transport: &http.Transport{
-			Dial: (&net.Dialer{
-				Timeout: 30 * time.Second,
-			}).Dial,
-			ResponseHeaderTimeout: 10 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			DisableKeepAlives:     true,
-		},
-
-		filters: list.New(),
+		fastHTTPClient: NewFastHTTPClient(config),
+		config:         config,
+		routeTable:     routeTable,
+		filters:        list.New(),
 	}
 
 	return p
@@ -126,11 +111,13 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 	for _, result := range results {
 		if result.Err != nil {
 			ctx.SetStatusCode(result.Code)
+			result.Release()
 			return
 		}
 
 		if !merge {
 			p.writeResult(ctx, result.Res)
+			result.Release()
 			return
 		}
 	}
@@ -155,6 +142,8 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 		if index < count-1 {
 			ctx.WriteString(",")
 		}
+
+		result.Release()
 	}
 
 	ctx.WriteString("}")
@@ -174,14 +163,11 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *mo
 	}
 
 	outreq := copyRequest(&ctx.Request)
-	path := string(ctx.URI().Path())
 
 	// change url
 	if result.Node != nil {
-		path = result.Node.URL
+		outreq.URI().SetPath(result.Node.URL)
 	}
-
-	outreq.SetRequestURI(fmt.Sprintf("http://%s/%s", svr.Addr, path))
 
 	c := &filterContext{
 		ctx:        ctx,
@@ -213,7 +199,7 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *mo
 			log.InfoErrorf(err, "Proxy Fail <%s>", svr.Addr)
 		} else {
 			resCode = res.StatusCode()
-			log.InfoErrorf(err, "Proxy Fail <%s>, Code <%d>", svr.Addr, res.StatusCode)
+			log.InfoErrorf(err, "Proxy Fail <%s>, Code <%d>", svr.Addr, res.StatusCode())
 		}
 
 		// 用户取消，不计算为错误
@@ -225,6 +211,8 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *mo
 		result.Code = resCode
 		return
 	}
+
+	log.Infof("Backend server[%s] responsed, code <%d>, body<%s>", svr.Addr, res.StatusCode(), res.Body())
 
 	// post filters
 	filterName, code, err = p.doPostFilters(c)

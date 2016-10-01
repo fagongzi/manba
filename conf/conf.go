@@ -1,7 +1,5 @@
 package conf
 
-import "time"
-
 // Conf config struct
 type Conf struct {
 	LogLevel string `json:"-"`
@@ -17,17 +15,17 @@ type Conf struct {
 	// Maximum number of connections which may be established to server
 	MaxConns int `json:"maxConns"`
 	// MaxConnDuration Keep-alive connections are closed after this duration.
-	MaxConnDuration time.Duration `json:"maxConnDuration"`
+	MaxConnDuration int `json:"maxConnDuration"`
 	// MaxIdleConnDuration Idle keep-alive connections are closed after this duration.
-	MaxIdleConnDuration time.Duration `json:"maxIdleConnDuration"`
+	MaxIdleConnDuration int `json:"maxIdleConnDuration"`
 	// ReadBufferSize Per-connection buffer size for responses' reading.
 	ReadBufferSize int `json:"readBufferSize"`
 	// WriteBufferSize Per-connection buffer size for requests' writing.
 	WriteBufferSize int `json:"writeBufferSize"`
 	// ReadTimeout Maximum duration for full response reading (including body).
-	ReadTimeout time.Duration `json:"readTimeout"`
+	ReadTimeout int `json:"readTimeout"`
 	// WriteTimeout Maximum duration for full request writing (including body).
-	WriteTimeout time.Duration `json:"writeTimeout"`
+	WriteTimeout int `json:"writeTimeout"`
 	// MaxResponseBodySize Maximum response body size.
 	MaxResponseBodySize int `json:"maxResponseBodySize"`
 
