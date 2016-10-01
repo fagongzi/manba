@@ -23,7 +23,7 @@ Gateway自身有2个组件
 ```
 git clone https://github.com/fagongzi.git
 cd $GOPATH/src/github.com/fagongzi/gateway
-go build cmd/gateway/gateway.go
+go build cmd/proxy/proxy.go
 go build cmd/admin/admin.go
 ```
 
