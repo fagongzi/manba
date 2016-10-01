@@ -2,12 +2,13 @@ package model
 
 import (
 	"errors"
-	"net/http"
+
 	"sync"
 	"time"
 
 	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/goetty"
+	"github.com/valyala/fasthttp"
 )
 
 var (
@@ -30,8 +31,15 @@ type RouteResult struct {
 	Svr   *Server
 	Err   error
 	Code  int
-	Res   *http.Response
+	Res   *fasthttp.Response
 	Merge bool
+}
+
+// Release release resp
+func (result *RouteResult) Release() {
+	if nil != result.Res {
+		fasthttp.ReleaseResponse(result.Res)
+	}
 }
 
 // RouteTable route table
@@ -406,13 +414,13 @@ func (r *RouteTable) doUnBind(svr *Server, cluster *Cluster, withLock bool) {
 }
 
 // Select return route result
-func (r *RouteTable) Select(req *http.Request) []*RouteResult {
+func (r *RouteTable) Select(req *fasthttp.Request) []*RouteResult {
 	r.rwLock.RLock()
-	defer r.rwLock.RUnlock()
 
 	matches, results := r.selectAggregation(req)
 
 	if matches {
+		r.rwLock.RUnlock()
 		return results
 	}
 
@@ -426,6 +434,7 @@ func (r *RouteTable) Select(req *http.Request) []*RouteResult {
 	}
 
 	if nil != targetCluster {
+		r.rwLock.RUnlock()
 		return []*RouteResult{&RouteResult{Svr: r.doSelectServer(req, targetCluster)}}
 	}
 
@@ -433,18 +442,20 @@ func (r *RouteTable) Select(req *http.Request) []*RouteResult {
 		svr := r.selectServer(req, cluster)
 
 		if nil != svr {
+			r.rwLock.RUnlock()
 			return []*RouteResult{&RouteResult{Svr: svr}}
 		}
 	}
 
+	r.rwLock.RUnlock()
 	return nil
 }
 
-func (r *RouteTable) selectAggregation(req *http.Request) (matches bool, results []*RouteResult) {
+func (r *RouteTable) selectAggregation(req *fasthttp.Request) (matches bool, results []*RouteResult) {
 	matches = false
 
 	for url, agn := range r.aggregations {
-		if url == req.URL.Path {
+		if url == string(req.URI().Path()) {
 			matches = true
 			results = make([]*RouteResult, len(agn.Nodes))
 
@@ -460,7 +471,7 @@ func (r *RouteTable) selectAggregation(req *http.Request) (matches bool, results
 	return matches, results
 }
 
-func (r *RouteTable) selectServer(req *http.Request, cluster *Cluster) *Server {
+func (r *RouteTable) selectServer(req *fasthttp.Request, cluster *Cluster) *Server {
 	if cluster.Matches(req) {
 		return r.doSelectServer(req, cluster)
 	}
@@ -468,7 +479,7 @@ func (r *RouteTable) selectServer(req *http.Request, cluster *Cluster) *Server {
 	return nil
 }
 
-func (r *RouteTable) doSelectServer(req *http.Request, cluster *Cluster) *Server {
+func (r *RouteTable) doSelectServer(req *fasthttp.Request, cluster *Cluster) *Server {
 	addr := cluster.Select(req) // 这里有可能会被锁住，会被正在修改bind关系的cluster锁住
 	svr, _ := r.svrs[addr]
 	return svr

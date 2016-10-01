@@ -33,13 +33,13 @@
 		},
 		{
 			"ImportPath": "github.com/brettlangdon/forge",
-			"Comment": "v0.2.0",
-			"Rev": "a0685525343b856f2f42569c7a5aac9007b29da4"
+			"Comment": "v0.2.2",
+			"Rev": "eec119e2c248aaf770997b018f5141e95daf9c80"
 		},
 		{
 			"ImportPath": "github.com/brettlangdon/forge/token",
-			"Comment": "v0.2.0",
-			"Rev": "a0685525343b856f2f42569c7a5aac9007b29da4"
+			"Comment": "v0.2.2",
+			"Rev": "eec119e2c248aaf770997b018f5141e95daf9c80"
 		},
 		{
 			"ImportPath": "github.com/coreos/go-etcd/etcd",
@@ -116,6 +116,16 @@
 			"Rev": "a396ed22fc049df733440d90efe17475e3929ccb"
 		},
 		{
+			"ImportPath": "github.com/valyala/fasthttp",
+			"Comment": "v20160617",
+			"Rev": "d42167fd04f636e20b005e9934159e95454233c7"
+		},
+		{
+			"ImportPath": "github.com/valyala/fasthttp/fasthttputil",
+			"Comment": "v20160617",
+			"Rev": "d42167fd04f636e20b005e9934159e95454233c7"
+		},
+		{
 			"ImportPath": "github.com/valyala/fasttemplate",
 			"Rev": "3b874956e03f1636d171bda64b130f9135f42cff"
 		},
@@ -125,7 +135,7 @@
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",
-			"Rev": "62bee037599929a6e9146f29d10dd5208c43507d"
+			"Rev": "8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9"
 		}
 	]
 }

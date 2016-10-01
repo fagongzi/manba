@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/valyala/fasthttp"
 )
 
 var (
@@ -13,8 +14,8 @@ var (
 
 type filterContext struct {
 	rw         http.ResponseWriter
-	req        *http.Request
-	outreq     *http.Request
+	ctx        *fasthttp.RequestCtx
+	outreq     *fasthttp.Request
 	result     *model.RouteResult
 	rb         *model.RouteTable
 	startAt    int64

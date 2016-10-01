@@ -1,3 +1,7 @@
+2016-07-10  Brett Langdon  <me@brett.is>
+
+	* v0.2.1: Add new `func (*Section) Merge` to merge multiple `Section`s together.
+
 2016-02-26  Brett Langdon  <me@brett.is>
 
 	* v0.2.0: Fix bug with parsing of lists without ending semicolon

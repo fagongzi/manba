@@ -1,0 +1,28 @@
+<div class="panel panel-default">
+    <div class="panel-heading">Create a New Routing</div>
+    <div class="panel-body">
+        <div class="form-group">
+            <label for="clusterName">Target Cluster</label>
+            <select class="form-control" ng-model="newClusterName" id="clusterName">
+                <option ng-repeat="c in clusters" value="{{c.name}}">{{c.name}}</option>
+            </select>
+        </div>
+         <div class="form-group">
+            <label for="routingUrl">Match URL</label>
+            <input type="text" class="form-control" ng-model="newRoutingUrl" id="routingUrl"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="routingCfg">Routing Cfg</label>
+            <pre>
+desc = "test";  # describle
+deadline = 100; # unit is second
+# rule can use header,cookie,query runtime val, use "_" connect attr.
+# can used comparison Operators are: ==,>=,<=,~(matches),in 
+rule = ["$header_abc == 10", "$query_123==20", "$cookie_abc==abc", "$query_abc~^abc"]; 
+or = ["$query_abc == 10", "$query_123 == 20"];  # optional
+            </pre>
+            <textarea rows="10" class="form-control" ng-model="newRoutingCfg" id="routingCfg"></textarea>
+        </div>
+        <button type="button" class="btn btn-default" ng-click="add()">Submit</button>
+    </div>
+</div>

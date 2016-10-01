@@ -1,11 +1,6 @@
 package proxy
 
-import (
-	"net"
-	"strings"
-
-	"github.com/fagongzi/gateway/conf"
-)
+import "github.com/fagongzi/gateway/conf"
 
 // XForwardForFilter XForwardForFilter
 type XForwardForFilter struct {
@@ -28,15 +23,6 @@ func (f XForwardForFilter) Name() string {
 
 // Pre execute before proxy
 func (f XForwardForFilter) Pre(c *filterContext) (statusCode int, err error) {
-	if clientIP, _, err := net.SplitHostPort(c.req.RemoteAddr); err == nil {
-		// If we aren't the first proxy retain prior
-		// X-Forwarded-For information as a comma+space
-		// separated list and fold multiple headers into one.
-		if prior, ok := c.outreq.Header["X-Forwarded-For"]; ok {
-			clientIP = strings.Join(prior, ", ") + ", " + clientIP
-		}
-		c.outreq.Header.Set("X-Forwarded-For", clientIP)
-	}
-
+	c.outreq.Header.Add("X-Forwarded-For", c.ctx.RemoteIP().String())
 	return f.baseFilter.Pre(c)
 }

@@ -4,13 +4,13 @@ import (
 	"container/list"
 	"encoding/json"
 	"io"
-	"net/http"
 	"regexp"
 	"sync"
 
 	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/pkg/lb"
 	"github.com/fagongzi/gateway/pkg/util"
+	"github.com/valyala/fasthttp"
 )
 
 // Cluster cluster
@@ -132,7 +132,7 @@ func (c *Cluster) bind(svr *Server) {
 }
 
 // Select return a server using spec loadbalance
-func (c *Cluster) Select(req *http.Request) string {
+func (c *Cluster) Select(req *fasthttp.Request) string {
 	c.rwLock.RLock()
 	defer c.rwLock.RUnlock()
 
@@ -154,8 +154,8 @@ func (c *Cluster) Select(req *http.Request) string {
 }
 
 // Matches return true if req matches
-func (c *Cluster) Matches(req *http.Request) bool {
-	return c.regexp.MatchString(req.URL.Path)
+func (c *Cluster) Matches(req *fasthttp.Request) bool {
+	return c.regexp.MatchString(string(req.URI().Path()))
 }
 
 // Marshal marshal

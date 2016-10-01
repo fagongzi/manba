@@ -38,18 +38,9 @@ func (f HeadersFilter) Name() string {
 
 // Pre execute before proxy
 func (f HeadersFilter) Pre(c *filterContext) (statusCode int, err error) {
-	c.outreq.Proto = "HTTP/1.1"
-	c.outreq.ProtoMajor = 1
-	c.outreq.ProtoMinor = 1
-	c.outreq.Close = false
-
-	copyHeader(c.outreq.Header, c.req.Header)
-
 	for _, h := range hopHeaders {
 		c.outreq.Header.Del(h)
 	}
-
-	c.outreq.Host = c.req.Host
 
 	return f.baseFilter.Pre(c)
 }
@@ -62,7 +53,8 @@ func (f HeadersFilter) Post(c *filterContext) (statusCode int, err error) {
 
 	// 需要合并处理的，不做header的复制，由proxy做合并
 	if !c.result.Merge {
-		copyHeader(c.rw.Header(), c.result.Res.Header)
+		c.ctx.Response.Header.Reset()
+		c.result.Res.Header.CopyTo(&c.ctx.Response.Header)
 	}
 
 	return f.baseFilter.Post(c)

@@ -1,0 +1,26 @@
+{
+    "addr": ":80",
+    "mgrAddr": ":8081",
+    "etcdAddrs": [
+        "http://192.168.159.130:2379"
+    ],
+    "etcdPrefix": "/gateway",
+    "filers": [
+        "analysis",
+        "rate-limiting",
+        "circuit-breake",
+        "http-access",
+        "head",
+        "xforward"
+    ],
+    "maxConns": 512,
+    "maxConnDuration": 10,
+    "maxIdleConnDuration": 10,
+    "readBufferSize": 4096,
+    "writeBufferSize": 4096,
+    "readTimeout": 30,
+    "writeTimeout": 30,
+    "maxResponseBodySize": 1048576,
+    "enablePPROF": false,
+    "pprofAddr": ""
+}

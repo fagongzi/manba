@@ -1,0 +1,61 @@
+<div class="panel panel-default">
+    <div class="panel-heading">Server Info</div>
+    <div class="panel-body">
+        <div class="form-group">
+            <label>
+                <strong>Server Addr:</strong>
+                {{server.addr}}
+            </label>
+        </div>
+        <div class="form-group">
+            <label>
+                <strong>Server CheckPath:</strong>
+                {{server.checkPath}}
+            </label>
+        </div>
+        <div class="form-group">
+            <label>
+                <strong>Server CheckTimeout:</strong>
+                {{server.checkTimeout}}
+            </label>
+        </div>
+        <div class="form-group">
+            <label>
+                <strong>Server CheckDuration:</strong>
+                {{server.checkDuration}}
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <strong>Server Max QPS:</strong>
+                {{server.maxQPS}}
+            </label>
+        </div>
+        
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-heading">Bined Clusters</div>
+    <div class="panel-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                    <tr ng-repeat="cluster in server.bindClusters">
+                        <td>
+                            <a href="#/clusters/{{cluster}}">{{cluster}}</a>
+                             <button type="button" class="btn btn-default btn-sm" ng-click="unbind(server.addr, cluster)">UnBind</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

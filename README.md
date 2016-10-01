@@ -19,20 +19,42 @@ Gateway自身有2个组件
 * admin 管理后台
 
 ###通过源码安装
-建议使用go1.6
+建议使用go1.6+
 ```
 git clone https://github.com/fagongzi.git
 cd $GOPATH/src/github.com/fagongzi/gateway
-go build gateway.go
-go build admin/admin.go
+go build cmd/gateway/gateway.go
+go build cmd/admin/admin.go
 ```
 
-流控
-----
+# 2.0 版本
+使用fasthttp代替golang http包，性能提升
+
+# 概念
+gateway有以下几个概念：
+
+* proxy
+gateway的前台proxy
+
+* admin
+gateway的后台管理，一个admin可以管理同一个namespace（即etcdPrefix参数指定）下的所有proxy
+
+* cluster
+一个集群，集群中包含一组提供相同服务的server
+
+* server
+一个backend server
+
+* aggregation
+聚合，针对一个cluster和URL做聚合配置，一个聚合URL请求，会在proxy上扩散成多个子URL请求，然后做合并处理，返回数据。
+
+* routing
+路由，可以根据queryString,cookie,request header等信息做请求路由。
+
+# 流控
 流控是限制多大的流量进入后端server而设计的，支持针对单个server的流量阈值设置
 
-熔断
-----
+# 熔断
 熔断就是为了解决后端系统被流量冲垮、以及后续的雪崩问题而设计的。熔断把后端server的状态设计为以下三种：
 
 * 打开
@@ -56,13 +78,11 @@ go build admin/admin.go
 * 轮询
 * IP Hash
 
-基于URL的路由分发
---------------
+# 基于URL的路由分发
 网关把加入到网关的后端server进行分组，形成多个cluster，在cluster上做负载均衡。
 多个cluster通过url的规则来进行消息路由
 
-服务聚合
----------
+# 服务聚合
 为了说清楚这个功能，我们先看一个场景：
 
 在一家互联网公司，一个设计的故事：
@@ -83,10 +103,29 @@ go build admin/admin.go
 * 这个url请求到达网关，网关根据配置，同时请求对应的后端接口
 * 等待后端接口返回数据，合并数据返回给客户端
 
-管理后台
----------
+# 管理后台
 提供webUI的方式管理网关的配置，例如后端server、集群、服务聚合、流控、熔断等所有功能
 
 提供网关上单个server的各项指标的查看页面
 
+## dashboard
+![](./images/dashboard.png)
+
+## proxy管理
+![](./images/proxy.png)
+
+## cluster管理
+![](./images/cluster.png)
+
+## server管理
+![](./images/server.png)
+
+## 聚合管理
+![](./images/aggregations.png)
+
+## routing管理
+![](./images/routing.png)
+
+## 监控
+![](./images/metries.png)
 
