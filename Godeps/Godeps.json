@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/fagongzi/gateway",
-	"GoVersion": "go1.6",
+	"GoVersion": "go1.7",
 	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
@@ -58,6 +58,31 @@
 		{
 			"ImportPath": "github.com/fgrid/uuid",
 			"Rev": "6f72a2d331c927473b9b19f590d43ccb5018c844"
+		},
+		{
+			"ImportPath": "github.com/klauspost/compress/flate",
+			"Comment": "v1.0-14-gd0763f1",
+			"Rev": "d0763f13d86e630f5d3ea9fa848a6ecc68255297"
+		},
+		{
+			"ImportPath": "github.com/klauspost/compress/gzip",
+			"Comment": "v1.0-14-gd0763f1",
+			"Rev": "d0763f13d86e630f5d3ea9fa848a6ecc68255297"
+		},
+		{
+			"ImportPath": "github.com/klauspost/compress/zlib",
+			"Comment": "v1.0-14-gd0763f1",
+			"Rev": "d0763f13d86e630f5d3ea9fa848a6ecc68255297"
+		},
+		{
+			"ImportPath": "github.com/klauspost/cpuid",
+			"Comment": "v1.0",
+			"Rev": "09cded8978dc9e80714c4d85b0322337b0a1e5e0"
+		},
+		{
+			"ImportPath": "github.com/klauspost/crc32",
+			"Comment": "v1.0",
+			"Rev": "19b0b332c9e4516a6370a0456e6182c3b5036720"
 		},
 		{
 			"ImportPath": "github.com/labstack/echo",
