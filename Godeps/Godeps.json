@@ -57,6 +57,7 @@
 		},
 		{
 			"ImportPath": "github.com/fgrid/uuid",
+			"Comment": "v0.1.0",
 			"Rev": "6f72a2d331c927473b9b19f590d43ccb5018c844"
 		},
 		{
