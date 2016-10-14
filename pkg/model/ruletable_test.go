@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	etcdAddr   = "http://192.168.70.13:2379"
+	etcdAddr   = "http://192.168.159.130:2379"
 	etcdPrefix = "/gateway2"
 )
 

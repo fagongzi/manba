@@ -312,7 +312,7 @@ func (r *RoutingItem) getHeaderValue(req *fasthttp.Request) string {
 }
 
 func (r *RoutingItem) getQueryValue(req *fasthttp.Request) string {
-	v, _ := url.QueryUnescape(string(req.URI().QueryArgs().Peek("r.attrName")))
+	v, _ := url.QueryUnescape(string(req.URI().QueryArgs().Peek(r.attrName)))
 	return v
 }
 

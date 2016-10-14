@@ -1,8 +1,9 @@
 package model
 
 import (
-	"net/http"
 	"testing"
+
+	"github.com/valyala/fasthttp"
 )
 
 func TestParse(t *testing.T) {
@@ -36,7 +37,8 @@ func TestParseHeader(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("/abc")
 	req.Header.Add("abc", "abc")
 
 	if r.sourceValueFun(req) != "abc" {
@@ -51,11 +53,9 @@ func TestParseCookie(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc", nil)
-	req.AddCookie(&http.Cookie{
-		Name:  "abc",
-		Value: "abc",
-	})
+	req := &fasthttp.Request{}
+	req.SetRequestURI("/abc")
+	req.Header.Add("cookie", "abc=abc")
 
 	if r.sourceValueFun(req) != "abc" {
 		t.Error("parse cookie error")
@@ -69,7 +69,8 @@ func TestParseQuery(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc?abc=abc", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=abc")
 
 	if r.sourceValueFun(req) != "abc" {
 		t.Error("parse cookie error")
@@ -83,7 +84,8 @@ func TestMatchesEq(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc?abc=abc", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=abc")
 
 	if !r.matches(req) {
 		t.Error("matches op eq error")
@@ -97,7 +99,8 @@ func TestMatchesLt(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc?abc=1", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=1")
 
 	if !r.matches(req) {
 		t.Error("matches op lt error")
@@ -111,7 +114,8 @@ func TestMatchesLe(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc?abc=100", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=100")
 
 	if !r.matches(req) {
 		t.Error("matches op le error")
@@ -125,7 +129,8 @@ func TestMatchesGt(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc?abc=101", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=101")
 
 	if !r.matches(req) {
 		t.Error("matches op gt error")
@@ -139,7 +144,8 @@ func TestMatchesGe(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc?abc=100", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=100")
 
 	if !r.matches(req) {
 		t.Error("matches op ge error")
@@ -153,7 +159,8 @@ func TestMatchesIn(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc?abc=11001", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=11001")
 
 	if !r.matches(req) {
 		t.Error("matches op in error")
@@ -167,7 +174,8 @@ func TestMatchesReg(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc?abc=11001a", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=11001a")
 
 	if !r.matches(req) {
 		t.Error("matches op reg error")
@@ -186,7 +194,8 @@ func TestMatchesRouting(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc?abc=abc", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=abc")
 
 	if !r.Matches(req) {
 		t.Error("matches routing error")
@@ -205,7 +214,8 @@ func TestNotMatchesRouting(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc?abc=20", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=20")
 
 	if r.Matches(req) {
 		t.Error("not matches routing error")
@@ -223,7 +233,8 @@ func TestMatchesRoutingAndLogic(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc?abc=10&123=20", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=10&123=20")
 
 	if !r.Matches(req) {
 		t.Error("matches and error")
@@ -242,7 +253,8 @@ func TestNotMatchesRoutingAndLogic(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc?abc=10&123=30", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=10&123=30")
 
 	if r.Matches(req) {
 		t.Error("matches and error")
@@ -262,7 +274,8 @@ func TestMatchesRoutingAllLogic(t *testing.T) {
 		t.Error("parse error.")
 	}
 
-	req, _ := http.NewRequest("GET", "/abc?abc=10&123=10&or2=40", nil)
+	req := &fasthttp.Request{}
+	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=10&123=10&or2=40")
 
 	if !r.Matches(req) {
 		t.Error("matches and error")
