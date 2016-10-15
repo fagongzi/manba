@@ -39,7 +39,7 @@ The admin is a backend manager system. Admin also is a stateless node, you can u
 ### Etcd
 The Etcd store gateway's mete data.
 
-## Concept of mysql
+## Concept of gateway
 
 * Server
 Server is a backend server which provide restfule json service.The server is the basic unit at gateway.
