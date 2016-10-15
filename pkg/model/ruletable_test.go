@@ -16,7 +16,7 @@ const (
 
 var (
 	serverAddr    = "127.0.0.1:12345"
-	angUrl        = "/api/test"
+	angURL        = "/api/test"
 	checkDuration = 3
 	checkTimeout  = 2
 	clusterName   = "app"
@@ -101,8 +101,8 @@ func TestEtcdWatchNewServer(t *testing.T) {
 func TestServerCheckOk(t *testing.T) {
 	time.Sleep(time.Second * time.Duration(checkDuration))
 
-	if rt.svrs[serverAddr].Status == DOWN {
-		t.Errorf("status check ok err.expect:<UP>, acture:<%v>", DOWN)
+	if rt.svrs[serverAddr].Status == Down {
+		t.Errorf("status check ok err.expect:<UP>, acture:<%v>", Down)
 	}
 }
 
@@ -114,8 +114,8 @@ func TestServerCheckTimeout(t *testing.T) {
 	sleep = true
 	time.Sleep(time.Second * time.Duration(checkDuration*2+1)) // 等待两个周期
 
-	if rt.svrs[serverAddr].Status == UP {
-		t.Errorf("status check timeout err.expect:<DOWN>, acture:<%v>", UP)
+	if rt.svrs[serverAddr].Status == Up {
+		t.Errorf("status check timeout err.expect:<DOWN>, acture:<%v>", Up)
 		return
 	}
 }
@@ -123,8 +123,8 @@ func TestServerCheckTimeout(t *testing.T) {
 func TestServerCheckTimeoutRecovery(t *testing.T) {
 	time.Sleep(time.Second * time.Duration(checkDuration*2+1)) // 等待两个周期
 
-	if rt.svrs[serverAddr].Status == DOWN {
-		t.Errorf("status check timeout recovery err.expect:<UP>, acture:<%v>", UP)
+	if rt.svrs[serverAddr].Status == Down {
+		t.Errorf("status check timeout recovery err.expect:<UP>, acture:<%v>", Up)
 		return
 	}
 }
@@ -182,7 +182,7 @@ func TestEtcdWatchNewAggregation(t *testing.T) {
 	}
 
 	err := rt.store.SaveAggregation(&Aggregation{
-		URL:   angUrl,
+		URL:   angURL,
 		Nodes: []*Node{n},
 	})
 
@@ -293,7 +293,7 @@ func TestEtcdWatchUpdateAggregation(t *testing.T) {
 	}
 
 	ang := &Aggregation{
-		URL:   angUrl,
+		URL:   angURL,
 		Nodes: []*Node{n, n2},
 	}
 
@@ -359,7 +359,7 @@ func TestEtcdWatchDeleteServer(t *testing.T) {
 }
 
 func TestEtcdWatchDeleteAggregation(t *testing.T) {
-	err := rt.store.DeleteAggregation(angUrl)
+	err := rt.store.DeleteAggregation(angURL)
 
 	if nil != err {
 		t.Error("delete aggregation err.")

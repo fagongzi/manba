@@ -7,11 +7,6 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-var (
-	// SupportFilters support filters
-	SupportFilters = []string{"Log", "Headers", "XForwardFor"}
-)
-
 type filterContext struct {
 	rw         http.ResponseWriter
 	ctx        *fasthttp.RequestCtx

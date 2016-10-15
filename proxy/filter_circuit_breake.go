@@ -61,14 +61,14 @@ func (f CircuitBreakeFilter) Pre(c *filterContext) (statusCode int, err error) {
 	status := c.result.Svr.GetCircuit()
 	count := c.rb.GetAnalysis().GetContinuousFailureCount(c.result.Svr.Addr)
 
-	if status == model.CIRCUIT_OPEN {
+	if status == model.CircuitOpen {
 		if count > c.result.Svr.CloseCount {
 			f.changeToClose(c.result.Svr)
 			return http.StatusServiceUnavailable, ErrCircuitClose
 		}
 
 		return http.StatusOK, nil
-	} else if status == model.CIRCUIT_HALF {
+	} else if status == model.CircuitHalf {
 		if limitAllow(c.result.Svr.HalfTrafficRate) {
 			return f.baseFilter.Pre(c)
 		}
@@ -83,7 +83,7 @@ func (f CircuitBreakeFilter) Pre(c *filterContext) (statusCode int, err error) {
 func (f CircuitBreakeFilter) Post(c *filterContext) (statusCode int, err error) {
 	status := c.result.Svr.GetCircuit()
 
-	if status == model.CIRCUIT_HALF {
+	if status == model.CircuitHalf {
 		f.changeToOpen(c.result.Svr)
 	}
 
@@ -94,7 +94,7 @@ func (f CircuitBreakeFilter) Post(c *filterContext) (statusCode int, err error) 
 func (f CircuitBreakeFilter) PostErr(c *filterContext) {
 	status := c.result.Svr.GetCircuit()
 
-	if status == model.CIRCUIT_HALF {
+	if status == model.CircuitHalf {
 		f.changeToClose(c.result.Svr)
 	}
 }
@@ -103,7 +103,7 @@ func (f CircuitBreakeFilter) changeToClose(server *model.Server) {
 	server.Lock()
 	defer server.UnLock()
 
-	if server.GetCircuit() == model.CIRCUIT_CLOSE {
+	if server.GetCircuit() == model.CircuitClose {
 		return
 	}
 
@@ -118,7 +118,7 @@ func (f CircuitBreakeFilter) changeToOpen(server *model.Server) {
 	server.Lock()
 	defer server.UnLock()
 
-	if server.GetCircuit() == model.CIRCUIT_OPEN || server.GetCircuit() != model.CIRCUIT_HALF {
+	if server.GetCircuit() == model.CircuitOpen || server.GetCircuit() != model.CircuitHalf {
 		return
 	}
 

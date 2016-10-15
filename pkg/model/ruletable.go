@@ -12,17 +12,26 @@ import (
 )
 
 var (
-	ERR_SERVER_EXISTS      = errors.New("Server already exist")
-	ERR_CLUSTER_EXISTS     = errors.New("Cluster already exist")
-	ERR_BIND_EXISTS        = errors.New("Bind already exist")
-	ERR_AGGREGATION_EXISTS = errors.New("Aggregation already exist")
-	ERR_ROUTING_EXISTS     = errors.New("Routing already exist")
-
-	ERR_SERVER_NOT_FOUND      = errors.New("Server not found")
-	ERR_CLUSTER_NOT_FOUND     = errors.New("Cluster not found")
-	ERR_BIND_NOT_FOUND        = errors.New("Bind not found")
-	ERR_AGGREGATION_NOT_FOUND = errors.New("Aggregation not found")
-	ERR_ROUTING_NOT_FOUND     = errors.New("Routing not found")
+	// ErrServerExists Server already exist
+	ErrServerExists = errors.New("Server already exist")
+	// ErrClusterExists Cluster already exist
+	ErrClusterExists = errors.New("Cluster already exist")
+	// ErrBindExists Bind already exist
+	ErrBindExists = errors.New("Bind already exist")
+	// ErrAggregationExists Aggregation already exist
+	ErrAggregationExists = errors.New("Aggregation already exist")
+	// ErrRoutingExists Routing already exist
+	ErrRoutingExists = errors.New("Routing already exist")
+	// ErrServerNotFound Server not found
+	ErrServerNotFound = errors.New("Server not found")
+	// ErrClusterNotFound Cluster not found
+	ErrClusterNotFound = errors.New("Cluster not found")
+	// ErrBindNotFound Bind not found
+	ErrBindNotFound = errors.New("Bind not found")
+	// ErrAggregationNotFound Aggregation not found
+	ErrAggregationNotFound = errors.New("Aggregation not found")
+	// ErrRoutingNotFound Routing not found
+	ErrRoutingNotFound = errors.New("Routing not found")
 )
 
 // RouteResult RouteResult
@@ -109,7 +118,7 @@ func (r *RouteTable) AddNewRouting(routing *Routing) error {
 	_, ok := r.routings[routing.ID]
 
 	if ok {
-		return ERR_ROUTING_EXISTS
+		return ErrRoutingExists
 	}
 
 	r.routings[routing.ID] = routing
@@ -127,7 +136,7 @@ func (r *RouteTable) DeleteRouting(id string) error {
 	route, ok := r.routings[id]
 
 	if !ok {
-		return ERR_ROUTING_NOT_FOUND
+		return ErrRoutingNotFound
 	}
 
 	delete(r.routings, id)
@@ -145,7 +154,7 @@ func (r *RouteTable) AddNewAggregation(ang *Aggregation) error {
 	_, ok := r.aggregations[ang.URL]
 
 	if ok {
-		return ERR_AGGREGATION_EXISTS
+		return ErrAggregationExists
 	}
 
 	r.aggregations[ang.URL] = ang
@@ -163,7 +172,7 @@ func (r *RouteTable) UpdateAggregation(ang *Aggregation) error {
 	old, ok := r.aggregations[ang.URL]
 
 	if !ok {
-		return ERR_AGGREGATION_NOT_FOUND
+		return ErrAggregationNotFound
 	}
 
 	old.updateFrom(ang)
@@ -181,7 +190,7 @@ func (r *RouteTable) DeleteAggregation(url string) error {
 	_, ok := r.aggregations[url]
 
 	if !ok {
-		return ERR_AGGREGATION_NOT_FOUND
+		return ErrAggregationNotFound
 	}
 
 	delete(r.aggregations, url)
@@ -199,7 +208,7 @@ func (r *RouteTable) UpdateServer(svr *Server) error {
 	old, ok := r.svrs[svr.Addr]
 
 	if !ok {
-		return ERR_SERVER_NOT_FOUND
+		return ErrServerNotFound
 	}
 
 	old.updateFrom(svr)
@@ -217,7 +226,7 @@ func (r *RouteTable) DeleteServer(serverAddr string) error {
 	svr, ok := r.svrs[serverAddr]
 
 	if !ok {
-		return ERR_SERVER_NOT_FOUND
+		return ErrServerNotFound
 	}
 
 	delete(r.svrs, serverAddr)
@@ -248,11 +257,11 @@ func (r *RouteTable) AddNewServer(svr *Server) error {
 	_, ok := r.svrs[svr.Addr]
 
 	if ok {
-		return ERR_SERVER_EXISTS
+		return ErrServerExists
 	}
 
-	svr.prevStatus = DOWN
-	svr.Status = DOWN
+	svr.prevStatus = Down
+	svr.Status = Down
 	svr.useCheckDuration = svr.CheckDuration
 	r.svrs[svr.Addr] = svr
 
@@ -281,7 +290,7 @@ func (r *RouteTable) UpdateCluster(cluster *Cluster) error {
 	old, ok := r.clusters[cluster.Name]
 
 	if !ok {
-		return ERR_CLUSTER_NOT_FOUND
+		return ErrClusterNotFound
 	}
 
 	old.updateFrom(cluster)
@@ -299,7 +308,7 @@ func (r *RouteTable) DeleteCluster(clusterName string) error {
 	cluster, ok := r.clusters[clusterName]
 
 	if !ok {
-		return ERR_CLUSTER_NOT_FOUND
+		return ErrClusterNotFound
 	}
 
 	cluster.doInEveryBindServers(func(addr string) {
@@ -326,8 +335,8 @@ func (r *RouteTable) AddNewCluster(cluster *Cluster) error {
 	_, ok := r.clusters[cluster.Name]
 
 	if ok {
-		log.Errorf("Cluster <%v> added fail: %s", cluster, ERR_CLUSTER_EXISTS.Error())
-		return ERR_CLUSTER_EXISTS
+		log.Errorf("Cluster <%v> added fail: %s", cluster, ErrClusterExists.Error())
+		return ErrClusterExists
 	}
 
 	r.clusters[cluster.Name] = cluster
@@ -344,32 +353,32 @@ func (r *RouteTable) Bind(svrAddr string, clusterName string) error {
 
 	svr, ok := r.svrs[svrAddr]
 	if !ok {
-		log.Errorf("Bind <%s,%s> fail: %s", svrAddr, clusterName, ERR_SERVER_NOT_FOUND.Error())
+		log.Errorf("Bind <%s,%s> fail: %s", svrAddr, clusterName, ErrServerNotFound.Error())
 
-		return ERR_SERVER_NOT_FOUND
+		return ErrServerNotFound
 	}
 
 	cluster, ok := r.clusters[clusterName]
 	if !ok {
-		log.Errorf("Bind <%s,%s> fail: %s", svrAddr, clusterName, ERR_CLUSTER_NOT_FOUND.Error())
+		log.Errorf("Bind <%s,%s> fail: %s", svrAddr, clusterName, ErrClusterNotFound.Error())
 
-		return ERR_CLUSTER_NOT_FOUND
+		return ErrClusterNotFound
 	}
 
 	binded, _ := r.mapping[svr.Addr]
 	bindCluster, ok := binded[cluster.Name]
 
 	if ok && bindCluster.Name == clusterName {
-		log.Errorf("Bind <%s,%s> fail: %s", svrAddr, clusterName, ERR_BIND_EXISTS.Error())
+		log.Errorf("Bind <%s,%s> fail: %s", svrAddr, clusterName, ErrBindExists.Error())
 
-		return ERR_BIND_EXISTS
+		return ErrBindExists
 	}
 
 	binded[cluster.Name] = cluster
 
 	log.Infof("Bind <%s,%s> stored.", svrAddr, clusterName)
 
-	if svr.Status == UP {
+	if svr.Status == Up {
 		cluster.bind(svr)
 	}
 
@@ -383,16 +392,16 @@ func (r *RouteTable) UnBind(svrAddr string, clusterName string) error {
 
 	svr, ok := r.svrs[svrAddr]
 	if !ok {
-		log.Errorf("UnBind <%s,%s> fail: %s", svrAddr, clusterName, ERR_SERVER_NOT_FOUND.Error())
+		log.Errorf("UnBind <%s,%s> fail: %s", svrAddr, clusterName, ErrServerNotFound.Error())
 
-		return ERR_SERVER_NOT_FOUND
+		return ErrServerNotFound
 	}
 
 	cluster, ok := r.clusters[clusterName]
 	if !ok {
-		log.Errorf("UnBind <%s,%s> fail: %s", svrAddr, clusterName, ERR_CLUSTER_NOT_FOUND.Error())
+		log.Errorf("UnBind <%s,%s> fail: %s", svrAddr, clusterName, ErrClusterNotFound.Error())
 
-		return ERR_CLUSTER_NOT_FOUND
+		return ErrClusterNotFound
 	}
 
 	r.doUnBind(svr, cluster, true)
@@ -679,13 +688,13 @@ func (r *RouteTable) check(addr string) {
 	svr, _ := r.svrs[addr]
 
 	if svr.check(r.addToCheck) {
-		svr.changeTo(UP)
+		svr.changeTo(Up)
 
 		if svr.statusChanged() {
 			log.Infof("Server <%s> UP.", svr.Addr)
 		}
 	} else {
-		svr.changeTo(DOWN)
+		svr.changeTo(Down)
 
 		if svr.statusChanged() {
 			log.Warnf("Server <%s, %s> DOWN.", svr.Addr, svr.CheckPath)
@@ -702,7 +711,7 @@ func (r *RouteTable) changed() {
 		if svr.statusChanged() {
 			binded := r.mapping[svr.Addr]
 
-			if svr.Status == UP {
+			if svr.Status == Up {
 				for _, c := range binded {
 					c.bind(svr)
 				}
