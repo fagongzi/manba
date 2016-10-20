@@ -27,6 +27,10 @@
                 <label for="nodeUrl">Url</label>
                 <input type="text" class="form-control" ng-model="newNodeUrl" id="nodeUrl" />
             </div>
+            <div class="form-group">
+                <label for="nodeRewrite">Rewrite</label>
+                <input type="text" class="form-control" ng-model="newNodeRewrite" id="nodeRewrite" />
+            </div>
             
             <button type="button" class="btn btn-default" ng-click="addNode()">Add</button>
              <button type="button" class="btn btn-default" ng-click="add()">Submit</button>
@@ -40,6 +44,7 @@
         <th>Cluster</th>
         <th>AttrName</th>
         <th>Url</th>
+        <th>Rewrite</th>
         <th>Opts</th>
     </tr>
     </thead>
@@ -49,6 +54,7 @@
             <td><a href="#/clusters/{{n.clusterName}}">{{n.clusterName}}</a></td>
             <td>{{n.attrName}}</td>
             <td>{{n.url}}</td>
+            <td>{{n.rewrite}}</td>
             <td>
                 <button type="button" class="btn btn-default" ng-click="delete(n)">Delete</button>
             </td>

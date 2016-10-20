@@ -71,6 +71,7 @@ func main() {
 	e.Get("/api/cookie", cookie())
 	e.Get("/api/set-cookie", setCookie())
 	e.Get("/api/query", query())
+	e.Get("/api/path/:value", path())
 
 	e.Run(sd.New(*addr))
 }
@@ -119,5 +120,11 @@ func setCookie() echo.HandlerFunc {
 func query() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		return c.JSON(http.StatusOK, c.QueryParam("value"))
+	}
+}
+
+func path() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		return c.JSON(http.StatusOK, c.Param("value"))
 	}
 }

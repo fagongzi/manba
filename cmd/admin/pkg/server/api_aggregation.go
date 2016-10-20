@@ -1,9 +1,11 @@
 package server
 
 import (
+	"fmt"
+	"net/http"
+
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/labstack/echo"
-	"net/http"
 )
 
 func (server *AdminServer) getAggregations() echo.HandlerFunc {
@@ -15,6 +17,10 @@ func (server *AdminServer) getAggregations() echo.HandlerFunc {
 		if err != nil {
 			errstr = err.Error()
 			code = CodeError
+		}
+
+		for _, ang := range aggregations {
+			fmt.Printf("%s\n", ang.URL)
 		}
 
 		return c.JSON(http.StatusOK, &Result{

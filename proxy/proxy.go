@@ -165,8 +165,19 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *mo
 	outreq := copyRequest(&ctx.Request)
 
 	// change url
-	if result.Node != nil {
-		outreq.URI().SetPath(result.Node.URL)
+	if result.NeedRewrite() {
+		// if not use rewrite, it only change uri path and query string
+		realPath := result.GetRealPath(&ctx.Request)
+		if "" != realPath {
+			log.Infof("URL Rewrite from <%s> to <%s>", string(ctx.URI().FullURI()), realPath)
+			outreq.SetRequestURI(realPath)
+			outreq.SetHost(svr.Addr)
+		}
+	} else {
+		// if not use rewrite, it only change uri path, the query string will use origin.
+		if result.Node != nil {
+			outreq.URI().SetPath(result.Node.URL)
+		}
 	}
 
 	c := &filterContext{

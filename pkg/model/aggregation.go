@@ -3,28 +3,32 @@ package model
 import (
 	"encoding/json"
 	"io"
-	"net/url"
+	"regexp"
+
+	"github.com/valyala/fasthttp"
 )
 
 // Node aggregation node struct
 type Node struct {
 	ClusterName string `json:"clusterName,omitempty"`
 	URL         string `json:"url,omitempty"`
+	Rewrite     string `json:"rewrite,omitempty"`
 	AttrName    string `json:"attrName,omitempty"`
 }
 
 // Aggregation aggregation struct
 // a aggregation container a url and some nodes
 type Aggregation struct {
-	URL   string  `json:"url"`
-	Nodes []*Node `json:"nodes"`
+	URL     string         `json:"url"`
+	Nodes   []*Node        `json:"nodes"`
+	Pattern *regexp.Regexp `json:"-"`
 }
 
 // UnMarshalAggregation unmarshal
 func UnMarshalAggregation(data []byte) *Aggregation {
 	v := &Aggregation{}
 	json.Unmarshal(data, v)
-	v.URL, _ = url.QueryUnescape(v.URL)
+	// v.URL, _ = url.QueryUnescape(v.URL)
 	return v
 }
 
@@ -50,6 +54,18 @@ func NewAggregation(url string, nodes []*Node) *Aggregation {
 func (a *Aggregation) Marshal() []byte {
 	v, _ := json.Marshal(a)
 	return v
+}
+
+func (a *Aggregation) getNodeURL(req *fasthttp.Request, node *Node) string {
+	if node.Rewrite == "" {
+		return node.URL
+	}
+
+	return a.Pattern.ReplaceAllString(string(req.URI().RequestURI()), node.Rewrite)
+}
+
+func (a *Aggregation) matches(req *fasthttp.Request) bool {
+	return a.Pattern.Match(req.URI().RequestURI())
 }
 
 func (a *Aggregation) updateFrom(ang *Aggregation) {

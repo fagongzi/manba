@@ -2,7 +2,7 @@ package model
 
 import (
 	"errors"
-
+	"regexp"
 	"sync"
 	"time"
 
@@ -36,12 +36,13 @@ var (
 
 // RouteResult RouteResult
 type RouteResult struct {
-	Node  *Node
-	Svr   *Server
-	Err   error
-	Code  int
-	Res   *fasthttp.Response
-	Merge bool
+	Aggregation *Aggregation
+	Node        *Node
+	Svr         *Server
+	Err         error
+	Code        int
+	Res         *fasthttp.Response
+	Merge       bool
 }
 
 // Release release resp
@@ -49,6 +50,20 @@ func (result *RouteResult) Release() {
 	if nil != result.Res {
 		fasthttp.ReleaseResponse(result.Res)
 	}
+}
+
+// NeedRewrite need rewrite
+func (result *RouteResult) NeedRewrite() bool {
+	return result.Node != nil && result.Node.Rewrite != ""
+}
+
+// GetRealPath get real path
+func (result *RouteResult) GetRealPath(req *fasthttp.Request) string {
+	if nil != result.Node {
+		return result.Aggregation.getNodeURL(req, result.Node)
+	}
+
+	return ""
 }
 
 // RouteTable route table
@@ -156,6 +171,8 @@ func (r *RouteTable) AddNewAggregation(ang *Aggregation) error {
 	if ok {
 		return ErrAggregationExists
 	}
+
+	ang.Pattern = regexp.MustCompile(ang.URL)
 
 	r.aggregations[ang.URL] = ang
 
@@ -312,8 +329,7 @@ func (r *RouteTable) DeleteCluster(clusterName string) error {
 	}
 
 	cluster.doInEveryBindServers(func(addr string) {
-		svr, ok := r.svrs[addr]
-		if ok {
+		if svr, ok := r.svrs[addr]; ok {
 			r.doUnBind(svr, cluster, false)
 		}
 	})
@@ -410,8 +426,7 @@ func (r *RouteTable) UnBind(svrAddr string, clusterName string) error {
 }
 
 func (r *RouteTable) doUnBind(svr *Server, cluster *Cluster, withLock bool) {
-	binded, ok := r.mapping[svr.Addr]
-	if ok {
+	if binded, ok := r.mapping[svr.Addr]; ok {
 		delete(binded, cluster.Name)
 		log.Infof("Bind <%s,%s> stored removed.", svr.Addr, cluster.Name)
 		if withLock {
@@ -463,15 +478,16 @@ func (r *RouteTable) Select(req *fasthttp.Request) []*RouteResult {
 func (r *RouteTable) selectAggregation(req *fasthttp.Request) (matches bool, results []*RouteResult) {
 	matches = false
 
-	for url, agn := range r.aggregations {
-		if url == string(req.URI().Path()) {
+	for _, agn := range r.aggregations {
+		if agn.matches(req) {
 			matches = true
 			results = make([]*RouteResult, len(agn.Nodes))
 
 			for index, node := range agn.Nodes {
 				results[index] = &RouteResult{
-					Node: node,
-					Svr:  r.selectServer(req, r.clusters[node.ClusterName]),
+					Aggregation: agn,
+					Node:        node,
+					Svr:         r.selectServer(req, r.clusters[node.ClusterName]),
 				}
 			}
 		}

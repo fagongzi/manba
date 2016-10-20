@@ -7,14 +7,13 @@ Gateway is a API gateway based on http. It works at 7 layer.
 * Circuit Breaker
 * Loadbalance
 * Routing based on URL
-* API aggregation
+* API aggregation(support url rewrite)
 * Backend Server heath check
 * Use [fasthttp](https://github.com/valyala/fasthttp)
 * Admin WEBUI
 
 # Install
-----
-Gateway dependency[etcd](https://github.com/coreos/etcd)
+Gateway dependency [etcd](https://github.com/coreos/etcd)
 
 ## Compile from source
 ```
@@ -42,16 +41,21 @@ The Etcd store gateway's mete data.
 ## Concept of gateway
 
 * Server
-Server is a backend server which provide restfule json service.The server is the basic unit at gateway.
+
+  Server is a backend server which provide restfule json service.The server is the basic unit at gateway.
 
 * Cluster
-Cluster is a set of servers which provide the same service. The Loadbalancer select a usable server to use.
+
+  Cluster is a set of servers which provide the same service. The Loadbalancer select a usable server to use.
 
 * Aggregation
-Aggregation is a set of URLs that correspond to some clusters. A http request arrive proxy, the proxy dispatcher the request to specify clusters, then wait responses and merge to response client.
+
+  Aggregation is a set of URLs that correspond to some clusters. A http request arrive proxy, the proxy dispatcher the request to specify clusters, then wait responses and merge to response client.
+Notes, if your set a rewrite rule, it must container full request url, because proxy need set path value to query string or set query string to path value, to meet the demand that backend server url design. 
 
 * Routing
-Routing is a approach to control http traffic to clusters. You can use cookie, query string, request header infomation in a expression for control.
+
+  Routing is a approach to control http traffic to clusters. You can use cookie, query string, request header infomation in a expression for control.
 
 # What gateway can help you
 ## Redefine your API URL

@@ -2,7 +2,7 @@
     "addr": ":80",
     "mgrAddr": ":8081",
     "etcdAddrs": [
-        "http://192.168.159.130:2379"
+        "http://192.168.70.13:2379"
     ],
     "etcdPrefix": "/gateway",
     "filers": [
