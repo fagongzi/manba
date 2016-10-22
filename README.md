@@ -23,6 +23,9 @@ go build cmd/proxy/proxy.go
 go build cmd/admin/admin.go
 ```
 
+## Download binary file
+[linux-64bit](http://7xtbpp.com1.z0.glb.clouddn.com/gateway-linux64.tar.gz)
+
 # Architecture
 ![](./images/arch.png)
 
