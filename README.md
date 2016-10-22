@@ -76,21 +76,20 @@ Gateway's **Routing** fucntion can help your AB Test.
 ## Admin UI
 ![](./images/dashboard.png)
 
-## proxy管理
+## Proxy UI
 ![](./images/proxy.png)
 
-## cluster管理
+## Cluster UI
 ![](./images/cluster.png)
 
-## server管理
+## Server UI
 ![](./images/server.png)
 
-## 聚合管理
+## Aggregation UI
 ![](./images/aggregations.png)
 
-## routing管理
+## Routing UI
 ![](./images/routing.png)
 
-## 监控
+## Monitor UI
 ![](./images/metries.png)
-
