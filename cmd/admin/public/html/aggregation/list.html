@@ -23,7 +23,7 @@
 
         <tbody>
             <tr ng-repeat="agn in aggregations | filter: q">
-                <td>{{agn.url}}</td>
+                <td><a href="#/aggregations/{{agn.encodeURL}}">{{agn.url}}</a></td>
                 <td>
                     <table class="table table-bordered ">
                         <thead>

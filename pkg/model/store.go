@@ -60,6 +60,7 @@ type Store interface {
 	UpdateAggregation(agn *Aggregation) error
 	DeleteAggregation(url string) error
 	GetAggregations() ([]*Aggregation, error)
+	GetAggregation(url string) (*Aggregation, error)
 
 	SaveRouting(routing *Routing) error
 	GetRoutings() ([]*Routing, error)

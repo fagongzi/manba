@@ -1,16 +1,16 @@
 <div class="panel panel-default">
-    <div class="panel-heading">Create a Aggregation Url</div>
+    <div class="panel-heading">Update a Aggregation Url</div>
     <div class="panel-body">
         <div class="form-group">
             <label for="url">Url</label>
-            <input type="text" class="form-control" ng-model="newUrl" id="url">
+            <input type="text" class="form-control" ng-model="ang.url" id="url">
         </div>
     </div>
 </div>
 
 
 <div class="panel panel-default">
-    <div class="panel-heading">Create a Aggregation Nodes</div>
+    <div class="panel-heading">Update a Aggregation Nodes</div>
     <div class="panel-body">
         <form class="form-inline">
             <div class="form-group">
@@ -49,11 +49,11 @@
     </thead>
 
     <tbody>
-        <tr ng-repeat="n in newNodes">
+        <tr ng-repeat="n in ang.nodes">
             <td><a href="#/clusters/{{n.clusterName}}">{{n.clusterName}}</a></td>
-            <td>{{n.attrName}}</td>
-            <td>{{n.url}}</td>
-            <td>{{n.rewrite}}</td>
+            <td><input type="text" ng-model="n.attrName"/></td>
+            <td><input type="text" ng-model="n.url"/></td>
+            <td><input type="text" ng-model="n.rewrite"/></td>
             <td>
                 <button type="button" class="btn btn-default" ng-click="delete(n)">Delete</button>
             </td>
@@ -61,4 +61,4 @@
     </tbody>
 </table>
 
-<button type="button" class="btn btn-default" ng-click="add()">Submit</button>
+<button type="button" class="btn btn-default" ng-click="update()">Submit</button>

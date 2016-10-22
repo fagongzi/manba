@@ -93,6 +93,18 @@ func (e EtcdStore) GetAggregations() ([]*Aggregation, error) {
 	return angs, nil
 }
 
+// GetAggregation return aggregation by url from store
+func (e EtcdStore) GetAggregation(aggregationURL string) (*Aggregation, error) {
+	key := fmt.Sprintf("%s/%s", e.aggregationsDir, url.QueryEscape(aggregationURL))
+	rsp, err := e.cli.Get(key, false, false)
+
+	if nil != err {
+		return nil, err
+	}
+
+	return UnMarshalAggregation([]byte(rsp.Node.Value)), nil
+}
+
 // SaveServer save a server to store
 func (e EtcdStore) SaveServer(svr *Server) error {
 	key := fmt.Sprintf("%s/%s", e.serversDir, svr.Addr)
