@@ -672,7 +672,7 @@ func (r *RouteTable) loadBinds() {
 	for _, b := range binds {
 		err := r.Bind(b.ServerAddr, b.ClusterName)
 		if nil != err {
-			log.PanicError(err, "Bind <%s, %s> add fail.", b.ServerAddr, b.ClusterName)
+			log.WarnErrorf(err, "Bind <%s, %s> add fail.", b.ServerAddr, b.ClusterName)
 		}
 	}
 }

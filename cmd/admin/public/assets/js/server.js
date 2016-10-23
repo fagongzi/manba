@@ -1,22 +1,23 @@
 function routeServer($routeProvider) {
     $routeProvider.when("/servers", {
-        "templateUrl" : "html/server/list.html",
-        "controller" : ServerIndexController
+        "templateUrl": "html/server/list.html",
+        "controller": ServerIndexController
     }).when("/servers/:name", {
-        "templateUrl" : "html/server/detail.html",
-        "controller" : ServerDetailController
+        "templateUrl": "html/server/detail.html",
+        "controller": ServerDetailController
     }).when("/new/server", {
-        "templateUrl" : "html/server/new.html",
-        "controller" : ServerCreateController
+        "templateUrl": "html/server/new.html",
+        "controller": ServerCreateController
     });
 }
 
 function ServerCreateController($scope, $routeParams, $http, $location, $route) {
-    $scope.add = function() {
+    $scope.add = function () {
         var c = {
             "schema": "http",
             "addr": $scope.newServerAddr,
             "checkPath": $scope.newServerCheckPath,
+            "checkResponsedBody": $scope.newServerCheckResponsedBody,
             "checkTimeout": $scope.newServerCheckTimeout,
             "checkDuration": $scope.newServerCheckDuration,
             "maxQPS": $scope.newServerMaxQPS,
@@ -25,7 +26,7 @@ function ServerCreateController($scope, $routeParams, $http, $location, $route) 
             "closeCount": $scope.newServerToCloseCount,
         };
 
-        $http.post('api/servers', c).success(function(data){
+        $http.post('api/servers', c).success(function (data) {
             $location.path("/servers");
             $route.reload();
         });
@@ -50,76 +51,76 @@ function ServerIndexController($scope, $routeParams, $http, $location, $route) {
         }
     });
 
-    
-    $scope.create = function() {
+
+    $scope.create = function () {
         $location.path("/new/server");
         $route.reload();
     }
 
-    $scope.delete = function(addr) {
-        $http.delete('api/servers/' + addr).success(function(data){
+    $scope.delete = function (addr) {
+        $http.delete('api/servers/' + addr).success(function (data) {
             $location.path("/servers");
             $route.reload();
         });
     }
 
-    $scope.preBind = function(addr) {
+    $scope.preBind = function (addr) {
         $scope.bindServer = addr
     }
 
-    $scope.bind = function() {
+    $scope.bind = function () {
         var clusters = getChoose($scope.clusters, "name");
 
         if (clusters.length > 0) {
             b = {
-                "clusterName" : clusters[0],
-                "serverAddr" : $scope.bindServer
+                "clusterName": clusters[0],
+                "serverAddr": $scope.bindServer
             };
 
-            $http.post('api/binds', b).success(function(data){
+            $http.post('api/binds', b).success(function (data) {
                 $location.path("/servers");
                 $route.reload();
             });
         }
     }
 
-    $scope.addAnalysis = function(addr) {
+    $scope.addAnalysis = function (addr) {
         d = {
             "proxyAddr": $scope.proxyAddr,
             "serverAddr": addr,
             "secs": 1
         };
 
-        $http.post('api/analysis', d).success(function(data){
+        $http.post('api/analysis', d).success(function (data) {
             $location.path("/servers");
             $route.reload();
         });
     }
-    $scope.goAnalysis = function(addr) {
+    $scope.goAnalysis = function (addr) {
         $location.path("/analysis/" + $scope.proxyAddr + "/" + addr + "/1");
         $route.reload();
     }
 }
 
 function ServerDetailController($scope, $routeParams, $http, $location, $route) {
-    $http.get("api/servers/" +  $routeParams.name).success(function (data) {
+    $http.get("api/servers/" + $routeParams.name).success(function (data) {
         $scope.server = data.value;
     });
 
-    $scope.unbind = function(svrAddr, clusterName) {
+    $scope.unbind = function (svrAddr, clusterName) {
         b = {
-            "clusterName" : clusterName,
-            "serverAddr" : svrAddr
+            "clusterName": clusterName,
+            "serverAddr": svrAddr
         };
 
-        $http.delete('api/binds', {"data":b}).success(function(data){
+        $http.delete('api/binds', { "data": b }).success(function (data) {
             $location.path("/servers");
             $route.reload();
         });
     }
 
-    $scope.update = function() {
-        $http.put('api/servers', $scope.server).success(function(data){
+    $scope.update = function () {
+        $http.put('api/servers', $scope.server).success(function (data) {
             $location.path("/servers");
             $route.reload();
         });

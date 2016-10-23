@@ -10,6 +10,10 @@
             <input type="text" class="form-control" ng-model="newServerCheckPath" id="serverCheckPath" placeholder="e.g. /check">
         </div>
         <div class="form-group">
+            <label for="serverCheckResponsedBody">Server Check URL Responsed Body</label>
+            <input type="text" class="form-control" ng-model="newServerCheckResponsedBody" id="serverCheckResponsedBody" placeholder="if not set, only check response status is 200.">
+        </div>
+        <div class="form-group">
             <label for="serverCheckTimeout">Server Check Timeout</label>
             <input type="number" class="form-control" ng-model="newServerCheckTimeout" id="serverCheckTimeout" placeholder="unit is second"/>
         </div>

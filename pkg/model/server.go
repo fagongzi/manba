@@ -12,11 +12,6 @@ import (
 	"github.com/CodisLabs/codis/pkg/utils/log"
 )
 
-const (
-	// CheckSuccess check backend server, if response body is "OK", is heath
-	CheckSuccess = "OK"
-)
-
 // Status status
 type Status int
 
@@ -51,8 +46,10 @@ type Server struct {
 	Schema string `json:"schema,omitempty"`
 	Addr   string `json:"addr,omitempty"`
 
-	// CheckPath begin with / checkpath, expect return OK.
+	// CheckPath begin with / checkpath, expect return CheckResponsedBody.
 	CheckPath string `json:"checkPath,omitempty"`
+	// CheckResponsedBody check url responsed http body, if not set, not check body
+	CheckResponsedBody string `json:"checkResponsedBody"`
 	// CheckDuration check interval, unit second
 	CheckDuration int `json:"checkDuration,omitempty"`
 	// CheckTimeout timeout to check server
@@ -209,12 +206,16 @@ func (s *Server) check(cb func(*Server)) bool {
 		return succ
 	}
 
+	if s.CheckResponsedBody == "" {
+		return true
+	}
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if nil != err {
 		return false
 	}
 
-	succ = string(body) == CheckSuccess
+	succ = string(body) == s.CheckResponsedBody
 	return succ
 }
 
