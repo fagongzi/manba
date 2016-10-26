@@ -43,7 +43,6 @@ func InitLog(file string) {
 		if err != nil {
 			log.PanicErrorf(err, "open rolling log file failed: %s", file)
 		} else {
-			defer f.Close()
 			log.StdLog = log.New(f, "")
 		}
 	}
