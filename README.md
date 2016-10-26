@@ -29,7 +29,8 @@ go build cmd/admin/admin.go
 # Online Demo
 
 * admin
-  http://demo-admin.fagongzi.win
+ 
+  http://demo-admin.fagongzi.win admin/admin
 
 * proxy
   http://demo-proxy.fagongzi.win 
