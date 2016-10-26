@@ -33,6 +33,7 @@ go build cmd/admin/admin.go
   http://demo-admin.fagongzi.win admin/admin
 
 * proxy
+  
   http://demo-proxy.fagongzi.win 
 
 # Architecture
