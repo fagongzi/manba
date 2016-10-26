@@ -26,6 +26,14 @@ go build cmd/admin/admin.go
 ## Download binary file
 [linux-64bit](http://7xtbpp.com1.z0.glb.clouddn.com/gateway-linux64.tar.gz)
 
+# Online Demo
+
+* admin
+  http://demo-admin.fagongzi.win
+
+* proxy
+  http://demo-proxy.fagongzi.win 
+
 # Architecture
 ![](./images/arch.png)
 
