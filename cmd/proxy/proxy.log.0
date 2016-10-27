@@ -1,0 +1,22 @@
+2016/10/27 19:53:08 log.go:33: [INFO] set log level to <info>
+2016/10/27 19:53:08 proxy.go:52: [INFO] conf:<&{LogLevel:info Addr::80 MgrAddr::8081 EtcdAddrs:[http://192.168.70.13:2379] EtcdPrefix:/gateway Filers:[analysis rate-limiting circuit-breake http-access head xforward] MaxConns:512 MaxConnDuration:10 MaxIdleConnDuration:10 ReadBufferSize:4096 WriteBufferSize:4096 ReadTimeout:30 WriteTimeout:30 MaxResponseBodySize:104857600 EnablePPROF:false PPROFAddr:}>
+2016/10/27 19:53:08 ruletable.go:524: [INFO] RouteTable start watch.
+2016/10/27 19:53:08 etcd.go:420: [INFO] Etcd watch at: </gateway>
+2016/10/27 19:53:08 ruletable.go:360: [INFO] Cluster <app> added
+2016/10/27 19:53:08 ruletable.go:372: [ERROR] Bind <127.0.0.1:9091,app1> fail: Server not found
+[stack]: 
+    3   D:/lib/go-gateway-path/src/github.com/fagongzi/gateway/pkg/model/ruletable.go:372
+            github.com/fagongzi/gateway/pkg/model.(*RouteTable).Bind
+    2   D:/lib/go-gateway-path/src/github.com/fagongzi/gateway/pkg/model/ruletable.go:673
+            github.com/fagongzi/gateway/pkg/model.(*RouteTable).loadBinds
+    1   D:/lib/go-gateway-path/src/github.com/fagongzi/gateway/pkg/model/ruletable.go:614
+            github.com/fagongzi/gateway/pkg/model.(*RouteTable).Load
+    0   D:/lib/go-gateway-path/src/github.com/fagongzi/gateway/cmd/proxy/proxy.go:69
+            main.main
+        ... ...
+2016/10/27 19:53:08 ruletable.go:675: [WARN] Bind <127.0.0.1:9091, app1> add fail.
+[error]: Server not found
+2016/10/27 19:53:08 ruletable.go:179: [INFO] API </api/abc> added
+2016/10/27 19:53:08 ruletable.go:653: [WARN] Load routings from etcd fail.
+[error]: 100: Key not found (/gateway/routings) [484877]
+2016/10/27 19:53:08 manager.go:70: [INFO] Mgr listen at :8081.

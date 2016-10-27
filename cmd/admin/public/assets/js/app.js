@@ -15,7 +15,7 @@ angular.module('gateway', ["status"]).config(['$routeProvider',route]);
 function route($routeProvider) {
     routeServer($routeProvider);
     routeRouting($routeProvider);
-    routeAggregation($routeProvider);
+    routeAPI($routeProvider);
     routeCluster($routeProvider);
     routeDashboard($routeProvider);
     routeProxy($routeProvider);

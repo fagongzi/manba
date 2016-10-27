@@ -18,8 +18,8 @@ var (
 	ErrClusterExists = errors.New("Cluster already exist")
 	// ErrBindExists Bind already exist
 	ErrBindExists = errors.New("Bind already exist")
-	// ErrAggregationExists Aggregation already exist
-	ErrAggregationExists = errors.New("Aggregation already exist")
+	// ErrAPIExists API already exist
+	ErrAPIExists = errors.New("API already exist")
 	// ErrRoutingExists Routing already exist
 	ErrRoutingExists = errors.New("Routing already exist")
 	// ErrServerNotFound Server not found
@@ -28,21 +28,21 @@ var (
 	ErrClusterNotFound = errors.New("Cluster not found")
 	// ErrBindNotFound Bind not found
 	ErrBindNotFound = errors.New("Bind not found")
-	// ErrAggregationNotFound Aggregation not found
-	ErrAggregationNotFound = errors.New("Aggregation not found")
+	// ErrAPINotFound API not found
+	ErrAPINotFound = errors.New("API not found")
 	// ErrRoutingNotFound Routing not found
 	ErrRoutingNotFound = errors.New("Routing not found")
 )
 
 // RouteResult RouteResult
 type RouteResult struct {
-	Aggregation *Aggregation
-	Node        *Node
-	Svr         *Server
-	Err         error
-	Code        int
-	Res         *fasthttp.Response
-	Merge       bool
+	API   *API
+	Node  *Node
+	Svr   *Server
+	Err   error
+	Code  int
+	Res   *fasthttp.Response
+	Merge bool
 }
 
 // Release release resp
@@ -60,7 +60,7 @@ func (result *RouteResult) NeedRewrite() bool {
 // GetRealPath get real path
 func (result *RouteResult) GetRealPath(req *fasthttp.Request) string {
 	if nil != result.Node {
-		return result.Aggregation.getNodeURL(req, result.Node)
+		return result.API.getNodeURL(req, result.Node)
 	}
 
 	return ""
@@ -70,11 +70,11 @@ func (result *RouteResult) GetRealPath(req *fasthttp.Request) string {
 type RouteTable struct {
 	rwLock *sync.RWMutex
 
-	clusters     map[string]*Cluster
-	svrs         map[string]*Server
-	mapping      map[string]map[string]*Cluster
-	aggregations map[string]*Aggregation
-	routings     map[string]*Routing
+	clusters map[string]*Cluster
+	svrs     map[string]*Server
+	mapping  map[string]map[string]*Cluster
+	apis     map[string]*API
+	routings map[string]*Routing
 
 	tw             *goetty.HashedTimeWheel
 	evtChan        chan *Server
@@ -97,11 +97,11 @@ func NewRouteTable(store Store) *RouteTable {
 
 		rwLock: &sync.RWMutex{},
 
-		clusters:     make(map[string]*Cluster),
-		svrs:         make(map[string]*Server),
-		aggregations: make(map[string]*Aggregation),
-		routings:     make(map[string]*Routing),
-		mapping:      make(map[string]map[string]*Cluster), // serverAddr -> map[clusterName]*Cluster
+		clusters: make(map[string]*Cluster),
+		svrs:     make(map[string]*Server),
+		apis:     make(map[string]*API),
+		routings: make(map[string]*Routing),
+		mapping:  make(map[string]map[string]*Cluster), // serverAddr -> map[clusterName]*Cluster
 
 		evtChan:        make(chan *Server, 1024),
 		watchStopCh:    make(chan bool),
@@ -161,58 +161,58 @@ func (r *RouteTable) DeleteRouting(id string) error {
 	return nil
 }
 
-// AddNewAggregation add a new aggregation
-func (r *RouteTable) AddNewAggregation(ang *Aggregation) error {
+// AddNewAPI add a new API
+func (r *RouteTable) AddNewAPI(api *API) error {
 	r.rwLock.Lock()
 	defer r.rwLock.Unlock()
 
-	_, ok := r.aggregations[ang.URL]
+	_, ok := r.apis[api.URL]
 
 	if ok {
-		return ErrAggregationExists
+		return ErrAPIExists
 	}
 
-	ang.Pattern = regexp.MustCompile(ang.URL)
+	api.Pattern = regexp.MustCompile(api.URL)
 
-	r.aggregations[ang.URL] = ang
+	r.apis[api.URL] = api
 
-	log.Infof("Aggregation <%s> added", ang.URL)
+	log.Infof("API <%s> added", api.URL)
 
 	return nil
 }
 
-// UpdateAggregation update aggregation
-func (r *RouteTable) UpdateAggregation(ang *Aggregation) error {
+// UpdateAPI update API
+func (r *RouteTable) UpdateAPI(api *API) error {
 	r.rwLock.Lock()
 	defer r.rwLock.Unlock()
 
-	old, ok := r.aggregations[ang.URL]
+	old, ok := r.apis[api.URL]
 
 	if !ok {
-		return ErrAggregationNotFound
+		return ErrAPINotFound
 	}
 
-	old.updateFrom(ang)
+	old.updateFrom(api)
 
-	log.Infof("Aggregation <%s> updated", ang.URL)
+	log.Infof("API <%s> updated", api.URL)
 
 	return nil
 }
 
-// DeleteAggregation delete a aggregation using url
-func (r *RouteTable) DeleteAggregation(url string) error {
+// DeleteAPI delete a api using url
+func (r *RouteTable) DeleteAPI(url string) error {
 	r.rwLock.Lock()
 	defer r.rwLock.Unlock()
 
-	_, ok := r.aggregations[url]
+	_, ok := r.apis[url]
 
 	if !ok {
-		return ErrAggregationNotFound
+		return ErrAPINotFound
 	}
 
-	delete(r.aggregations, url)
+	delete(r.apis, url)
 
-	log.Infof("Aggregation <%s> deleted", url)
+	log.Infof("API <%s> deleted", url)
 
 	return nil
 }
@@ -248,7 +248,7 @@ func (r *RouteTable) DeleteServer(serverAddr string) error {
 
 	delete(r.svrs, serverAddr)
 
-	// TODO: delete aggregations
+	// TODO: delete apis
 
 	svr.stopCheck()
 	r.removeFromCheck(svr)
@@ -336,7 +336,7 @@ func (r *RouteTable) DeleteCluster(clusterName string) error {
 
 	delete(r.clusters, cluster.Name)
 
-	// TODO: Aggregation node loose cluster
+	// TODO: API node loose cluster
 
 	log.Infof("Cluster <%s> deleted", cluster.Name)
 
@@ -441,7 +441,7 @@ func (r *RouteTable) doUnBind(svr *Server, cluster *Cluster, withLock bool) {
 func (r *RouteTable) Select(req *fasthttp.Request) []*RouteResult {
 	r.rwLock.RLock()
 
-	matches, results := r.selectAggregation(req)
+	matches, results := r.selectAPI(req)
 
 	if matches {
 		r.rwLock.RUnlock()
@@ -475,19 +475,19 @@ func (r *RouteTable) Select(req *fasthttp.Request) []*RouteResult {
 	return nil
 }
 
-func (r *RouteTable) selectAggregation(req *fasthttp.Request) (matches bool, results []*RouteResult) {
+func (r *RouteTable) selectAPI(req *fasthttp.Request) (matches bool, results []*RouteResult) {
 	matches = false
 
-	for _, agn := range r.aggregations {
-		if agn.matches(req) {
+	for _, api := range r.apis {
+		if api.matches(req) {
 			matches = true
-			results = make([]*RouteResult, len(agn.Nodes))
+			results = make([]*RouteResult, len(api.Nodes))
 
-			for index, node := range agn.Nodes {
+			for index, node := range api.Nodes {
 				results[index] = &RouteResult{
-					Aggregation: agn,
-					Node:        node,
-					Svr:         r.selectServer(req, r.clusters[node.ClusterName]),
+					API:  api,
+					Node: node,
+					Svr:  r.selectServer(req, r.clusters[node.ClusterName]),
 				}
 			}
 		}
@@ -539,8 +539,8 @@ func (r *RouteTable) doEvtReceive() {
 			r.doReceiveServer(evt)
 		} else if evt.Src == EventSrcBind {
 			r.doReceiveBind(evt)
-		} else if evt.Src == EventSrcAggregation {
-			r.doReceiveAggregation(evt)
+		} else if evt.Src == EventSrcAPI {
+			r.doReceiveAPI(evt)
 		} else if evt.Src == EventSrcRouting {
 			r.doReceiveRouting(evt)
 		} else {
@@ -561,15 +561,15 @@ func (r *RouteTable) doReceiveRouting(evt *Evt) {
 	}
 }
 
-func (r *RouteTable) doReceiveAggregation(evt *Evt) {
-	ang, _ := evt.Value.(*Aggregation)
+func (r *RouteTable) doReceiveAPI(evt *Evt) {
+	ang, _ := evt.Value.(*API)
 
 	if evt.Type == EventTypeNew {
-		r.AddNewAggregation(ang)
+		r.AddNewAPI(ang)
 	} else if evt.Type == EventTypeDelete {
-		r.DeleteAggregation(evt.Key)
+		r.DeleteAPI(evt.Key)
 	} else if evt.Type == EventTypeUpdate {
-		r.UpdateAggregation(ang)
+		r.UpdateAPI(ang)
 	}
 }
 
@@ -612,7 +612,7 @@ func (r *RouteTable) Load() {
 	r.loadClusters()
 	r.loadServers()
 	r.loadBinds()
-	r.loadAggregations()
+	r.loadAPIs()
 	r.loadRoutings()
 }
 
@@ -677,17 +677,17 @@ func (r *RouteTable) loadBinds() {
 	}
 }
 
-func (r *RouteTable) loadAggregations() {
-	angs, err := r.store.GetAggregations()
+func (r *RouteTable) loadAPIs() {
+	apis, err := r.store.GetAPIs()
 	if nil != err {
-		log.WarnErrorf(err, "Load aggregations from etcd fail.")
+		log.WarnErrorf(err, "Load apis from etcd fail.")
 		return
 	}
 
-	for _, ang := range angs {
-		err := r.AddNewAggregation(ang)
+	for _, api := range apis {
+		err := r.AddNewAPI(api)
 		if nil != err {
-			log.PanicError(err, "Aggregation <%s> add fail.", ang.URL)
+			log.PanicError(err, "API <%s> add fail.", api.URL)
 		}
 	}
 }

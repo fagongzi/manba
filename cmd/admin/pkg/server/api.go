@@ -21,11 +21,11 @@ func (server *AdminServer) initAPIRoute() {
 	server.e.POST("/api/binds", server.newBind())
 	server.e.DELETE("/api/binds", server.unBind())
 
-	server.e.GET("/api/aggregations", server.getAggregations())
-	server.e.GET("/api/aggregation", server.getAggregation())
-	server.e.POST("/api/aggregations", server.newAggregation())
-	server.e.PUT("/api/aggregations", server.updateAggregation())
-	server.e.DELETE("/api/aggregations", server.deleteAggregation())
+	server.e.GET("/api/apis", server.getAPIs())
+	server.e.GET("/api/apis/:url", server.getAPI())
+	server.e.POST("/api/apis", server.newAPI())
+	server.e.PUT("/api/apis", server.updateAPI())
+	server.e.DELETE("/api/apis/:url", server.deleteAPI())
 
 	server.e.GET("/api/routings", server.getRoutings())
 	server.e.POST("/api/routings", server.newRouting())

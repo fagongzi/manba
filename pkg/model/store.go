@@ -22,8 +22,8 @@ const (
 	EventSrcServer = EvtSrc(1)
 	// EventSrcBind bind event
 	EventSrcBind = EvtSrc(2)
-	// EventSrcAggregation aggregation event
-	EventSrcAggregation = EvtSrc(3)
+	// EventSrcAPI api event
+	EventSrcAPI = EvtSrc(3)
 	// EventSrcRouting routing event
 	EventSrcRouting = EvtSrc(4)
 )
@@ -56,11 +56,11 @@ type Store interface {
 	GetServer(serverAddr string, withBinded bool) (*Server, error)
 	GetBindedServers(clusterName string) ([]string, error)
 
-	SaveAggregation(agn *Aggregation) error
-	UpdateAggregation(agn *Aggregation) error
-	DeleteAggregation(url string) error
-	GetAggregations() ([]*Aggregation, error)
-	GetAggregation(url string) (*Aggregation, error)
+	SaveAPI(api *API) error
+	UpdateAPI(api *API) error
+	DeleteAPI(url string) error
+	GetAPIs() ([]*API, error)
+	GetAPI(url string) (*API, error)
 
 	SaveRouting(routing *Routing) error
 	GetRoutings() ([]*Routing, error)

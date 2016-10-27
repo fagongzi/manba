@@ -10,13 +10,13 @@ import (
 )
 
 const (
-	etcdAddr   = "http://192.168.159.130:2379"
+	etcdAddr   = "http://192.168.70.13:2379"
 	etcdPrefix = "/gateway2"
 )
 
 var (
 	serverAddr    = "127.0.0.1:12345"
-	angURL        = "/api/test"
+	apiURL        = "/api/test"
 	checkDuration = 3
 	checkTimeout  = 2
 	clusterName   = "app"
@@ -174,30 +174,30 @@ func TestEtcdWatchNewBind(t *testing.T) {
 	t.Errorf("expect:<1>, acture:<%d>. %+v", len(rt.mapping), rt.mapping)
 }
 
-func TestEtcdWatchNewAggregation(t *testing.T) {
+func TestEtcdWatchNewAPI(t *testing.T) {
 	n := &Node{
 		AttrName:    "test",
 		URL:         "/api/node/test",
 		ClusterName: clusterName,
 	}
 
-	err := rt.store.SaveAggregation(&Aggregation{
-		URL:   angURL,
+	err := rt.store.SaveAPI(&API{
+		URL:   apiURL,
 		Nodes: []*Node{n},
 	})
 
 	if nil != err {
-		t.Error("add aggregation err.")
+		t.Error("add api err.")
 		return
 	}
 
 	waitNotify()
 
-	if len(rt.aggregations) == 1 {
+	if len(rt.apis) == 1 {
 		return
 	}
 
-	t.Errorf("expect:<1>, acture:<%d>", len(rt.aggregations))
+	t.Errorf("expect:<1>, acture:<%d>", len(rt.apis))
 }
 
 func TestEtcdWatchUpdateServer(t *testing.T) {
@@ -279,7 +279,7 @@ func TestEtcdWatchUpdateCluster(t *testing.T) {
 	}
 }
 
-func TestEtcdWatchUpdateAggregation(t *testing.T) {
+func TestEtcdWatchUpdateAPI(t *testing.T) {
 	n := &Node{
 		AttrName:    "test",
 		URL:         "/api/node/test",
@@ -292,24 +292,24 @@ func TestEtcdWatchUpdateAggregation(t *testing.T) {
 		ClusterName: clusterName,
 	}
 
-	ang := &Aggregation{
-		URL:   angURL,
+	api := &API{
+		URL:   apiURL,
 		Nodes: []*Node{n, n2},
 	}
 
-	err := rt.store.UpdateAggregation(ang)
+	err := rt.store.UpdateAPI(api)
 
 	if nil != err {
-		t.Error("update aggregation err.")
+		t.Error("update api err.")
 		return
 	}
 
 	waitNotify()
 
-	existAng, _ := rt.aggregations[ang.URL]
+	existAPI, _ := rt.apis[api.URL]
 
-	if len(existAng.Nodes) != len(ang.Nodes) {
-		t.Errorf("Nodes expect:<%s>, acture:<%s>. ", len(existAng.Nodes), len(ang.Nodes))
+	if len(existAPI.Nodes) != len(api.Nodes) {
+		t.Errorf("Nodes expect:<%s>, acture:<%s>. ", len(existAPI.Nodes), len(api.Nodes))
 		return
 	}
 }
@@ -358,18 +358,18 @@ func TestEtcdWatchDeleteServer(t *testing.T) {
 	}
 }
 
-func TestEtcdWatchDeleteAggregation(t *testing.T) {
-	err := rt.store.DeleteAggregation(angURL)
+func TestEtcdWatchDeleteAPI(t *testing.T) {
+	err := rt.store.DeleteAPI(apiURL)
 
 	if nil != err {
-		t.Error("delete aggregation err.")
+		t.Error("delete api err.")
 		return
 	}
 
 	waitNotify()
 
-	if len(rt.aggregations) != 0 {
-		t.Errorf("aggregations expect:<0>, acture:<%d>", len(rt.aggregations))
+	if len(rt.apis) != 0 {
+		t.Errorf("apis expect:<0>, acture:<%d>", len(rt.apis))
 		return
 	}
 }

@@ -13,16 +13,16 @@ import (
 
 // EtcdStore etcd store impl
 type EtcdStore struct {
-	prefix                string
-	clustersDir           string
-	serversDir            string
-	bindsDir              string
-	aggregationsDir       string
-	proxiesDir            string
-	routingsDir           string
-	deleteServersDir      string
-	deleteClustersDir     string
-	deleteAggregationsDir string
+	prefix            string
+	clustersDir       string
+	serversDir        string
+	bindsDir          string
+	apisDir           string
+	proxiesDir        string
+	routingsDir       string
+	deleteServersDir  string
+	deleteClustersDir string
+	deleteAPIsDir     string
 
 	cli *etcd.Client
 
@@ -35,16 +35,16 @@ type EtcdStore struct {
 // NewEtcdStore create a etcd store
 func NewEtcdStore(etcdAddrs []string, prefix string) (Store, error) {
 	store := EtcdStore{
-		prefix:                prefix,
-		clustersDir:           fmt.Sprintf("%s/clusters", prefix),
-		serversDir:            fmt.Sprintf("%s/servers", prefix),
-		bindsDir:              fmt.Sprintf("%s/binds", prefix),
-		aggregationsDir:       fmt.Sprintf("%s/aggregations", prefix),
-		proxiesDir:            fmt.Sprintf("%s/proxy", prefix),
-		routingsDir:           fmt.Sprintf("%s/routings", prefix),
-		deleteServersDir:      fmt.Sprintf("%s/delete/servers", prefix),
-		deleteClustersDir:     fmt.Sprintf("%s/delete/clusters", prefix),
-		deleteAggregationsDir: fmt.Sprintf("%s/delete/aggregations", prefix),
+		prefix:            prefix,
+		clustersDir:       fmt.Sprintf("%s/clusters", prefix),
+		serversDir:        fmt.Sprintf("%s/servers", prefix),
+		bindsDir:          fmt.Sprintf("%s/binds", prefix),
+		apisDir:           fmt.Sprintf("%s/apis", prefix),
+		proxiesDir:        fmt.Sprintf("%s/proxy", prefix),
+		routingsDir:       fmt.Sprintf("%s/routings", prefix),
+		deleteServersDir:  fmt.Sprintf("%s/delete/servers", prefix),
+		deleteClustersDir: fmt.Sprintf("%s/delete/clusters", prefix),
+		deleteAPIsDir:     fmt.Sprintf("%s/delete/apis", prefix),
 
 		cli:                etcd.NewClient(etcdAddrs),
 		watchMethodMapping: make(map[EvtSrc]func(EvtType, *etcd.Response) *Evt),
@@ -54,55 +54,55 @@ func NewEtcdStore(etcdAddrs []string, prefix string) (Store, error) {
 	return store, nil
 }
 
-// SaveAggregation save a aggregation in store
-func (e EtcdStore) SaveAggregation(agn *Aggregation) error {
-	key := fmt.Sprintf("%s/%s", e.aggregationsDir, url.QueryEscape(agn.URL))
-	_, err := e.cli.Create(key, string(agn.Marshal()), 0)
+// SaveAPI save a api in store
+func (e EtcdStore) SaveAPI(api *API) error {
+	key := fmt.Sprintf("%s/%s", e.apisDir, url.QueryEscape(api.URL))
+	_, err := e.cli.Create(key, string(api.Marshal()), 0)
 
 	return err
 }
 
-// UpdateAggregation update a aggregation in store
-func (e EtcdStore) UpdateAggregation(agn *Aggregation) error {
-	key := fmt.Sprintf("%s/%s", e.aggregationsDir, url.QueryEscape(agn.URL))
-	_, err := e.cli.Set(key, string(agn.Marshal()), 0)
+// UpdateAPI update a api in store
+func (e EtcdStore) UpdateAPI(api *API) error {
+	key := fmt.Sprintf("%s/%s", e.apisDir, url.QueryEscape(api.URL))
+	_, err := e.cli.Set(key, string(api.Marshal()), 0)
 
 	return err
 }
 
-// DeleteAggregation delete a aggregation from store
-func (e EtcdStore) DeleteAggregation(aggregationURL string) error {
-	return e.deleteKey(url.QueryEscape(aggregationURL), e.aggregationsDir, e.deleteAggregationsDir)
+// DeleteAPI delete a api from store
+func (e EtcdStore) DeleteAPI(apiURL string) error {
+	return e.deleteKey(url.QueryEscape(apiURL), e.apisDir, e.deleteAPIsDir)
 }
 
-// GetAggregations return aggregations from store
-func (e EtcdStore) GetAggregations() ([]*Aggregation, error) {
-	rsp, err := e.cli.Get(e.aggregationsDir, true, false)
+// GetAPIs return api list from store
+func (e EtcdStore) GetAPIs() ([]*API, error) {
+	rsp, err := e.cli.Get(e.apisDir, true, false)
 
 	if nil != err {
 		return nil, err
 	}
 
 	l := rsp.Node.Nodes.Len()
-	angs := make([]*Aggregation, l)
+	apis := make([]*API, l)
 
 	for i := 0; i < l; i++ {
-		angs[i] = UnMarshalAggregation([]byte(rsp.Node.Nodes[i].Value))
+		apis[i] = UnMarshalAPI([]byte(rsp.Node.Nodes[i].Value))
 	}
 
-	return angs, nil
+	return apis, nil
 }
 
-// GetAggregation return aggregation by url from store
-func (e EtcdStore) GetAggregation(aggregationURL string) (*Aggregation, error) {
-	key := fmt.Sprintf("%s/%s", e.aggregationsDir, url.QueryEscape(aggregationURL))
+// GetAPI return api by url from store
+func (e EtcdStore) GetAPI(apiURL string) (*API, error) {
+	key := fmt.Sprintf("%s/%s", e.apisDir, url.QueryEscape(apiURL))
 	rsp, err := e.cli.Get(key, false, false)
 
 	if nil != err {
 		return nil, err
 	}
 
-	return UnMarshalAggregation([]byte(rsp.Node.Value)), nil
+	return UnMarshalAPI([]byte(rsp.Node.Value)), nil
 }
 
 // SaveServer save a server to store
@@ -364,7 +364,7 @@ func (e EtcdStore) GC() error {
 		return err
 	}
 
-	err = e.gcDir(e.deleteAggregationsDir, e.DeleteAggregation)
+	err = e.gcDir(e.deleteAPIsDir, e.DeleteAPI)
 
 	if nil != err {
 		return err
@@ -459,8 +459,8 @@ func (e EtcdStore) doWatch() {
 			evtSrc = EventSrcServer
 		} else if strings.HasPrefix(key, e.bindsDir) {
 			evtSrc = EventSrcBind
-		} else if strings.HasPrefix(key, e.aggregationsDir) {
-			evtSrc = EventSrcAggregation
+		} else if strings.HasPrefix(key, e.apisDir) {
+			evtSrc = EventSrcAPI
 		} else if strings.HasPrefix(key, e.routingsDir) {
 			evtSrc = EventSrcRouting
 		} else {
@@ -525,12 +525,12 @@ func (e EtcdStore) doWatchWithBind(evtType EvtType, rsp *etcd.Response) *Evt {
 	}
 }
 
-func (e EtcdStore) doWatchWithAggregation(evtType EvtType, rsp *etcd.Response) *Evt {
-	ang := UnMarshalAggregation([]byte(rsp.Node.Value))
-	value, _ := url.QueryUnescape(strings.Replace(rsp.Node.Key, fmt.Sprintf("%s/", e.aggregationsDir), "", 1))
+func (e EtcdStore) doWatchWithAPI(evtType EvtType, rsp *etcd.Response) *Evt {
+	ang := UnMarshalAPI([]byte(rsp.Node.Value))
+	value, _ := url.QueryUnescape(strings.Replace(rsp.Node.Key, fmt.Sprintf("%s/", e.apisDir), "", 1))
 
 	return &Evt{
-		Src:   EventSrcAggregation,
+		Src:   EventSrcAPI,
 		Type:  evtType,
 		Key:   value,
 		Value: ang,
@@ -552,6 +552,6 @@ func (e EtcdStore) init() {
 	e.watchMethodMapping[EventSrcBind] = e.doWatchWithBind
 	e.watchMethodMapping[EventSrcServer] = e.doWatchWithServer
 	e.watchMethodMapping[EventSrcCluster] = e.doWatchWithCluster
-	e.watchMethodMapping[EventSrcAggregation] = e.doWatchWithAggregation
+	e.watchMethodMapping[EventSrcAPI] = e.doWatchWithAPI
 	e.watchMethodMapping[EventSrcRouting] = e.doWatchWithRouting
 }
