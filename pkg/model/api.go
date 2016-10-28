@@ -19,6 +19,7 @@ type Node struct {
 
 // API a api define
 type API struct {
+	Name    string         `json:"name, omitempty"`
 	URL     string         `json:"url"`
 	Method  string         `json:"method"`
 	Alias   string         `json:"alias, omitempty"`

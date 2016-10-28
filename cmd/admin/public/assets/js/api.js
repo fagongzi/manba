@@ -76,6 +76,7 @@ function APICreateController($scope, $routeParams, $http, $location, $route) {
 
     $scope.newUrl = "";
     $scope.newDesc = "";
+    $scope.newName = "";
     $scope.newNodes = [];
 
 
@@ -111,6 +112,7 @@ function APICreateController($scope, $routeParams, $http, $location, $route) {
 
     $scope.add = function () {
         d = {
+            "name": $scope.newName,
             "url": $scope.newUrl,
             "method": $scope.newMethod,
             "desc": $scope.newDesc,

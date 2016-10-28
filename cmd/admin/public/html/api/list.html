@@ -15,6 +15,7 @@
 	<table class="table table-bordered table-striped">
 		<thead>
 			<tr>
+				<th>Name</th>
 				<th>Url</th>
 				<th>Method</th>
 				<th>Desc</th>
@@ -26,7 +27,10 @@
 		<tbody>
 			<tr ng-repeat="api in apis | filter: q">
 				<td>
-					<a href="#/apis/{{api.encodeURL}}/{{api.method}}">{{api.url}}</a>
+					<a href="#/apis/{{api.encodeURL}}/{{api.method}}">{{api.name}}</a>
+				</td>
+				<td>
+					<span>{{api.url}}</span>
 				</td>
 				<td>
 					{{api.method}}
