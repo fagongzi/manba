@@ -33,9 +33,10 @@ func (server *AdminServer) getAPI() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		u, _ := base64.StdEncoding.DecodeString(c.Param("url"))
+		u, _ := base64.RawURLEncoding.DecodeString(c.Param("url"))
+		method := c.QueryParam("method")
 
-		api, err := server.store.GetAPI(string(u))
+		api, err := server.store.GetAPI(string(u), method)
 		if err != nil {
 			errstr = err.Error()
 			code = CodeError
@@ -104,8 +105,9 @@ func (server *AdminServer) deleteAPI() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		url, _ := base64.StdEncoding.DecodeString(c.Param("url"))
-		err := server.store.DeleteAPI(string(url))
+		url, _ := base64.RawURLEncoding.DecodeString(c.Param("url"))
+		method := c.QueryParam("method")
+		err := server.store.DeleteAPI(string(url), method)
 
 		if nil != err {
 			errstr = err.Error()

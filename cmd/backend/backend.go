@@ -64,6 +64,6 @@ func userBase() echo.HandlerFunc {
 
 func userAccount() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return c.JSON(http.StatusOK, userAccount)
+		return c.JSON(http.StatusOK, account)
 	}
 }

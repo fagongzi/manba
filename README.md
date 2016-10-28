@@ -26,10 +26,12 @@ go build cmd/admin/admin.go
 ## Download binary file
 [linux-64bit](http://7xtbpp.com1.z0.glb.clouddn.com/gateway-linux64.tar.gz)
 
+You can read [this](./docs/build.md) for more infomation about build and run gateway.
+
 # Online Demo
 
 * admin
- 
+
   http://demo-admin.fagongzi.win admin/admin
 
 * proxy
@@ -55,16 +57,15 @@ The Etcd store gateway's mete data.
 
 * Server
 
-  Server is a backend server which provide restfule json service.The server is the basic unit at gateway.
+  Server is a backend server which provide restfule json service.The server is the basic unit at gateway. You can read [this](./docs/server.md) for more infomation.
 
 * Cluster
 
-  Cluster is a set of servers which provide the same service. The Loadbalancer select a usable server to use.
+  Cluster is a set of servers which provide the same service. The Loadbalancer select a usable server to use. You can read [this](./docs/cluster.md) for more infomation.
 
-* Aggregation
+* API
 
-  Aggregation is a set of URLs that correspond to some clusters. A http request arrive proxy, the proxy dispatcher the request to specify clusters, then wait responses and merge to response client.
-Notes, if your set a rewrite rule, it must container full request url, because proxy need set path value to query string or set query string to path value, to meet the demand that backend server url design. 
+  API is the core concept in gateway.  You can define a API with a URL pattern, http method, and at least one dispatch node. You can read [this](./docs/api.md) for more infomation.
 
 * Routing
 
@@ -95,7 +96,7 @@ Gateway's **Routing** fucntion can help your AB Test.
 ## Server UI
 ![](./images/server.png)
 
-## Aggregation UI
+## API UI
 ![](./images/aggregations.png)
 
 ## Routing UI

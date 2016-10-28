@@ -5,13 +5,14 @@ import (
 	"io"
 	"regexp"
 
+	"strings"
+
 	"github.com/valyala/fasthttp"
 )
 
 // Node api dispatch node
 type Node struct {
 	ClusterName string `json:"clusterName, omitempty"`
-	URL         string `json:"url, omitempty"`
 	Rewrite     string `json:"rewrite, omitempty"`
 	AttrName    string `json:"attrName, omitempty"`
 }
@@ -19,7 +20,10 @@ type Node struct {
 // API a api define
 type API struct {
 	URL     string         `json:"url"`
+	Method  string         `json:"method"`
+	Alias   string         `json:"alias, omitempty"`
 	Nodes   []*Node        `json:"nodes"`
+	Desc    string         `json:"desc, omitempty"`
 	Pattern *regexp.Regexp `json:"-"`
 }
 
@@ -56,14 +60,14 @@ func (a *API) Marshal() []byte {
 
 func (a *API) getNodeURL(req *fasthttp.Request, node *Node) string {
 	if node.Rewrite == "" {
-		return node.URL
+		return ""
 	}
 
 	return a.Pattern.ReplaceAllString(string(req.URI().RequestURI()), node.Rewrite)
 }
 
 func (a *API) matches(req *fasthttp.Request) bool {
-	return a.Pattern.Match(req.URI().RequestURI())
+	return (a.Method == "*" || strings.ToUpper(string(req.Header.Method())) == a.Method) && a.Pattern.Match(req.URI().RequestURI())
 }
 
 func (a *API) updateFrom(api *API) {

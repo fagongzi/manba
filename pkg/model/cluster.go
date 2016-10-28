@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"encoding/json"
 	"io"
-	"regexp"
 	"sync"
 
 	"github.com/CodisLabs/codis/pkg/utils/log"
@@ -16,11 +15,9 @@ import (
 // Cluster cluster
 type Cluster struct {
 	Name        string   `json:"name,omitempty"`
-	Pattern     string   `json:"pattern,omitempty"`
 	LbName      string   `json:"lbName,omitempty"`
 	BindServers []string `json:"bindServers,omitempty"`
 
-	regexp *regexp.Regexp
 	svrs   *list.List
 	rwLock *sync.RWMutex
 	lb     lb.LoadBalance
@@ -35,7 +32,7 @@ func UnMarshalCluster(data []byte) *Cluster {
 		return v
 	}
 
-	c, _ := NewCluster(v.Name, v.Pattern, v.LbName)
+	c, _ := NewCluster(v.Name, v.LbName)
 
 	return c
 }
@@ -55,24 +52,16 @@ func UnMarshalClusterFromReader(r io.Reader) (*Cluster, error) {
 }
 
 // NewCluster create a cluster
-func NewCluster(name string, pattern string, lbName string) (*Cluster, error) {
+func NewCluster(name string, lbName string) (*Cluster, error) {
 	c := &Cluster{
-		Name:    name,
-		Pattern: pattern,
-		LbName:  lbName,
+		Name:   name,
+		LbName: lbName,
 	}
 
 	return c, c.init()
 }
 
 func (c *Cluster) init() error {
-	reg, err := regexp.Compile(c.Pattern)
-
-	if nil != err {
-		return err
-	}
-
-	c.regexp = reg
 	c.svrs = list.New()
 	c.lb = lb.NewLoadBalance(c.LbName)
 	c.rwLock = &sync.RWMutex{}
@@ -86,10 +75,7 @@ func (c *Cluster) updateFrom(cluster *Cluster) {
 		defer c.rwLock.Unlock()
 	}
 
-	c.Pattern = cluster.Pattern
 	c.LbName = cluster.LbName
-
-	c.regexp, _ = regexp.Compile(c.Pattern)
 	c.lb = lb.NewLoadBalance(c.LbName)
 
 	log.Infof("Cluster <%s> updated, %+v", c.Name, c)
@@ -151,11 +137,6 @@ func (c *Cluster) Select(req *fasthttp.Request) string {
 	s, _ := e.Value.(string)
 
 	return s
-}
-
-// Matches return true if req matches
-func (c *Cluster) Matches(req *fasthttp.Request) bool {
-	return c.regexp.MatchString(string(req.URI().Path()))
 }
 
 // Marshal marshal

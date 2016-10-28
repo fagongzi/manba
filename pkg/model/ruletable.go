@@ -57,8 +57,8 @@ func (result *RouteResult) NeedRewrite() bool {
 	return result.Node != nil && result.Node.Rewrite != ""
 }
 
-// GetRealPath get real path
-func (result *RouteResult) GetRealPath(req *fasthttp.Request) string {
+// GetRewritePath get rewrite path
+func (result *RouteResult) GetRewritePath(req *fasthttp.Request) string {
 	if nil != result.Node {
 		return result.API.getNodeURL(req, result.Node)
 	}
@@ -174,9 +174,9 @@ func (r *RouteTable) AddNewAPI(api *API) error {
 
 	api.Pattern = regexp.MustCompile(api.URL)
 
-	r.apis[api.URL] = api
+	r.apis[getAPIKey(api.URL, api.Method)] = api
 
-	log.Infof("API <%s> added", api.URL)
+	log.Infof("API <%s-%s> added", api.Method, api.URL)
 
 	return nil
 }
@@ -186,7 +186,7 @@ func (r *RouteTable) UpdateAPI(api *API) error {
 	r.rwLock.Lock()
 	defer r.rwLock.Unlock()
 
-	old, ok := r.apis[api.URL]
+	old, ok := r.apis[getAPIKey(api.URL, api.Method)]
 
 	if !ok {
 		return ErrAPINotFound
@@ -194,25 +194,25 @@ func (r *RouteTable) UpdateAPI(api *API) error {
 
 	old.updateFrom(api)
 
-	log.Infof("API <%s> updated", api.URL)
+	log.Infof("API <%s-%s> updated", api.Method, api.URL)
 
 	return nil
 }
 
 // DeleteAPI delete a api using url
-func (r *RouteTable) DeleteAPI(url string) error {
+func (r *RouteTable) DeleteAPI(url, method string) error {
 	r.rwLock.Lock()
 	defer r.rwLock.Unlock()
 
-	_, ok := r.apis[url]
+	_, ok := r.apis[getAPIKey(url, method)]
 
 	if !ok {
 		return ErrAPINotFound
 	}
 
-	delete(r.apis, url)
+	delete(r.apis, getAPIKey(url, method))
 
-	log.Infof("API <%s> deleted", url)
+	log.Infof("API <%s-%s> deleted", method, url)
 
 	return nil
 }
@@ -441,14 +441,28 @@ func (r *RouteTable) doUnBind(svr *Server, cluster *Cluster, withLock bool) {
 func (r *RouteTable) Select(req *fasthttp.Request) []*RouteResult {
 	r.rwLock.RLock()
 
-	matches, results := r.selectAPI(req)
+	var results []*RouteResult
 
-	if matches {
-		r.rwLock.RUnlock()
-		return results
+	for _, api := range r.apis {
+		if api.matches(req) {
+			results = make([]*RouteResult, len(api.Nodes))
+
+			for index, node := range api.Nodes {
+				results[index] = &RouteResult{
+					API:  api,
+					Node: node,
+					Svr:  r.selectServer(req, r.selectClusterByRouting(req, r.clusters[node.ClusterName])),
+				}
+			}
+		}
 	}
 
-	var targetCluster *Cluster
+	r.rwLock.RUnlock()
+	return results
+}
+
+func (r *RouteTable) selectClusterByRouting(req *fasthttp.Request, src *Cluster) *Cluster {
+	targetCluster := src
 
 	for _, routing := range r.routings {
 		if routing.Matches(req) {
@@ -457,51 +471,11 @@ func (r *RouteTable) Select(req *fasthttp.Request) []*RouteResult {
 		}
 	}
 
-	if nil != targetCluster {
-		r.rwLock.RUnlock()
-		return []*RouteResult{&RouteResult{Svr: r.doSelectServer(req, targetCluster)}}
-	}
-
-	for _, cluster := range r.clusters {
-		svr := r.selectServer(req, cluster)
-
-		if nil != svr {
-			r.rwLock.RUnlock()
-			return []*RouteResult{&RouteResult{Svr: svr}}
-		}
-	}
-
-	r.rwLock.RUnlock()
-	return nil
-}
-
-func (r *RouteTable) selectAPI(req *fasthttp.Request) (matches bool, results []*RouteResult) {
-	matches = false
-
-	for _, api := range r.apis {
-		if api.matches(req) {
-			matches = true
-			results = make([]*RouteResult, len(api.Nodes))
-
-			for index, node := range api.Nodes {
-				results[index] = &RouteResult{
-					API:  api,
-					Node: node,
-					Svr:  r.selectServer(req, r.clusters[node.ClusterName]),
-				}
-			}
-		}
-	}
-
-	return matches, results
+	return targetCluster
 }
 
 func (r *RouteTable) selectServer(req *fasthttp.Request, cluster *Cluster) *Server {
-	if cluster.Matches(req) {
-		return r.doSelectServer(req, cluster)
-	}
-
-	return nil
+	return r.doSelectServer(req, cluster)
 }
 
 func (r *RouteTable) doSelectServer(req *fasthttp.Request, cluster *Cluster) *Server {
@@ -562,14 +536,14 @@ func (r *RouteTable) doReceiveRouting(evt *Evt) {
 }
 
 func (r *RouteTable) doReceiveAPI(evt *Evt) {
-	ang, _ := evt.Value.(*API)
+	api, _ := evt.Value.(*API)
 
 	if evt.Type == EventTypeNew {
-		r.AddNewAPI(ang)
+		r.AddNewAPI(api)
 	} else if evt.Type == EventTypeDelete {
-		r.DeleteAPI(evt.Key)
+		r.DeleteAPI(parseAPIKey(evt.Key))
 	} else if evt.Type == EventTypeUpdate {
-		r.UpdateAPI(ang)
+		r.UpdateAPI(api)
 	}
 }
 

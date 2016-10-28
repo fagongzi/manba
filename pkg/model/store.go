@@ -58,9 +58,9 @@ type Store interface {
 
 	SaveAPI(api *API) error
 	UpdateAPI(api *API) error
-	DeleteAPI(url string) error
+	DeleteAPI(url string, method string) error
 	GetAPIs() ([]*API, error)
-	GetAPI(url string) (*API, error)
+	GetAPI(url string, method string) (*API, error)
 
 	SaveRouting(routing *Routing) error
 	GetRoutings() ([]*Routing, error)

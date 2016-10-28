@@ -1,64 +1,74 @@
 <div class="panel panel-default">
-    <div class="panel-heading">Update a API Url</div>
-    <div class="panel-body">
-        <div class="form-group">
-            <label for="url">Url</label>
-            <input type="text" class="form-control" ng-model="api.url" id="url">
-        </div>
-    </div>
+	<div class="panel-heading">Update a API Url</div>
+	<div class="panel-body">
+		<div class="form-group">
+			<label for="url">Url</label>
+			<input type="text" class="form-control" ng-model="api.url" id="url">
+		</div>
+
+		<div class="form-group">
+			<label for="method">Method</label>
+
+			<select class="form-control" ng-model="api.method" id="method">
+                <option value="*">*</option>
+                <option value="GET">GET</option>
+                <option value="PUT">PUT</option>
+                <option value="POST">POST</option>
+                <option value="DELETE">DELETE</option>
+            </select>
+		</div>
+
+		<div class="form-group">
+			<label for="desc">Desc</label>
+			<textarea class="form-control" ng-model="api.desc" id="desc" rows="4"></textarea>
+		</div>
+	</div>
 </div>
 
-
 <div class="panel panel-default">
-    <div class="panel-heading">Update a API Nodes</div>
-    <div class="panel-body">
-        <form class="form-inline">
-            <div class="form-group">
-                <label for="clusterName">Cluster</label>
-                <select class="form-control" ng-model="newClusterName" id="clusterName">
+	<div class="panel-heading">Update API dispatch nodes</div>
+	<div class="panel-body">
+		<form class="form-inline">
+			<div class="form-group">
+				<label for="clusterName">Cluster</label>
+				<select class="form-control" ng-model="newClusterName" id="clusterName">
                     <option ng-repeat="c in clusters" value="{{c.name}}">{{c.name}}</option>
                 </select>
-            </div>
-            <div class="form-group">
-                <label for="nodeAttrName">AttrName</label>
-                <input type="text" size="10" class="form-control" ng-model="newNodeAttrName" id="nodeAttrName" />
-            </div>
-            <div class="form-group">
-                <label for="nodeUrl">Url</label>
-                <input type="text" class="form-control" ng-model="newNodeUrl" id="nodeUrl" />
-            </div>
-            <div class="form-group">
-                <label for="nodeRewrite">Rewrite</label>
-                <input type="text" class="form-control" ng-model="newNodeRewrite" id="nodeRewrite" />
-            </div>
-            
-            <button type="button" class="btn btn-default" ng-click="addNode()">Add</button>
-        </form>
-    </div>
+			</div>
+			<div class="form-group">
+				<label for="nodeAttrName">AttrName</label>
+				<input type="text" size="10" class="form-control" ng-model="newNodeAttrName" id="nodeAttrName" />
+			</div>
+			<div class="form-group">
+				<label for="nodeRewrite">Rewrite</label>
+				<input type="text" class="form-control" ng-model="newNodeRewrite" id="nodeRewrite" />
+			</div>
+
+			<button type="button" class="btn btn-default" ng-click="addNode()">Add</button>
+		</form>
+	</div>
 </div>
 
 <table class="table table-bordered table-striped">
-    <thead>
-    <tr>
-        <th>Cluster</th>
-        <th>AttrName</th>
-        <th>Url</th>
-        <th>Rewrite</th>
-        <th>Opts</th>
-    </tr>
-    </thead>
+	<thead>
+		<tr>
+			<th>Cluster</th>
+			<th>AttrName</th>
+			<th>Rewrite</th>
+			<th>Opts</th>
+		</tr>
+	</thead>
 
-    <tbody>
-        <tr ng-repeat="n in api.nodes">
-            <td><a href="#/clusters/{{n.clusterName}}">{{n.clusterName}}</a></td>
-            <td><input type="text" ng-model="n.attrName"/></td>
-            <td><input type="text" ng-model="n.url"/></td>
-            <td><input type="text" ng-model="n.rewrite"/></td>
-            <td>
-                <button type="button" class="btn btn-default" ng-click="delete(n)">Delete</button>
-            </td>
-        </tr>
-    </tbody>
+	<tbody>
+		<tr ng-repeat="n in api.nodes">
+			<td>{{n.clusterName}}</td>
+			<td><input type="text" ng-model="n.attrName" /></td>
+			<td><input type="text" ng-model="n.rewrite" /></td>
+			<td>
+				<button type="button" class="btn btn-default" ng-click="delete(n)">Delete</button>
+			</td>
+		</tr>
+	</tbody>
 </table>
 
 <button type="button" class="btn btn-default" ng-click="update()">Submit</button>

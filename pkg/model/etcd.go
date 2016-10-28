@@ -2,8 +2,8 @@ package model
 
 import (
 	"container/list"
+	"encoding/base64"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/CodisLabs/codis/pkg/utils/log"
@@ -56,7 +56,7 @@ func NewEtcdStore(etcdAddrs []string, prefix string) (Store, error) {
 
 // SaveAPI save a api in store
 func (e EtcdStore) SaveAPI(api *API) error {
-	key := fmt.Sprintf("%s/%s", e.apisDir, url.QueryEscape(api.URL))
+	key := fmt.Sprintf("%s/%s", e.apisDir, getAPIKey(api.URL, api.Method))
 	_, err := e.cli.Create(key, string(api.Marshal()), 0)
 
 	return err
@@ -64,15 +64,19 @@ func (e EtcdStore) SaveAPI(api *API) error {
 
 // UpdateAPI update a api in store
 func (e EtcdStore) UpdateAPI(api *API) error {
-	key := fmt.Sprintf("%s/%s", e.apisDir, url.QueryEscape(api.URL))
+	key := fmt.Sprintf("%s/%s", e.apisDir, getAPIKey(api.URL, api.Method))
 	_, err := e.cli.Set(key, string(api.Marshal()), 0)
 
 	return err
 }
 
 // DeleteAPI delete a api from store
-func (e EtcdStore) DeleteAPI(apiURL string) error {
-	return e.deleteKey(url.QueryEscape(apiURL), e.apisDir, e.deleteAPIsDir)
+func (e EtcdStore) DeleteAPI(apiURL, method string) error {
+	return e.deleteKey(getAPIKey(apiURL, method), e.apisDir, e.deleteAPIsDir)
+}
+
+func (e EtcdStore) deleteAPIGC(key string) error {
+	return e.deleteKey(key, e.apisDir, e.deleteAPIsDir)
 }
 
 // GetAPIs return api list from store
@@ -94,8 +98,8 @@ func (e EtcdStore) GetAPIs() ([]*API, error) {
 }
 
 // GetAPI return api by url from store
-func (e EtcdStore) GetAPI(apiURL string) (*API, error) {
-	key := fmt.Sprintf("%s/%s", e.apisDir, url.QueryEscape(apiURL))
+func (e EtcdStore) GetAPI(apiURL, method string) (*API, error) {
+	key := fmt.Sprintf("%s/%s", e.apisDir, getAPIKey(apiURL, method))
 	rsp, err := e.cli.Get(key, false, false)
 
 	if nil != err {
@@ -364,7 +368,7 @@ func (e EtcdStore) GC() error {
 		return err
 	}
 
-	err = e.gcDir(e.deleteAPIsDir, e.DeleteAPI)
+	err = e.gcDir(e.deleteAPIsDir, e.deleteAPIGC)
 
 	if nil != err {
 		return err
@@ -381,7 +385,6 @@ func (e EtcdStore) gcDir(dir string, fn func(value string) error) error {
 
 	for _, node := range rsp.Node.Nodes {
 		err = fn(node.Value)
-
 		if err != nil {
 			return err
 		}
@@ -526,14 +529,14 @@ func (e EtcdStore) doWatchWithBind(evtType EvtType, rsp *etcd.Response) *Evt {
 }
 
 func (e EtcdStore) doWatchWithAPI(evtType EvtType, rsp *etcd.Response) *Evt {
-	ang := UnMarshalAPI([]byte(rsp.Node.Value))
-	value, _ := url.QueryUnescape(strings.Replace(rsp.Node.Key, fmt.Sprintf("%s/", e.apisDir), "", 1))
+	api := UnMarshalAPI([]byte(rsp.Node.Value))
+	value := strings.Replace(rsp.Node.Key, fmt.Sprintf("%s/", e.apisDir), "", 1)
 
 	return &Evt{
 		Src:   EventSrcAPI,
 		Type:  evtType,
 		Key:   value,
-		Value: ang,
+		Value: api,
 	}
 }
 
@@ -554,4 +557,23 @@ func (e EtcdStore) init() {
 	e.watchMethodMapping[EventSrcCluster] = e.doWatchWithCluster
 	e.watchMethodMapping[EventSrcAPI] = e.doWatchWithAPI
 	e.watchMethodMapping[EventSrcRouting] = e.doWatchWithRouting
+}
+
+func getAPIKey(apiURL, method string) string {
+	key := fmt.Sprintf("%s-%s", apiURL, method)
+	return base64.RawURLEncoding.EncodeToString([]byte(key))
+}
+
+func parseAPIKey(key string) (url string, method string) {
+	raw := decodeAPIKey(key)
+	splits := strings.SplitN(raw, "-", 2)
+	url = splits[0]
+	method = splits[1]
+
+	return url, method
+}
+
+func decodeAPIKey(key string) string {
+	raw, _ := base64.RawURLEncoding.DecodeString(key)
+	return string(raw)
 }

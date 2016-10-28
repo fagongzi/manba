@@ -14,14 +14,13 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-const (
+var (
 	// ErrPrefixRequestCancel user cancel request error
 	ErrPrefixRequestCancel = "request canceled"
-)
-
-var (
 	// ErrNoServer no server
 	ErrNoServer = errors.New("has no server")
+	// ErrRewriteNotMatch rewrite not match request url
+	ErrRewriteNotMatch = errors.New("rewrite not match request url")
 )
 
 var (
@@ -84,7 +83,7 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 	results := p.routeTable.Select(&ctx.Request)
 
 	if nil == results || len(results) == 0 {
-		ctx.SetStatusCode(fasthttp.StatusServiceUnavailable)
+		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		return
 	}
 
@@ -167,16 +166,16 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *mo
 	// change url
 	if result.NeedRewrite() {
 		// if not use rewrite, it only change uri path and query string
-		realPath := result.GetRealPath(&ctx.Request)
+		realPath := result.GetRewritePath(&ctx.Request)
 		if "" != realPath {
 			log.Infof("URL Rewrite from <%s> to <%s>", string(ctx.URI().FullURI()), realPath)
 			outreq.SetRequestURI(realPath)
 			outreq.SetHost(svr.Addr)
-		}
-	} else {
-		// if not use rewrite, it only change uri path, the query string will use origin.
-		if result.Node != nil {
-			outreq.URI().SetPath(result.Node.URL)
+		} else {
+			log.Warnf("URL Rewrite<%s> not matches <%s>", string(ctx.URI().FullURI()), result.Node.Rewrite)
+			result.Err = ErrRewriteNotMatch
+			result.Code = http.StatusBadRequest
+			return
 		}
 	}
 

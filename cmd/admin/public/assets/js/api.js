@@ -2,9 +2,9 @@ function routeAPI($routeProvider) {
     $routeProvider.when("/apis", {
         "templateUrl": "html/api/list.html",
         "controller": APIController
-    }).when("/apis/:url", {
-        "templateUrl" : "html/api/update.html",
-        "controller" : APIUpdateController
+    }).when("/apis/:url/:method", {
+        "templateUrl": "html/api/update.html",
+        "controller": APIUpdateController
     }).when("/new/api", {
         "templateUrl": "html/api/new.html",
         "controller": APICreateController
@@ -16,11 +16,11 @@ function APIUpdateController($scope, $routeParams, $http, $location, $route) {
         $scope.clusters = data.value;
     });
 
-    $http.get("api/apis/" + $routeParams.url).success(function (data) {
+    $http.get("api/apis/" + $routeParams.url + "?method=" + $routeParams.method).success(function (data) {
         $scope.api = data.value;
+        $scope.oldMethod = data.value.method;
+        $scope.oldUrl = data.value.url;
     });
-
-    $scope.newUrl = "";
 
 
     $scope.resetNode = function () {
@@ -44,19 +44,26 @@ function APIUpdateController($scope, $routeParams, $http, $location, $route) {
     $scope.delete = function (node) {
         ns = []
 
-        for (var i = 0; i < $scope.ang.nodes.length; i++) {
-            if ($scope.ang.nodes[i] != node) {
-                ns.push($scope.ang.nodes[i]);
+        for (var i = 0; i < $scope.api.nodes.length; i++) {
+            if ($scope.api.nodes[i] != node) {
+                ns.push($scope.api.nodes[i]);
             }
         }
 
-        $scope.ang.nodes = ns;
+        $scope.api.nodes = ns;
     }
 
     $scope.update = function () {
-        $http.put('api/apis', $scope.ang).success(function (data) {
-            $location.path("/apis");
-            $route.reload();
+        $http.put('api/apis', $scope.api).success(function (data) {
+            if ($scope.oldMethod != $scope.api.method || $scope.oldUrl != $scope.api.url) {
+                $http.delete('api/apis/' + Base64.encodeURI($scope.oldUrl) + "?method=" + $scope.oldMethod).success(function (data) {
+                    $location.path("/apis");
+                    $route.reload();
+                });
+            } else {
+                $location.path("/apis");
+                $route.reload();
+            }
         });
     }
 }
@@ -68,6 +75,7 @@ function APICreateController($scope, $routeParams, $http, $location, $route) {
     });
 
     $scope.newUrl = "";
+    $scope.newDesc = "";
     $scope.newNodes = [];
 
 
@@ -104,6 +112,8 @@ function APICreateController($scope, $routeParams, $http, $location, $route) {
     $scope.add = function () {
         d = {
             "url": $scope.newUrl,
+            "method": $scope.newMethod,
+            "desc": $scope.newDesc,
             "nodes": $scope.newNodes,
         }
 
@@ -117,9 +127,9 @@ function APICreateController($scope, $routeParams, $http, $location, $route) {
 function APIController($scope, $routeParams, $http, $location, $route) {
     $http.get("api/apis").success(function (data) {
         $scope.apis = data.value;
-        
-        for(var i = 0; i < $scope.apis.length; i++) {
-            $scope.apis[i].encodeURL = btoa($scope.apis[i].url);
+
+        for (var i = 0; i < $scope.apis.length; i++) {
+            $scope.apis[i].encodeURL = Base64.encodeURI($scope.apis[i].url);
         }
     });
 
@@ -127,8 +137,8 @@ function APIController($scope, $routeParams, $http, $location, $route) {
         $location.path("/new/api");
     }
 
-    $scope.delete = function (url) {
-        $http.delete('api/apis/' + url).success(function (data) {
+    $scope.delete = function (url, method) {
+        $http.delete('api/apis/' + url + "?method=" + method).success(function (data) {
             $location.path("/apis");
             $route.reload();
         });

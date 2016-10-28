@@ -36,7 +36,6 @@ function ClusterCreateController($scope, $routeParams, $http, $location, $route)
     $scope.add = function() {
         var c = {
             "name": $scope.newClusterName,
-            "pattern": $scope.newClusterPattern,
             "lbName": $scope.newClusterLBName,
             "count": 0
         };

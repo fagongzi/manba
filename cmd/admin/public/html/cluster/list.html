@@ -1,38 +1,36 @@
 <h1 class="page-header">Clusters</h1>
 
 <div>
-    <form style="margin-bottom: 3px;" class="form-inline">
-        <button type="button" class="btn btn-success btn-sm" ng-click="create()">
+	<form style="margin-bottom: 3px;" class="form-inline">
+		<button type="button" class="btn btn-success btn-sm" ng-click="create()">
             Create
         </button>
 
-        <label for="search">Search:</label>
-        <input type="text" class="form-control" ng-model="q" id="search" />
-    </form>
+		<label for="search">Search:</label>
+		<input type="text" class="form-control" ng-model="q" id="search" />
+	</form>
 </div>
 
 <div class="table-responsive">
-    <table class="table table-bordered table-striped">
-        <thead>
-        <tr>
-            <th>Name</th>
-            <th>Pattern</th>
-            <th>Load Balance</th>
-            <th>ServerCounts</th>
-            <th>Opts</th>
-        </tr>
-        </thead>
+	<table class="table table-bordered table-striped">
+		<thead>
+			<tr>
+				<th>Name</th>
+				<th>Load Balance</th>
+				<th>ServerCounts</th>
+				<th>Opts</th>
+			</tr>
+		</thead>
 
-        <tbody>
-            <tr ng-repeat="cluster in clusters | filter: q">
-                <td><a href="#/clusters/{{cluster.name}}">{{cluster.name}}</a></td>
-                <td>{{cluster.pattern}}</td>
-                <td>{{cluster.lbName}}</td>
-                <td>{{cluster.count}}</td>
-                <td>
-                        <button type="button" class="btn btn-success btn-sm" ng-click="delete(cluster.name)">Delete</button>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+		<tbody>
+			<tr ng-repeat="cluster in clusters | filter: q">
+				<td><a href="#/clusters/{{cluster.name}}">{{cluster.name}}</a></td>
+				<td>{{cluster.lbName}}</td>
+				<td>{{cluster.count}}</td>
+				<td>
+					<button type="button" class="btn btn-success btn-sm" ng-click="delete(cluster.name)">Delete</button>
+				</td>
+			</tr>
+		</tbody>
+	</table>
 </div>
