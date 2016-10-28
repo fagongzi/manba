@@ -17,6 +17,7 @@ const (
 var (
 	serverAddr    = "127.0.0.1:12345"
 	apiURL        = "/api/test"
+	apiMethod     = "GET"
 	checkDuration = 3
 	checkTimeout  = 2
 	clusterName   = "app"
@@ -131,9 +132,8 @@ func TestServerCheckTimeoutRecovery(t *testing.T) {
 
 func TestEtcdWatchNewCluster(t *testing.T) {
 	cluster := &Cluster{
-		Name:    clusterName,
-		Pattern: "/api/*",
-		LbName:  lbName,
+		Name:   clusterName,
+		LbName: lbName,
 	}
 
 	err := rt.store.SaveCluster(cluster)
@@ -177,13 +177,13 @@ func TestEtcdWatchNewBind(t *testing.T) {
 func TestEtcdWatchNewAPI(t *testing.T) {
 	n := &Node{
 		AttrName:    "test",
-		URL:         "/api/node/test",
 		ClusterName: clusterName,
 	}
 
 	err := rt.store.SaveAPI(&API{
-		URL:   apiURL,
-		Nodes: []*Node{n},
+		URL:    apiURL,
+		Method: apiMethod,
+		Nodes:  []*Node{n},
 	})
 
 	if nil != err {
@@ -252,9 +252,8 @@ func TestEtcdWatchUpdateServer(t *testing.T) {
 
 func TestEtcdWatchUpdateCluster(t *testing.T) {
 	cluster := &Cluster{
-		Name:    clusterName,
-		Pattern: "/api/new/*",
-		LbName:  lbName,
+		Name:   clusterName,
+		LbName: lbName,
 	}
 
 	err := rt.store.UpdateCluster(cluster)
@@ -268,11 +267,6 @@ func TestEtcdWatchUpdateCluster(t *testing.T) {
 
 	existCluster := rt.clusters[clusterName]
 
-	if existCluster.Pattern != cluster.Pattern {
-		t.Errorf("Pattern expect:<%s>, acture:<%s>. ", cluster.Pattern, existCluster.Pattern)
-		return
-	}
-
 	if existCluster.LbName != cluster.LbName {
 		t.Errorf("LbName expect:<%s>, acture:<%s>. ", cluster.LbName, existCluster.LbName)
 		return
@@ -282,19 +276,18 @@ func TestEtcdWatchUpdateCluster(t *testing.T) {
 func TestEtcdWatchUpdateAPI(t *testing.T) {
 	n := &Node{
 		AttrName:    "test",
-		URL:         "/api/node/test",
 		ClusterName: clusterName,
 	}
 
 	n2 := &Node{
 		AttrName:    "tes2t",
-		URL:         "/api/node/test2",
 		ClusterName: clusterName,
 	}
 
 	api := &API{
-		URL:   apiURL,
-		Nodes: []*Node{n, n2},
+		URL:    apiURL,
+		Method: apiMethod,
+		Nodes:  []*Node{n, n2},
 	}
 
 	err := rt.store.UpdateAPI(api)
@@ -306,7 +299,7 @@ func TestEtcdWatchUpdateAPI(t *testing.T) {
 
 	waitNotify()
 
-	existAPI, _ := rt.apis[api.URL]
+	existAPI, _ := rt.apis[getAPIKey(api.URL, api.Method)]
 
 	if len(existAPI.Nodes) != len(api.Nodes) {
 		t.Errorf("Nodes expect:<%s>, acture:<%s>. ", len(existAPI.Nodes), len(api.Nodes))
@@ -359,7 +352,7 @@ func TestEtcdWatchDeleteServer(t *testing.T) {
 }
 
 func TestEtcdWatchDeleteAPI(t *testing.T) {
-	err := rt.store.DeleteAPI(apiURL)
+	err := rt.store.DeleteAPI(apiURL, apiMethod)
 
 	if nil != err {
 		t.Error("delete api err.")
