@@ -83,24 +83,3 @@ Gateway can use **Traffic Control** and **Circuit Breaker** functions to avoid b
 
 ## AB Test
 Gateway's **Routing** fucntion can help your AB Test.
-
-## Admin UI
-![](./images/dashboard.png)
-
-## Proxy UI
-![](./images/proxy.png)
-
-## Cluster UI
-![](./images/cluster.png)
-
-## Server UI
-![](./images/server.png)
-
-## API UI
-![](./images/aggregations.png)
-
-## Routing UI
-![](./images/routing.png)
-
-## Monitor UI
-![](./images/metries.png)
