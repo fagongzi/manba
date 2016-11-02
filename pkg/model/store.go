@@ -46,15 +46,13 @@ type Store interface {
 	UpdateCluster(cluster *Cluster) error
 	DeleteCluster(name string) error
 	GetClusters() ([]*Cluster, error)
-	GetCluster(clusterName string, withBinded bool) (*Cluster, error)
-	GetBindedClusters(serverAddr string) ([]string, error)
+	GetCluster(clusterName string) (*Cluster, error)
 
 	SaveServer(svr *Server) error
 	UpdateServer(svr *Server) error
 	DeleteServer(addr string) error
 	GetServers() ([]*Server, error)
-	GetServer(serverAddr string, withBinded bool) (*Server, error)
-	GetBindedServers(clusterName string) ([]string, error)
+	GetServer(serverAddr string) (*Server, error)
 
 	SaveAPI(api *API) error
 	UpdateAPI(api *API) error

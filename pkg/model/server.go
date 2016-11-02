@@ -110,6 +110,37 @@ func (s *Server) Marshal() []byte {
 	return v
 }
 
+// HasBind add bind
+func (s *Server) HasBind() bool {
+	return len(s.BindClusters) > 0
+}
+
+// AddBind add bind
+func (s *Server) AddBind(bind *Bind) {
+	index := s.indexOf(bind.ClusterName)
+	if index == -1 {
+		s.BindClusters = append(s.BindClusters, bind.ClusterName)
+	}
+}
+
+// RemoveBind remove bind
+func (s *Server) RemoveBind(clusterName string) {
+	index := s.indexOf(clusterName)
+	if index >= 0 {
+		s.BindClusters = append(s.BindClusters[:index], s.BindClusters[index+1:]...)
+	}
+}
+
+func (s *Server) indexOf(clusterName string) int {
+	for index, s := range s.BindClusters {
+		if s == clusterName {
+			return index
+		}
+	}
+
+	return -1
+}
+
 func (s *Server) updateFrom(svr *Server) {
 	if s.lock != nil {
 		s.Lock()

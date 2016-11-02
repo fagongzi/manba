@@ -1,10 +1,11 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/fagongzi/gateway/pkg/lb"
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/labstack/echo"
-	"net/http"
 )
 
 func (server *AdminServer) getLbs() echo.HandlerFunc {
@@ -19,7 +20,7 @@ func (server *AdminServer) getCluster() echo.HandlerFunc {
 		code := CodeSuccess
 
 		id := c.Param("id")
-		cluster, err := server.store.GetCluster(id, true)
+		cluster, err := server.store.GetCluster(id)
 
 		if nil != err {
 			errstr = err.Error()

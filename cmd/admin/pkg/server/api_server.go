@@ -32,7 +32,7 @@ func (server *AdminServer) getServer() echo.HandlerFunc {
 		code := CodeSuccess
 
 		id := c.Param("id")
-		server, err := server.store.GetServer(id, true)
+		server, err := server.store.GetServer(id)
 
 		if nil != err {
 			errstr = err.Error()

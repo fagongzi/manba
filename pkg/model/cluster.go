@@ -32,9 +32,9 @@ func UnMarshalCluster(data []byte) *Cluster {
 		return v
 	}
 
-	c, _ := NewCluster(v.Name, v.LbName)
+	v.init()
 
-	return c
+	return v
 }
 
 // UnMarshalClusterFromReader unmarshal from reader
@@ -59,6 +59,37 @@ func NewCluster(name string, lbName string) (*Cluster, error) {
 	}
 
 	return c, c.init()
+}
+
+// AddBind add bind
+func (c *Cluster) AddBind(bind *Bind) {
+	index := c.indexOf(bind.ServerAddr)
+	if index == -1 {
+		c.BindServers = append(c.BindServers, bind.ServerAddr)
+	}
+}
+
+// HasBind add bind
+func (c *Cluster) HasBind() bool {
+	return len(c.BindServers) > 0
+}
+
+// RemoveBind remove bind
+func (c *Cluster) RemoveBind(serverAddr string) {
+	index := c.indexOf(serverAddr)
+	if index >= 0 {
+		c.BindServers = append(c.BindServers[:index], c.BindServers[index+1:]...)
+	}
+}
+
+func (c *Cluster) indexOf(serverAddr string) int {
+	for index, s := range c.BindServers {
+		if s == serverAddr {
+			return index
+		}
+	}
+
+	return -1
 }
 
 func (c *Cluster) init() error {

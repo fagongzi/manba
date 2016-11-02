@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"regexp"
-
 	"strings"
 
 	"github.com/valyala/fasthttp"

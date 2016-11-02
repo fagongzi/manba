@@ -1,14 +1,18 @@
 package model
 
 import (
-	"container/list"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/coreos/go-etcd/etcd"
-	"github.com/fagongzi/gateway/pkg/util"
+)
+
+var (
+	// ErrHasBind error has bind into, can not delete
+	ErrHasBind = errors.New("Has bind info, can not delete")
 )
 
 // EtcdStore etcd store impl
@@ -119,7 +123,7 @@ func (e EtcdStore) SaveServer(svr *Server) error {
 
 // UpdateServer update a server to store
 func (e EtcdStore) UpdateServer(svr *Server) error {
-	old, err := e.GetServer(svr.Addr, false)
+	old, err := e.GetServer(svr.Addr)
 
 	if nil != err {
 		return err
@@ -127,23 +131,28 @@ func (e EtcdStore) UpdateServer(svr *Server) error {
 
 	old.updateFrom(svr)
 
-	key := fmt.Sprintf("%s/%s", e.serversDir, old.Addr)
-	_, err = e.cli.Set(key, string(old.Marshal()), 0)
+	return e.doUpdateServer(old)
+}
+
+func (e *EtcdStore) doUpdateServer(svr *Server) error {
+	key := fmt.Sprintf("%s/%s", e.serversDir, svr.Addr)
+	_, err := e.cli.Set(key, string(svr.Marshal()), 0)
 
 	return err
 }
 
 // DeleteServer delete a server from store
 func (e EtcdStore) DeleteServer(addr string) error {
-	err := e.deleteKey(addr, e.serversDir, e.deleteServersDir)
-
+	svr, err := e.GetServer(addr)
 	if err != nil {
 		return err
 	}
 
-	// TODO: delete bind
+	if svr.HasBind() {
+		return ErrHasBind
+	}
 
-	return nil
+	return e.deleteKey(addr, e.serversDir, e.deleteServersDir)
 }
 
 // GetServers return server from store
@@ -165,8 +174,7 @@ func (e EtcdStore) GetServers() ([]*Server, error) {
 }
 
 // GetServer return spec server
-// if withBinded is true, return with binded cluster
-func (e EtcdStore) GetServer(serverAddr string, withBinded bool) (*Server, error) {
+func (e EtcdStore) GetServer(serverAddr string) (*Server, error) {
 	key := fmt.Sprintf("%s/%s", e.serversDir, serverAddr)
 	rsp, err := e.cli.Get(key, false, false)
 
@@ -174,24 +182,7 @@ func (e EtcdStore) GetServer(serverAddr string, withBinded bool) (*Server, error
 		return nil, err
 	}
 
-	server := UnMarshalServer([]byte(rsp.Node.Value))
-
-	if withBinded {
-		bindsValues, err := e.GetBindedClusters(serverAddr)
-
-		if nil != err {
-			return nil, err
-		}
-
-		server.BindClusters = bindsValues
-	}
-
-	return server, nil
-}
-
-// GetBindedServers return cluster bind servers
-func (e EtcdStore) GetBindedServers(clusterName string) ([]string, error) {
-	return e.getBindedValues(clusterName, 1, 0)
+	return UnMarshalServer([]byte(rsp.Node.Value)), nil
 }
 
 // SaveCluster save a cluster to store
@@ -204,7 +195,7 @@ func (e EtcdStore) SaveCluster(cluster *Cluster) error {
 
 // UpdateCluster update a cluster to store
 func (e EtcdStore) UpdateCluster(cluster *Cluster) error {
-	old, err := e.GetCluster(cluster.Name, false)
+	old, err := e.GetCluster(cluster.Name)
 
 	if nil != err {
 		return err
@@ -212,23 +203,28 @@ func (e EtcdStore) UpdateCluster(cluster *Cluster) error {
 
 	old.updateFrom(cluster)
 
-	key := fmt.Sprintf("%s/%s", e.clustersDir, old.Name)
-	_, err = e.cli.Set(key, string(old.Marshal()), 0)
+	return e.doUpdateCluster(old)
+}
+
+func (e *EtcdStore) doUpdateCluster(cluster *Cluster) error {
+	key := fmt.Sprintf("%s/%s", e.clustersDir, cluster.Name)
+	_, err := e.cli.Set(key, string(cluster.Marshal()), 0)
 
 	return err
 }
 
 // DeleteCluster delete a cluster from store
 func (e EtcdStore) DeleteCluster(name string) error {
-	err := e.deleteKey(name, e.clustersDir, e.deleteClustersDir)
-
+	c, err := e.GetCluster(name)
 	if err != nil {
 		return err
 	}
 
-	// TODO: delete bind
+	if c.HasBind() {
+		return ErrHasBind
+	}
 
-	return nil
+	return e.deleteKey(name, e.clustersDir, e.deleteClustersDir)
 }
 
 // GetClusters return clusters in store
@@ -250,8 +246,7 @@ func (e EtcdStore) GetClusters() ([]*Cluster, error) {
 }
 
 // GetCluster return cluster info
-// if withBinded is true, return with binded servers
-func (e EtcdStore) GetCluster(clusterName string, withBinded bool) (*Cluster, error) {
+func (e EtcdStore) GetCluster(clusterName string) (*Cluster, error) {
 	key := fmt.Sprintf("%s/%s", e.clustersDir, clusterName)
 	rsp, err := e.cli.Get(key, false, false)
 
@@ -259,24 +254,7 @@ func (e EtcdStore) GetCluster(clusterName string, withBinded bool) (*Cluster, er
 		return nil, err
 	}
 
-	cluster := UnMarshalCluster([]byte(rsp.Node.Value))
-
-	if withBinded {
-		bindsValues, err := e.GetBindedServers(clusterName)
-
-		if nil != err {
-			return nil, err
-		}
-
-		cluster.BindServers = bindsValues
-	}
-
-	return cluster, nil
-}
-
-// GetBindedClusters return spec server binded clusters
-func (e EtcdStore) GetBindedClusters(serverAddr string) ([]string, error) {
-	return e.getBindedValues(serverAddr, 0, 1)
+	return UnMarshalCluster([]byte(rsp.Node.Value)), nil
 }
 
 // SaveBind save bind to store
@@ -284,7 +262,32 @@ func (e EtcdStore) SaveBind(bind *Bind) error {
 	key := fmt.Sprintf("%s/%s", e.bindsDir, bind.ToString())
 	_, err := e.cli.Create(key, "", 0)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	// update server bind info
+	svr, err := e.GetServer(bind.ServerAddr)
+	if err != nil {
+		return err
+	}
+
+	svr.AddBind(bind)
+
+	err = e.doUpdateServer(svr)
+	if err != nil {
+		return err
+	}
+
+	// update cluster bind info
+	c, err := e.GetCluster(bind.ClusterName)
+	if err != nil {
+		return err
+	}
+
+	c.AddBind(bind)
+
+	return e.doUpdateCluster(c)
 }
 
 // UnBind delete bind from store
@@ -292,8 +295,29 @@ func (e EtcdStore) UnBind(bind *Bind) error {
 	key := fmt.Sprintf("%s/%s", e.bindsDir, bind.ToString())
 
 	_, err := e.cli.Delete(key, true)
+	if err != nil {
+		return err
+	}
 
-	return err
+	svr, err := e.GetServer(bind.ServerAddr)
+	if err != nil {
+		return err
+	}
+
+	svr.RemoveBind(bind.ClusterName)
+
+	err = e.doUpdateServer(svr)
+	if err != nil {
+		return err
+	}
+
+	c, err := e.GetCluster(bind.ClusterName)
+	if err != nil {
+		return err
+	}
+
+	c.RemoveBind(bind.ServerAddr)
+	return e.doUpdateCluster(c)
 }
 
 // GetBinds return binds info
@@ -391,28 +415,6 @@ func (e EtcdStore) gcDir(dir string, fn func(value string) error) error {
 	}
 
 	return nil
-}
-
-func (e EtcdStore) getBindedValues(target string, matchIndex, valueIndex int) ([]string, error) {
-	rsp, err := e.cli.Get(e.bindsDir, false, false)
-
-	if nil != err {
-		return nil, err
-	}
-
-	values := list.New()
-	l := rsp.Node.Nodes.Len()
-
-	for i := 0; i < l; i++ {
-		key := strings.Replace(rsp.Node.Nodes[i].Key, fmt.Sprintf("%s/", e.bindsDir), "", 1)
-		infos := strings.SplitN(key, "-", 2)
-
-		if len(infos) == 2 && target == infos[matchIndex] {
-			values.PushBack(infos[valueIndex])
-		}
-	}
-
-	return util.ToStringArray(values), nil
 }
 
 // Watch watch event from etcd
