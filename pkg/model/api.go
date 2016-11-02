@@ -12,9 +12,10 @@ import (
 
 // Node api dispatch node
 type Node struct {
-	ClusterName string `json:"clusterName, omitempty"`
-	Rewrite     string `json:"rewrite, omitempty"`
-	AttrName    string `json:"attrName, omitempty"`
+	ClusterName string        `json:"clusterName, omitempty"`
+	Rewrite     string        `json:"rewrite, omitempty"`
+	AttrName    string        `json:"attrName, omitempty"`
+	Validations []*Validation `json:"validations, omitempty"`
 }
 
 // API a api define

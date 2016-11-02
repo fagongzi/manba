@@ -28,6 +28,7 @@ function APIUpdateController($scope, $routeParams, $http, $location, $route) {
         $scope.newNodeUrl = "";
         $scope.newNodeAttrName = "";
         $scope.newNodeRewrite = "";
+        $scope.newValidation = [];
     }
 
     $scope.addNode = function () {
@@ -35,7 +36,8 @@ function APIUpdateController($scope, $routeParams, $http, $location, $route) {
             "clusterName": $scope.newClusterName,
             "url": $scope.newNodeUrl,
             "attrName": $scope.newNodeAttrName,
-            "rewrite": $scope.newNodeRewrite
+            "rewrite": $scope.newNodeRewrite,
+            "validations": $scope.newValidation,
         });
 
         $scope.resetNode();
@@ -85,6 +87,7 @@ function APICreateController($scope, $routeParams, $http, $location, $route) {
         $scope.newNodeUrl = "";
         $scope.newNodeAttrName = "";
         $scope.newNodeRewrite = "";
+        $scope.newValidation = [];
     }
 
     $scope.addNode = function () {
@@ -92,7 +95,8 @@ function APICreateController($scope, $routeParams, $http, $location, $route) {
             "clusterName": $scope.newClusterName,
             "url": $scope.newNodeUrl,
             "attrName": $scope.newNodeAttrName,
-            "rewrite": $scope.newNodeRewrite
+            "rewrite": $scope.newNodeRewrite,
+            "validations": $scope.newValidation,
         });
 
         $scope.resetNode();

@@ -27,6 +27,8 @@ const (
 	FilterRateLimiting = "RATE-LIMITING"
 	// FilterCircuitBreake circuit breake filter
 	FilterCircuitBreake = "CIRCUIT-BREAKE"
+	// FilterValidation validation request
+	FilterValidation = "VALIDATION"
 )
 
 func newFilter(name string, config *conf.Conf, proxy *Proxy) (Filter, error) {
@@ -47,6 +49,8 @@ func newFilter(name string, config *conf.Conf, proxy *Proxy) (Filter, error) {
 		return newRateLimitingFilter(config, proxy), nil
 	case FilterCircuitBreake:
 		return newCircuitBreakeFilter(config, proxy), nil
+	case FilterValidation:
+		return newValidationFilter(config, proxy), nil
 	default:
 		return nil, ErrKnownFilter
 	}

@@ -45,6 +45,7 @@
 								<th>Cluster</th>
 								<th>AttrName</th>
 								<th>Rewrite</th>
+								<th>Validation</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -52,6 +53,7 @@
 								<td><a href="#/clusters/{{n.clusterName}}">{{n.clusterName}}</a></td>
 								<td>{{n.attrName}}</td>
 								<td>{{n.rewrite}}</td>
+								<td>{{n.validations | json}}</td>
 							</tr>
 						</tbody>
 					</table>

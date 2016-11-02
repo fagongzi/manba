@@ -11,7 +11,8 @@
         "circuit-breake",
         "http-access",
         "head",
-        "xforward"
+        "xforward",
+        "validation"
     ],
     "maxConns": 512,
     "maxConnDuration": 10,

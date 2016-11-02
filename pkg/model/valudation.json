@@ -1,0 +1,17 @@
+[
+    {
+        "attr": "abc",
+        "getFrom": 0,
+        "required": true,
+        "rules": [
+            {
+                "type": 0,
+                "expression": "\\d+"
+            },
+            {
+                "type": 0,
+                "expression": ""
+            }
+        ]
+    }
+]

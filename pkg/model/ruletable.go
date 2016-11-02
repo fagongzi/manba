@@ -173,6 +173,13 @@ func (r *RouteTable) AddNewAPI(api *API) error {
 	}
 
 	api.Pattern = regexp.MustCompile(api.URL)
+	for _, n := range api.Nodes {
+		if nil != n.Validations {
+			for _, v := range n.Validations {
+				v.ParseValidation()
+			}
+		}
+	}
 
 	r.apis[getAPIKey(api.URL, api.Method)] = api
 
@@ -193,6 +200,14 @@ func (r *RouteTable) UpdateAPI(api *API) error {
 	}
 
 	old.updateFrom(api)
+
+	for _, n := range old.Nodes {
+		if nil != n.Validations {
+			for _, v := range n.Validations {
+				v.ParseValidation()
+			}
+		}
+	}
 
 	log.Infof("API <%s-%s> updated", api.Method, api.URL)
 

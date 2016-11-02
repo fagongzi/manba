@@ -8,6 +8,7 @@ Gateway is a API gateway based on http. It works at 7 layer.
 * Loadbalance
 * Routing based on URL
 * API aggregation(support url rewrite)
+* Validation
 * Backend Server heath check
 * Use [fasthttp](https://github.com/valyala/fasthttp)
 * Admin WEBUI
@@ -57,15 +58,15 @@ The Etcd store gateway's mete data.
 
 * Server
 
-  Server is a backend server which provide restfule json service.The server is the basic unit at gateway. You can read [this](./docs/server.md) for more infomation.
+  Server is a backend server which provide restfule json service.The server is the basic unit at gateway. [more](./docs/server.md).
 
 * Cluster
 
-  Cluster is a set of servers which provide the same service. The Loadbalancer select a usable server to use. You can read [this](./docs/cluster.md) for more infomation.
+  Cluster is a set of servers which provide the same service. The Loadbalancer select a usable server to use. [more](./docs/cluster.md).
 
 * API
 
-  API is the core concept in gateway.  You can define a API with a URL pattern, http method, and at least one dispatch node. You can read [this](./docs/api.md) for more infomation.
+  API is the core concept in gateway.  You can define a API with a URL pattern, http method, and at least one dispatch node. [more](./docs/api.md).
 
 * Routing
 

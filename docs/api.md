@@ -18,6 +18,29 @@ API is the core concept in gateway. You can use admin to manage your APIs.
   * Rewrite (optional)
     Used for you want to rewite origin url to your wanted. It usually work together with **URL** attrbute. In actual, we need use proxy for a old system, but the old system's API is design not restful friendly. In this scenes, we want to provide a beatful API design to other user. The URL rewrite is a solution. For example, a old system provide a API `/user?userId=xxx`, and we want to provide a API like this `/api/users/xxx`, you can set **Url** to `/api/users/(.+)` and set **rewite** to `/user?userId=$1`.
 
+  * Validations (optional)
+    Validations rules is used for validate request. It support setting a validation rule for query string args and form data. It is a json array configuration like:
+    
+    ```json
+    [
+        {
+            "attr": "abc",  // query string arg name or a form data field name
+            "getFrom": 0,   // enum value, 0: query string. 1: form data 
+            "required": true, // is required
+            "rules": [
+                {
+                    "type": 0, // enum value, validate method. 0: regexp. Currently, only support regexp.
+                    "expression": "\\d+" 
+                },
+                {
+                    "type": 0,
+                    "expression": ""
+                }
+            ]
+        }
+    ]
+    ``` 
+
 # What can API do
 
 ## Redefine backend server API
