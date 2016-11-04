@@ -2,7 +2,6 @@ package model
 
 import (
 	"errors"
-	"regexp"
 	"sync"
 	"time"
 
@@ -172,14 +171,7 @@ func (r *RouteTable) AddNewAPI(api *API) error {
 		return ErrAPIExists
 	}
 
-	api.Pattern = regexp.MustCompile(api.URL)
-	for _, n := range api.Nodes {
-		if nil != n.Validations {
-			for _, v := range n.Validations {
-				v.ParseValidation()
-			}
-		}
-	}
+	api.Parse()
 
 	r.apis[getAPIKey(api.URL, api.Method)] = api
 
@@ -193,21 +185,12 @@ func (r *RouteTable) UpdateAPI(api *API) error {
 	r.rwLock.Lock()
 	defer r.rwLock.Unlock()
 
-	old, ok := r.apis[getAPIKey(api.URL, api.Method)]
-
-	if !ok {
+	if _, ok := r.apis[getAPIKey(api.URL, api.Method)]; !ok {
 		return ErrAPINotFound
 	}
 
-	old.updateFrom(api)
-
-	for _, n := range old.Nodes {
-		if nil != n.Validations {
-			for _, v := range n.Validations {
-				v.ParseValidation()
-			}
-		}
-	}
+	r.apis[getAPIKey(api.URL, api.Method)] = api
+	api.Parse()
 
 	log.Infof("API <%s-%s> updated", api.Method, api.URL)
 

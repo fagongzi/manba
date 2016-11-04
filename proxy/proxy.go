@@ -24,8 +24,6 @@ var (
 )
 
 var (
-	// HeaderContentType content-type header
-	HeaderContentType = "Content-Type"
 	// MergeContentType merge operation using content-type
 	MergeContentType = "application/json; charset=utf-8"
 	// MergeRemoveHeaders merge operation need to remove headers
@@ -109,6 +107,12 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 
 	for _, result := range results {
 		if result.Err != nil {
+			if result.API.Mock != nil {
+				result.API.RenderMock(ctx)
+				result.Release()
+				return
+			}
+
 			ctx.SetStatusCode(result.Code)
 			result.Release()
 			return
@@ -128,7 +132,7 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 		result.Res.Header.CopyTo(&ctx.Response.Header)
 	}
 
-	ctx.Response.Header.Add(HeaderContentType, MergeContentType)
+	ctx.Response.Header.SetContentType(MergeContentType)
 	ctx.SetStatusCode(fasthttp.StatusOK)
 
 	ctx.WriteString("{")

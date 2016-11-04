@@ -3,8 +3,36 @@ API
 API is the core concept in gateway. You can use admin to manage your APIs. 
 
 # API fields
+* Name
+  The API Name
+
 * URL
   URL is a regex pattern for match request url. If a origin request url matches this value, proxy dispatch request to nodes which is defined in this api.
+
+* Method
+  API Http method,  the request must match both URL and method. `*` is match all http method(GET,PUT,POST,DELETE)
+
+* Mock
+  A mock json configuration like this
+  ```json
+  {
+    "value": "{\"abc\":\"hello\"}",
+    "contentType": "application/json; charset=utf-8",
+    "headers": [
+        {
+            "name": "header1",
+            "value": "value1"
+        }
+    ],
+    "cookies": [
+        "test-c=1",  // it's a set-cookie header string format
+        "test-c2=2"  // it's a set-cookie header string format
+    ]
+}
+  ```
+  value is required, contentType, headers and cookies are optional.
+
+  Note. If proxy get any error(e.g. has no backend server, backend return a error code) by this API, proxy will use mock to response.
 
 * Nodes
   API nodes is a list infomation. Every Node has 4 attrbutes: cluster, attrbute name, rewrite. Proxy will dispatch origin request to these nodes, and wait for all response, than merge to response to client.

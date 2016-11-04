@@ -1,0 +1,14 @@
+{
+    "value": "{\"abc\":\"hello\"}",
+    "contentType": "application/json; charset=utf-8",
+    "headers": [
+        {
+            "name": "header1",
+            "value": "value1"
+        }
+    ],
+    "cookies": [
+        "test-c=1",
+        "test-c2=2"
+    ]
+}

@@ -20,6 +20,7 @@
 				<th>Method</th>
 				<th>Desc</th>
 				<th>Dispatch Nodes</th>
+				<th>Mock</th>
 				<th>Opts</th>
 			</tr>
 		</thead>
@@ -57,6 +58,9 @@
 							</tr>
 						</tbody>
 					</table>
+				</td>
+				<td>
+					{{api.mock | json}}
 				</td>
 				<td>
 					<button type="button" class="btn btn-success btn-sm" ng-click="delete(api.encodeURL, api.method)">Delete</button>

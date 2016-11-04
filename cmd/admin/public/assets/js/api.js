@@ -79,6 +79,8 @@ function APICreateController($scope, $routeParams, $http, $location, $route) {
     $scope.newUrl = "";
     $scope.newDesc = "";
     $scope.newName = "";
+    $scope.newMock = {};
+    $scope.newMockContentType = "";
     $scope.newNodes = [];
 
 
@@ -120,6 +122,8 @@ function APICreateController($scope, $routeParams, $http, $location, $route) {
             "url": $scope.newUrl,
             "method": $scope.newMethod,
             "desc": $scope.newDesc,
+            "mock": $scope.newMock,
+            "mockContentType": $scope.newMockContentType,
             "nodes": $scope.newNodes,
         }
 
