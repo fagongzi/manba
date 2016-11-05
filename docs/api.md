@@ -12,6 +12,26 @@ API is the core concept in gateway. You can use admin to manage your APIs.
 * Method
   API Http method,  the request must match both URL and method. `*` is match all http method(GET,PUT,POST,DELETE)
 
+* Access Control
+  Access control is a black and white list based on access client ip. It's a json configuration like this:
+  
+  ```json
+  {
+      "blacklist": [
+          "127.*",
+          "127.0.0.*",
+          "127.0.*",
+          "127.0.0.1"
+      ],
+      "whitelist": [
+          "127.*",
+          "127.0.0.*",
+          "127.0.*",
+          "127.0.0.1"
+      ]
+  }
+  ```
+
 * Mock
   A mock json configuration like this
   ```json

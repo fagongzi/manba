@@ -8,7 +8,8 @@ Gateway is a API gateway based on http. It works at 7 layer.
 * Loadbalance
 * Routing based on URL
 * API aggregation(support url rewrite)
-* Validation
+* API Validation
+* API Access Control(blacklist and whitelist)
 * API Mock
 * Backend Server heath check
 * Use [fasthttp](https://github.com/valyala/fasthttp)

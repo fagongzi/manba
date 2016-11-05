@@ -21,6 +21,8 @@ const (
 	FilterXForward = "XFORWARD"
 	// FilterBlackList blacklist filter
 	FilterBlackList = "BLACKLIST"
+	// FilterWhiteList whitelist filter
+	FilterWhiteList = "WHITELIST"
 	// FilterAnalysis analysis filter
 	FilterAnalysis = "ANALYSIS"
 	// FilterRateLimiting limit filter
@@ -45,6 +47,8 @@ func newFilter(name string, config *conf.Conf, proxy *Proxy) (Filter, error) {
 		return newAnalysisFilter(config, proxy), nil
 	case FilterBlackList:
 		return newBlackListFilter(config, proxy), nil
+	case FilterWhiteList:
+		return newWhiteListFilter(config, proxy), nil
 	case FilterRateLimiting:
 		return newRateLimitingFilter(config, proxy), nil
 	case FilterCircuitBreake:

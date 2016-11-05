@@ -20,6 +20,7 @@
 				<th>Method</th>
 				<th>Desc</th>
 				<th>Dispatch Nodes</th>
+				<th>Access Control</th>
 				<th>Mock</th>
 				<th>Opts</th>
 			</tr>
@@ -58,6 +59,9 @@
 							</tr>
 						</tbody>
 					</table>
+				</td>
+				<td>
+					{{api.accessControl | json}}
 				</td>
 				<td>
 					{{api.mock | json}}

@@ -32,7 +32,7 @@ func (f AccessFilter) Post(c *filterContext) (statusCode int, err error) {
 	cost := (c.endAt - c.startAt)
 
 	log.Infof("%s %s \"%s\" %d \"%s\" %s %s",
-		c.ctx.RemoteIP().String(),
+		GetRealClientIP(c.ctx),
 		c.ctx.Method(),
 		c.outreq.RequestURI(),
 		c.result.Res.StatusCode(),
