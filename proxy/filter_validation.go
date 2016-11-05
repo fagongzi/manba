@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	// ErrValidationFailure validation failure
 	ErrValidationFailure = errors.New("request validation failure")
 )
 
@@ -30,6 +31,7 @@ func (v ValidationFilter) Name() string {
 	return FilterValidation
 }
 
+// Pre pre filter, before proxy reuqest
 func (v ValidationFilter) Pre(c *filterContext) (statusCode int, err error) {
 	if c.result.Node.Validate(c.outreq) {
 		return v.baseFilter.Pre(c)
