@@ -1,6 +1,7 @@
 Gateway
 -------
 [![Build Status](https://api.travis-ci.org/fagongzi/gateway.svg)](https://travis-ci.org/fagongzi/gateway)
+[![Go Report Card](https://goreportcard.com/badge/github.com/fagongzi/gateway)](https://goreportcard.com/report/github.com/fagongzi/gateway)
 
 Gateway is a API gateway based on http. It works at 7 layer.
 
