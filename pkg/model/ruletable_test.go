@@ -302,7 +302,7 @@ func TestEtcdWatchUpdateAPI(t *testing.T) {
 	existAPI, _ := rt.apis[getAPIKey(api.URL, api.Method)]
 
 	if len(existAPI.Nodes) != len(api.Nodes) {
-		t.Errorf("Nodes expect:<%s>, acture:<%d>. ", len(existAPI.Nodes), len(api.Nodes))
+		t.Errorf("Nodes expect:<%d>, acture:<%d>. ", len(existAPI.Nodes), len(api.Nodes))
 		return
 	}
 }
