@@ -12,6 +12,9 @@ API is the core concept in gateway. You can use admin to manage your APIs.
 * Method
   API Http method,  the request must match both URL and method. `*` is match all http method(GET,PUT,POST,DELETE)
 
+* Status
+  API status, value range is UP and Down.
+
 * Access Control
   Access control is a black and white list based on access client ip. It's a json configuration like this:
   

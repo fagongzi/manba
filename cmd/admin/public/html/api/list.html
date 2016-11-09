@@ -15,14 +15,15 @@
 	<table class="table table-bordered table-striped">
 		<thead>
 			<tr>
-				<th>Name</th>
-				<th>Url</th>
-				<th>Method</th>
-				<th>Desc</th>
-				<th>Dispatch Nodes</th>
-				<th>Access Control</th>
-				<th>Mock</th>
-				<th>Opts</th>
+				<th width="5%">Name</th>
+				<th width="10%">Url</th>
+				<th width="5%">Method</th>
+				<th width="5%">Status</th>
+				<th width="15%">Desc</th>
+				<th width="15%">Dispatch Nodes</th>
+				<th width="10%">Access Control</th>
+				<th width="10%">Mock</th>
+				<th width="30%">Opts</th>
 			</tr>
 		</thead>
 
@@ -36,6 +37,9 @@
 				</td>
 				<td>
 					{{api.method}}
+				</td>
+				<td>
+					{{api.status | status}}
 				</td>
 				<td>
 					{{api.desc}}
@@ -67,6 +71,8 @@
 					{{api.mock | json}}
 				</td>
 				<td>
+					<button type="button" class="btn btn-success btn-sm" ng-click="up(api)">UP</button>
+					<button type="button" class="btn btn-success btn-sm" ng-click="down(api)">DOWN</button>
 					<button type="button" class="btn btn-success btn-sm" ng-click="delete(api.encodeURL, api.method)">Delete</button>
 				</td>
 			</tr>

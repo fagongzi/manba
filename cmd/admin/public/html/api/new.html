@@ -23,6 +23,14 @@
 		</div>
 
 		<div class="form-group">
+			<label for="status">Status</label>
+			<select class="form-control" ng-model="newStatus" id="status">
+                <option value="0" selected="selected">Down</option>
+                <option value="1">UP</option>
+            </select>
+		</div>
+
+		<div class="form-group">
 			<label for="desc">Desc</label>
 			<textarea class="form-control" ng-model="newDesc" id="desc" rows="4"></textarea>
 		</div>

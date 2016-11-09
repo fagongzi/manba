@@ -24,6 +24,14 @@
 		</div>
 
 		<div class="form-group">
+			<label for="status">Status</label>
+			<select class="form-control" ng-model="api.status" id="status">
+                <option value="0">Down</option>
+                <option value="1">UP</option>
+            </select>
+		</div>
+
+		<div class="form-group">
 			<label for="desc">Desc</label>
 			<textarea class="form-control" ng-model="api.desc" id="desc" rows="4"></textarea>
 		</div>

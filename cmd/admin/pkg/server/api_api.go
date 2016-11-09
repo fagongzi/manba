@@ -80,13 +80,13 @@ func (server *AdminServer) updateAPI() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		ang, err := model.UnMarshalAPIFromReader(c.Request().Body())
+		api, err := model.UnMarshalAPIFromReader(c.Request().Body())
 
 		if nil != err {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := server.store.UpdateAPI(ang)
+			err := server.store.UpdateAPI(api)
 			if nil != err {
 				errstr = err.Error()
 				code = CodeError

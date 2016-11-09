@@ -9,6 +9,13 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+const (
+	// APIStatusDown down status
+	APIStatusDown = iota
+	//APIStatusUp up status
+	APIStatusUp
+)
+
 // Node api dispatch node
 type Node struct {
 	ClusterName string        `json:"clusterName, omitempty"`
@@ -68,6 +75,7 @@ type API struct {
 	Name          string         `json:"name, omitempty"`
 	URL           string         `json:"url"`
 	Method        string         `json:"method"`
+	Status        int            `json:"status, omitempty"`
 	AccessControl *AccessControl `json:"accessControl, omitempty"`
 	Mock          *Mock          `json:"mock, omitempty"`
 	Nodes         []*Node        `json:"nodes"`
@@ -214,5 +222,17 @@ func (a *API) getNodeURL(req *fasthttp.Request, node *Node) string {
 }
 
 func (a *API) matches(req *fasthttp.Request) bool {
-	return (a.Method == "*" || strings.ToUpper(string(req.Header.Method())) == a.Method) && a.Pattern.Match(req.URI().RequestURI())
+	return a.isUp() && a.isMethodMatches(req) && a.isURIMatches(req)
+}
+
+func (a *API) isUp() bool {
+	return a.Status == APIStatusUp
+}
+
+func (a *API) isMethodMatches(req *fasthttp.Request) bool {
+	return a.Method == "*" || strings.ToUpper(string(req.Header.Method())) == a.Method
+}
+
+func (a *API) isURIMatches(req *fasthttp.Request) bool {
+	return a.Pattern.Match(req.URI().RequestURI())
 }

@@ -56,6 +56,7 @@ function APIUpdateController($scope, $routeParams, $http, $location, $route) {
     }
 
     $scope.update = function () {
+        $scope.api.status = parseInt($scope.api.status)
         $http.put('api/apis', $scope.api).success(function (data) {
             if ($scope.oldMethod != $scope.api.method || $scope.oldUrl != $scope.api.url) {
                 $http.delete('api/apis/' + Base64.encodeURI($scope.oldUrl) + "?method=" + $scope.oldMethod).success(function (data) {
@@ -82,6 +83,7 @@ function APICreateController($scope, $routeParams, $http, $location, $route) {
     $scope.newMock = {};
     $scope.newAccessControl = {};
     $scope.newNodes = [];
+    $scope.newStatus = 0;
 
 
     $scope.resetNode = function () {
@@ -121,6 +123,7 @@ function APICreateController($scope, $routeParams, $http, $location, $route) {
             "name": $scope.newName,
             "url": $scope.newUrl,
             "method": $scope.newMethod,
+            "status": parseInt($scope.newStatus),
             "desc": $scope.newDesc,
             "mock": $scope.newMock,
             "accessControl": $scope.newAccessControl,
@@ -151,6 +154,29 @@ function APIController($scope, $routeParams, $http, $location, $route) {
         $http.delete('api/apis/' + url + "?method=" + method).success(function (data) {
             $location.path("/apis");
             $route.reload();
+        });
+    }
+
+    $scope.up = function (api) {
+        if (api.status == 1) {
+            return;
+        }
+
+        var old = api.status;
+        api.status = 1;
+        $http.put('api/apis', api).error(function (err) {
+            api.status = old;
+        });
+    }
+
+    $scope.down = function (api) {
+        if (api.status == 0) {
+            return;
+        }
+
+        api.status = 0;
+        $http.put('api/apis', api).error(function (err) {
+            api.status = old;
         });
     }
 }
