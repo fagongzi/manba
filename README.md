@@ -37,15 +37,18 @@ go build cmd/admin/admin.go
 You can read [this](./docs/build.md) for more infomation about build and run gateway.
 
 ## Docker
-You can run `docker pull fagongzi/gatway` to get docker images, then use `docker run -d fagongzi/gateway` to run. It export 3 ports:
+You can run `docker pull fagongzi/gateway` to get docker images, then use `docker run -d fagongzi/gateway` to run. It export 3 ports:
 
 * 80
+
   proxy http serve port
 
 * 8081
+
   proxy manager port
 
 * 8080
+  
   admin http port
 
 # Online Demo
