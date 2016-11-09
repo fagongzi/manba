@@ -10,7 +10,7 @@ import (
 var (
 	cpus       = flag.Int("cpus", 1, "use cpu nums")
 	addr       = flag.String("addr", ":8080", "listen addr.(e.g. ip:port)")
-	etcdAddr   = flag.String("etcd-addr", "http://192.168.159.130:2379", "etcd address, use ',' to splite.")
+	etcdAddr   = flag.String("etcd-addr", "http://localhost:2379", "etcd address, use ',' to splite.")
 	etcdPrefix = flag.String("etcd-prefix", "/gateway", "etcd node prefix.")
 )
 
