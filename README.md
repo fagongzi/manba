@@ -5,6 +5,8 @@
 
 Gateway
 -------
+
+[![Join the chat at https://gitter.im/fagongzi/gateway](https://badges.gitter.im/fagongzi/gateway.svg)](https://gitter.im/fagongzi/gateway?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 Gateway is a API gateway based on http. It works at 7 layer.
 
 # Features
