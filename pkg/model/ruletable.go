@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/fagongzi/gateway/pkg/conf"
 	"github.com/fagongzi/goetty"
 	"github.com/valyala/fasthttp"
 )
@@ -69,30 +70,40 @@ func (result *RouteResult) GetRewritePath(req *fasthttp.Request) string {
 type RouteTable struct {
 	rwLock *sync.RWMutex
 
+	cnf *conf.Conf
+
 	clusters map[string]*Cluster
 	svrs     map[string]*Server
 	mapping  map[string]map[string]*Cluster
 	apis     map[string]*API
 	routings map[string]*Routing
 
-	tw             *goetty.HashedTimeWheel
+	store                  Store
+	serviceDiscoveryDriver *ServiceDiscoveryDriver
+	lastDiscoveryClusters  map[string]string
+
+	tw *goetty.HashedTimeWheel
+
 	evtChan        chan *Server
-	store          Store
 	watchStopCh    chan bool
 	watchReceiveCh chan *Evt
+	syncChan       chan bool
 
 	analysiser *Analysis
 }
 
 // NewRouteTable create a new RouteTable
-func NewRouteTable(store Store) *RouteTable {
+func NewRouteTable(cnf *conf.Conf, store Store, serviceDiscoveryDriver *ServiceDiscoveryDriver) *RouteTable {
 	tw := goetty.NewHashedTimeWheel(time.Second, 60, 3)
 	tw.Start()
 
 	rt := &RouteTable{
-		tw:         tw,
-		store:      store,
-		analysiser: newAnalysis(),
+		cnf:   cnf,
+		tw:    tw,
+		store: store,
+		serviceDiscoveryDriver: serviceDiscoveryDriver,
+		lastDiscoveryClusters:  make(map[string]string),
+		analysiser:             newAnalysis(),
 
 		rwLock: &sync.RWMutex{},
 
@@ -105,6 +116,7 @@ func NewRouteTable(store Store) *RouteTable {
 		evtChan:        make(chan *Server, 1024),
 		watchStopCh:    make(chan bool),
 		watchReceiveCh: make(chan *Evt),
+		syncChan:       make(chan bool, 32),
 	}
 
 	go rt.changed()
@@ -285,8 +297,11 @@ func (r *RouteTable) AddNewServer(svr *Server) error {
 
 	svr.init()
 
-	// start check
-	r.addToCheck(svr)
+	if !svr.External {
+		r.addToCheck(svr)
+	} else {
+		svr.changeTo(Up)
+	}
 
 	r.analysiser.addNewAnalysis(svr.Addr)
 	// 1 secs default add to use
@@ -349,7 +364,6 @@ func (r *RouteTable) AddNewCluster(cluster *Cluster) error {
 	_, ok := r.clusters[cluster.Name]
 
 	if ok {
-		log.Errorf("Cluster <%v> added fail: %s", cluster, ErrClusterExists.Error())
 		return ErrClusterExists
 	}
 
@@ -375,7 +389,6 @@ func (r *RouteTable) Bind(svrAddr string, clusterName string) error {
 	cluster, ok := r.clusters[clusterName]
 	if !ok {
 		log.Errorf("Bind <%s,%s> fail: %s", svrAddr, clusterName, ErrClusterNotFound.Error())
-
 		return ErrClusterNotFound
 	}
 
@@ -383,8 +396,6 @@ func (r *RouteTable) Bind(svrAddr string, clusterName string) error {
 	bindCluster, ok := binded[cluster.Name]
 
 	if ok && bindCluster.Name == clusterName {
-		log.Errorf("Bind <%s,%s> fail: %s", svrAddr, clusterName, ErrBindExists.Error())
-
 		return ErrBindExists
 	}
 
@@ -407,14 +418,12 @@ func (r *RouteTable) UnBind(svrAddr string, clusterName string) error {
 	svr, ok := r.svrs[svrAddr]
 	if !ok {
 		log.Errorf("UnBind <%s,%s> fail: %s", svrAddr, clusterName, ErrServerNotFound.Error())
-
 		return ErrServerNotFound
 	}
 
 	cluster, ok := r.clusters[clusterName]
 	if !ok {
 		log.Errorf("UnBind <%s,%s> fail: %s", svrAddr, clusterName, ErrClusterNotFound.Error())
-
 		return ErrClusterNotFound
 	}
 
@@ -586,6 +595,59 @@ func (r *RouteTable) Load() {
 	r.loadBinds()
 	r.loadAPIs()
 	r.loadRoutings()
+
+	r.loadFromServiceDiscovery("timeout-sync-service-discovery")
+
+	go r.doLoadFromServiceDiscovery()
+}
+
+func (r *RouteTable) loadFromServiceDiscovery(timeoutKey string) {
+	r.tw.AddWithId(time.Second*time.Duration(r.cnf.ServiceDiscoveryDuration), timeoutKey, r.loadFromServiceDiscovery)
+	r.syncChan <- true
+}
+
+func (r *RouteTable) doLoadFromServiceDiscovery() {
+	for {
+		<-r.syncChan
+		clusters, err := r.serviceDiscoveryDriver.GetAllClusters()
+		if err != nil {
+			log.WarnError(err, "Load clusters from service discovery failure")
+			return
+		}
+
+		filter := func(c *Cluster) bool { return c.External }
+
+		deleteClusters := MinusClusters(clusters.Clusters, r.clusters, filter)
+		allServers := make(map[string]*Server)
+
+		for _, cluster := range clusters.Clusters {
+			cluster.init()
+
+			if _, ok := deleteClusters[cluster.Name]; ok {
+				r.DeleteCluster(cluster.Name)
+			} else {
+				r.AddNewCluster(cluster)
+
+				servers, err := r.serviceDiscoveryDriver.GetServersByClusterName(cluster.Name)
+				if err != nil {
+					log.WarnErrorf(err, "Load servers from service discovery failure with cluster <%s>", cluster.Name)
+					continue
+				}
+
+				for addr, server := range servers.Servers {
+					r.AddNewServer(server)
+					r.Bind(server.Addr, cluster.Name)
+					allServers[addr] = server
+				}
+			}
+		}
+
+		deleteServers := MinusServers(allServers, r.svrs, func(s *Server) bool { return s.External })
+		log.Infof("Delete servers len is %d", len(deleteServers))
+		for svr := range deleteServers {
+			r.DeleteServer(svr)
+		}
+	}
 }
 
 func (r *RouteTable) loadClusters() {

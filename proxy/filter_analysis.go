@@ -1,7 +1,7 @@
 package proxy
 
 import (
-	"github.com/fagongzi/gateway/conf"
+	"github.com/fagongzi/gateway/pkg/conf"
 )
 
 // AnalysisFilter analysis filter

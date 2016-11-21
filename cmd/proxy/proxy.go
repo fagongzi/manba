@@ -9,8 +9,7 @@ import (
 	"runtime"
 
 	"github.com/CodisLabs/codis/pkg/utils/log"
-	"github.com/fagongzi/gateway/conf"
-	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/gateway/pkg/conf"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/gateway/proxy"
 )
@@ -51,28 +50,7 @@ func main() {
 
 	log.Infof("conf:<%+v>", cnf)
 
-	proxyInfo := &model.ProxyInfo{
-		Conf: cnf,
-	}
-
-	store, err := model.NewEtcdStore(cnf.EtcdAddrs, cnf.EtcdPrefix)
-
-	if err != nil {
-		log.Panicf("init etcd store error:<%+v>", err)
-	}
-
-	register, _ := store.(model.Register)
-
-	register.Registry(proxyInfo)
-
-	rt := model.NewRouteTable(store)
-	rt.Load()
-
-	server := proxy.NewProxy(cnf, rt)
-
-	for _, filter := range cnf.Filers {
-		server.RegistryFilter(filter)
-	}
+	server := proxy.NewProxy(cnf)
 
 	server.Start()
 }

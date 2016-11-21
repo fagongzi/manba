@@ -21,7 +21,7 @@ func newManager(proxy *Proxy) *Manager {
 // SetLogLevel set log level
 func (m *Manager) SetLogLevel(req model.SetLogReq, rsp *model.SetLogRsp) error {
 	level := util.SetLogLevel(req.Level)
-	m.proxy.config.LogLevel = level
+	m.proxy.cnf.LogLevel = level
 
 	rsp.Code = 0
 	return nil
@@ -56,7 +56,7 @@ func (m *Manager) GetAnalysisPoint(req model.GetAnalysisPointReq, rsp *model.Get
 }
 
 func (p *Proxy) startRPCServer() error {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", p.config.MgrAddr)
+	tcpAddr, err := net.ResolveTCPAddr("tcp", p.cnf.MgrAddr)
 
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (p *Proxy) startRPCServer() error {
 		return err
 	}
 
-	log.Infof("Mgr listen at %s.", p.config.MgrAddr)
+	log.Infof("Mgr listen at %s.", p.cnf.MgrAddr)
 
 	server := rpc.NewServer()
 

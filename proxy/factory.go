@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/fagongzi/gateway/conf"
+	"github.com/fagongzi/gateway/pkg/conf"
 )
 
 var (
@@ -13,10 +13,10 @@ var (
 )
 
 const (
-	// FilterHTTPAccess log filter
+	// FilterHTTPAccess access log filter
 	FilterHTTPAccess = "HTTP-ACCESS"
 	// FilterHeader header filter
-	FilterHeader = "HEAD" // 处理head
+	FilterHeader = "HEAD" // process header fiter
 	// FilterXForward xforward fiter
 	FilterXForward = "XFORWARD"
 	// FilterBlackList blacklist filter
@@ -29,7 +29,7 @@ const (
 	FilterRateLimiting = "RATE-LIMITING"
 	// FilterCircuitBreake circuit breake filter
 	FilterCircuitBreake = "CIRCUIT-BREAKE"
-	// FilterValidation validation request
+	// FilterValidation validation request filter
 	FilterValidation = "VALIDATION"
 )
 

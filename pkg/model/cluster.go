@@ -14,8 +14,10 @@ import (
 
 // Cluster cluster
 type Cluster struct {
-	Name        string   `json:"name,omitempty"`
-	LbName      string   `json:"lbName,omitempty"`
+	Name   string `json:"name,omitempty"`
+	LbName string `json:"lbName,omitempty"`
+	// External external, e.g. create from external service discovery
+	External    bool     `json:"external,omitempty"`
 	BindServers []string `json:"bindServers,omitempty"`
 
 	svrs   *list.List

@@ -12,6 +12,10 @@ type Conf struct {
 
 	Filers []string `json:"filers"`
 
+	PluginDir string `json:"pluginDir"`
+
+	ServiceDiscoveryDuration int `json:"serviceDiscoveryDuration"`
+
 	// Maximum number of connections which may be established to server
 	MaxConns int `json:"maxConns"`
 	// MaxConnDuration Keep-alive connections are closed after this duration.

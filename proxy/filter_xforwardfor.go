@@ -1,6 +1,8 @@
 package proxy
 
-import "github.com/fagongzi/gateway/conf"
+import (
+	"github.com/fagongzi/gateway/pkg/conf"
+)
 
 // XForwardForFilter XForwardForFilter
 type XForwardForFilter struct {

@@ -46,6 +46,8 @@ type Server struct {
 	Schema string `json:"schema,omitempty"`
 	Addr   string `json:"addr,omitempty"`
 
+	// External external, e.g. create from external service discovery
+	External bool `json:"external,omitempty"`
 	// CheckPath begin with / checkpath, expect return CheckResponsedBody.
 	CheckPath string `json:"checkPath,omitempty"`
 	// CheckResponsedBody check url responsed http body, if not set, not check body

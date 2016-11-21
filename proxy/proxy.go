@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/CodisLabs/codis/pkg/utils/log"
-	"github.com/fagongzi/gateway/conf"
+	"github.com/fagongzi/gateway/pkg/conf"
 	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/gateway/pkg/plugin"
+	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/valyala/fasthttp"
 )
 
@@ -36,33 +38,73 @@ var (
 
 // Proxy Proxy
 type Proxy struct {
-	fastHTTPClient *FastHTTPClient
-	config         *conf.Conf
-	routeTable     *model.RouteTable
-	flushInterval  time.Duration
-	filters        *list.List
+	cnf                  *conf.Conf
+	filters              *list.List
+	fastHTTPClient       *util.FastHTTPClient
+	routeTable           *model.RouteTable
+	pluginRegistryCenter *plugin.RegistryCenter
 }
 
 // NewProxy create a new proxy
-func NewProxy(config *conf.Conf, routeTable *model.RouteTable) *Proxy {
+func NewProxy(config *conf.Conf) *Proxy {
 	p := &Proxy{
-		fastHTTPClient: NewFastHTTPClient(config),
-		config:         config,
-		routeTable:     routeTable,
+		fastHTTPClient: util.NewFastHTTPClient(config),
+		cnf:            config,
 		filters:        list.New(),
 	}
+
+	p.init()
 
 	return p
 }
 
-// RegistryFilter registry a filter
-func (p *Proxy) RegistryFilter(name string) {
-	f, err := newFilter(name, p.config, p)
+func (p *Proxy) init() {
+	err := p.initPlugins()
 	if nil != err {
-		log.Panicf("Proxy unknow filter <%s>.", name)
+		log.PanicErrorf(err, "Proxy load plugins failure at <%s>.", p.cnf.PluginDir)
 	}
 
-	p.filters.PushBack(f)
+	err = p.initRouteTable()
+	if err != nil {
+		log.PanicError(err, "init etcd store error")
+	}
+
+	p.initFilters()
+}
+
+func (p *Proxy) initRouteTable() error {
+	store, err := model.NewEtcdStore(p.cnf.EtcdAddrs, p.cnf.EtcdPrefix)
+
+	if err != nil {
+		return err
+	}
+
+	register, _ := store.(model.Register)
+
+	register.Registry(&model.ProxyInfo{
+		Conf: p.cnf,
+	})
+
+	p.routeTable = model.NewRouteTable(p.cnf, store, model.NewServiceDiscoveryDriver(p.pluginRegistryCenter))
+	p.routeTable.Load()
+
+	return nil
+}
+
+func (p *Proxy) initPlugins() error {
+	p.pluginRegistryCenter = plugin.NewRegistryCenter(p.cnf, p.fastHTTPClient)
+	return p.pluginRegistryCenter.Load()
+}
+
+func (p *Proxy) initFilters() {
+	for _, filter := range p.cnf.Filers {
+		f, err := newFilter(filter, p.cnf, p)
+		if nil != err {
+			log.Panicf("Proxy unknow filter <%s>.", filter)
+		}
+
+		p.filters.PushBack(f)
+	}
 }
 
 // Start start proxy
@@ -70,10 +112,10 @@ func (p *Proxy) Start() {
 	err := p.startRPCServer()
 
 	if nil != err {
-		log.PanicErrorf(err, "Proxy start rpc at <%s> fail.", p.config.MgrAddr)
+		log.PanicErrorf(err, "Proxy start rpc at <%s> fail.", p.cnf.MgrAddr)
 	}
 
-	log.ErrorErrorf(fasthttp.ListenAndServe(p.config.Addr, p.ReverseProxyHandler), "Proxy exit at %s", p.config.Addr)
+	log.ErrorErrorf(fasthttp.ListenAndServe(p.cnf.Addr, p.ReverseProxyHandler), "Proxy exit at %s", p.cnf.Addr)
 }
 
 // ReverseProxyHandler http reverse handler

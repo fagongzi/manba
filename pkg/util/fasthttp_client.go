@@ -1,4 +1,4 @@
-package proxy
+package util
 
 import (
 	"bufio"
@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/fagongzi/gateway/conf"
+	"github.com/fagongzi/gateway/pkg/conf"
 	"github.com/valyala/fasthttp"
 )
 
@@ -22,12 +22,16 @@ var clientConnPool sync.Pool
 
 // FastHTTPClient fast http client
 type FastHTTPClient struct {
-	conf *conf.Conf
+	MaxConnDuration     time.Duration
+	MaxIdleConnDuration time.Duration
+	ReadTimeout         time.Duration
+	WriteTimeout        time.Duration
 
-	MaxConnDuration     time.Duration `json:"maxConnDuration"`
-	MaxIdleConnDuration time.Duration `json:"maxIdleConnDuration"`
-	ReadTimeout         time.Duration `json:"readTimeout"`
-	WriteTimeout        time.Duration `json:"writeTimeout"`
+	MaxConns            int
+	MaxResponseBodySize int
+
+	WriteBufferSize int
+	ReadBufferSize  int
 
 	clientName  atomic.Value
 	lastUseTime uint32
@@ -43,11 +47,15 @@ type FastHTTPClient struct {
 // NewFastHTTPClient create FastHTTPClient instance
 func NewFastHTTPClient(conf *conf.Conf) *FastHTTPClient {
 	return &FastHTTPClient{
-		conf:                conf,
 		MaxConnDuration:     time.Duration(conf.MaxConnDuration) * time.Second,
 		MaxIdleConnDuration: time.Duration(conf.MaxIdleConnDuration) * time.Second,
 		ReadTimeout:         time.Duration(conf.ReadTimeout) * time.Second,
 		WriteTimeout:        time.Duration(conf.WriteTimeout) * time.Second,
+
+		MaxResponseBodySize: conf.MaxResponseBodySize,
+		WriteBufferSize:     conf.WriteBufferSize,
+		ReadBufferSize:      conf.ReadBufferSize,
+		MaxConns:            conf.MaxConns,
 	}
 }
 
@@ -61,7 +69,7 @@ type clientConn struct {
 	lastWriteDeadlineTime time.Time
 }
 
-// Do do proxy
+// Do do a http request
 func (c *FastHTTPClient) Do(req *fasthttp.Request, addr string) (*fasthttp.Response, error) {
 	resp, retry, err := c.do(req, addr)
 	if err != nil && retry && isIdempotent(req) {
@@ -102,7 +110,7 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 	conn := cc.c
 
 	// set write deadline
-	if c.conf.WriteTimeout > 0 {
+	if c.WriteTimeout > 0 {
 		// Optimization: update write deadline only if more than 25%
 		// of the last write deadline exceeded.
 		// See https://github.com/golang/go/issues/15133 for details.
@@ -117,7 +125,7 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 	}
 
 	resetConnection := false
-	if c.conf.MaxConnDuration > 0 && time.Since(cc.createdTime) > c.MaxConnDuration && !req.ConnectionClose() {
+	if c.MaxConnDuration > 0 && time.Since(cc.createdTime) > c.MaxConnDuration && !req.ConnectionClose() {
 		req.SetConnectionClose()
 		resetConnection = true
 	}
@@ -140,7 +148,7 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 	c.releaseWriter(bw)
 
 	// set read readline
-	if c.conf.ReadTimeout > 0 {
+	if c.ReadTimeout > 0 {
 		// Optimization: update read deadline only if more than 25%
 		// of the last read deadline exceeded.
 		// See https://github.com/golang/go/issues/15133 for details.
@@ -159,7 +167,7 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 	}
 
 	br := c.acquireReader(conn)
-	if err = resp.ReadLimitBody(br, c.conf.MaxResponseBodySize); err != nil {
+	if err = resp.ReadLimitBody(br, c.MaxResponseBodySize); err != nil {
 		c.releaseReader(br)
 		c.closeConn(cc)
 		if err == io.EOF {
@@ -187,7 +195,7 @@ func (c *FastHTTPClient) acquireConn(addr string) (*clientConn, error) {
 	c.connsLock.Lock()
 	n = len(c.conns)
 	if n == 0 {
-		maxConns := c.conf.MaxConns
+		maxConns := c.MaxConns
 		if maxConns <= 0 {
 			maxConns = fasthttp.DefaultMaxConnsPerHost
 		}
@@ -292,7 +300,7 @@ func (c *FastHTTPClient) closeConn(cc *clientConn) {
 func (c *FastHTTPClient) acquireWriter(conn net.Conn) *bufio.Writer {
 	v := c.writerPool.Get()
 	if v == nil {
-		return bufio.NewWriterSize(conn, c.conf.WriteBufferSize)
+		return bufio.NewWriterSize(conn, c.WriteBufferSize)
 	}
 	bw := v.(*bufio.Writer)
 	bw.Reset(conn)
@@ -306,7 +314,7 @@ func (c *FastHTTPClient) releaseWriter(bw *bufio.Writer) {
 func (c *FastHTTPClient) acquireReader(conn net.Conn) *bufio.Reader {
 	v := c.readerPool.Get()
 	if v == nil {
-		return bufio.NewReaderSize(conn, c.conf.ReadBufferSize)
+		return bufio.NewReaderSize(conn, c.ReadBufferSize)
 	}
 	br := v.(*bufio.Reader)
 	br.Reset(conn)

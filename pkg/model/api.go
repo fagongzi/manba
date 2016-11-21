@@ -75,6 +75,7 @@ type API struct {
 	Name          string         `json:"name, omitempty"`
 	URL           string         `json:"url"`
 	Method        string         `json:"method"`
+	Domain        string         `json:"domain, omitempty"`
 	Status        int            `json:"status, omitempty"`
 	AccessControl *AccessControl `json:"accessControl, omitempty"`
 	Mock          *Mock          `json:"mock, omitempty"`
@@ -222,7 +223,7 @@ func (a *API) getNodeURL(req *fasthttp.Request, node *Node) string {
 }
 
 func (a *API) matches(req *fasthttp.Request) bool {
-	return a.isUp() && a.isMethodMatches(req) && a.isURIMatches(req)
+	return a.isUp() && (a.isDomainMatches(req) || (a.isMethodMatches(req) && a.isURIMatches(req)))
 }
 
 func (a *API) isUp() bool {
@@ -235,4 +236,8 @@ func (a *API) isMethodMatches(req *fasthttp.Request) bool {
 
 func (a *API) isURIMatches(req *fasthttp.Request) bool {
 	return a.Pattern.Match(req.URI().RequestURI())
+}
+
+func (a *API) isDomainMatches(req *fasthttp.Request) bool {
+	return a.Domain != "" && string(req.Header.Host()) == a.Domain
 }

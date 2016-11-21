@@ -79,23 +79,6 @@ func (c *runOnFirstRead) Read(bs []byte) (int, error) {
 	return c.Reader.Read(bs)
 }
 
-func (p *Proxy) copyResponse(dst io.Writer, src io.Reader) {
-	if p.flushInterval != 0 {
-		if wf, ok := dst.(writeFlusher); ok {
-			mlw := &maxLatencyWriter{
-				dst:     wf,
-				latency: p.flushInterval,
-				done:    make(chan bool),
-			}
-			go mlw.flushLoop()
-			defer mlw.stop()
-			dst = mlw
-		}
-	}
-
-	io.Copy(dst, src)
-}
-
 func copyRequest(req *fasthttp.Request) *fasthttp.Request {
 	newreq := fasthttp.AcquireRequest()
 	newreq.Reset()
