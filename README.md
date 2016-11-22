@@ -6,14 +6,16 @@
 
 Gateway
 -------
-Gateway is a API gateway based on http. It works at 7 layer.
+Gateway is a http restful API gateway. 
 
 # Features
 * Traffic Control
 * Circuit Breaker
 * Loadbalance
+* Service Discovery
+* Plugin mechanism
 * Routing based on URL
-* API aggregation(support url rewrite)
+* API aggregation
 * API Validation
 * API Access Control(blacklist and whitelist)
 * API Mock
@@ -35,8 +37,6 @@ go build cmd/admin/admin.go
 ## Download binary file
 [linux-64bit](http://7xtbpp.com1.z0.glb.clouddn.com/gateway-linux64.tar.gz)
 
-You can read [this](./docs/build.md) for more infomation about build and run gateway.
-
 ## Docker
 You can run `docker pull fagongzi/gateway` to get docker images, then use `docker run -d fagongzi/gateway` to run. It export 3 ports:
 
@@ -51,6 +51,8 @@ You can run `docker pull fagongzi/gateway` to get docker images, then use `docke
 * 8080
   
   admin http port
+
+You can read [this](./docs/build.md) for more infomation about build and run gateway.
 
 # Online Demo
 
@@ -96,14 +98,34 @@ The Etcd store gateway's mete data.
   Routing is a approach to control http traffic to clusters. You can use cookie, query string, request header infomation in a expression for control.
 
 # What gateway can help you
-## Redefine your API URL
-Your backend server provide some restful API, You can redefine the API URL that provide to API caller.Use this funcation you can provide beautiful APIs.  
+## API Definition
+You can define restful API based on backend real apis. You can also define a aggregation API use more backend apis.
 
-## Dynamic URL & Aggregation
-You can define a URL and configuration a URL set which you want to aggregation.
+## Validation
+You can create some validation rules for api, these rules can validate args of api is correct.
+
+## API Mock
+You can create a mock API. These API is not depend on backend server api. It can used for front-end developer or default return value that the back-end server does not respond to.
 
 ## Protect backend server
 Gateway can use **Traffic Control** and **Circuit Breaker** functions to avoid backend crash by hight triffic.
 
 ## AB Test
 Gateway's **Routing** fucntion can help your AB Test.
+
+# How to extend the gateway
+Gateway support plugin mechanism, currently it only support service discovery plugin. 
+
+Once gateway proxy started, it scan `pluginDir` for plugins. In `PluginDir`, a json file is correspond a external plugin. The json file formart is:
+```json
+{
+    "type": "service-discovery",
+    "address": "127.0.0.1:8080"
+}
+```
+
+Gateway proxy used http for communicate with plugin. Plugin must implementation this API for Registration:
+
+|URL|Method|
+|:---|:---|
+|/plugins\/$type|POST|
