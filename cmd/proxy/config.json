@@ -2,9 +2,9 @@
     "addr": ":80",
     "mgrAddr": ":8081",
     "etcdAddrs": [
-        "http://192.168.159.130:2379"
+        "http://127.0.0.1:2379"
     ],
-    "etcdPrefix": "/gateway2",
+    "etcdPrefix": "/gateway",
     "filers": [
         "whitelist",
         "blacklist",
@@ -26,6 +26,6 @@
     "maxResponseBodySize": 104857600,
     "enablePPROF": false,
     "pprofAddr": "",
-    "pluginDir": "D:\\plugins",
+    "pluginDir": "/app/gateway/plugins",
     "ServiceDiscoveryDuration": 10
 }

@@ -1,6 +1,7 @@
 FROM golang:1.7.3
 
 RUN mkdir -p /app/gateway
+RUN mkdir -p /app/gateway/plugins
 RUN mkdir -p /go/src/github.com/fagongzi/gateway 
 
 COPY ./ /go/src/github.com/fagongzi/gateway
