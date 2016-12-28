@@ -1,36 +1,44 @@
 package goetty
 
 import (
-	"github.com/CodisLabs/codis/pkg/utils/atomic2"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/CodisLabs/codis/pkg/utils/atomic2"
 )
 
-type IdGenerator interface {
-	NewId() interface{}
+// IDGenerator ID Generator interface
+type IDGenerator interface {
+	NewID() interface{}
 }
 
-type Int64IdGenerator struct {
+// Int64IDGenerator int64 id Generator
+type Int64IDGenerator struct {
 	counter atomic2.Int64
 }
 
-func (self Int64IdGenerator) NewId() interface{} {
-	return self.counter.Incr()
+// NewInt64IDGenerator create a uuid v4 generator
+func NewInt64IDGenerator() IDGenerator {
+	return &Int64IDGenerator{}
 }
 
-func NewInt64IdGenerator() IdGenerator {
-	return &Int64IdGenerator{}
+// NewID return a id
+func (g Int64IDGenerator) NewID() interface{} {
+	return g.counter.Incr()
 }
 
+// UUIDV4IdGenerator uuid v4 generator
 type UUIDV4IdGenerator struct {
 }
 
-func (self UUIDV4IdGenerator) NewId() interface{} {
+// NewID return a id
+func (g UUIDV4IdGenerator) NewID() interface{} {
 	return NewV4UUID()
 }
 
-func NewUUIDV4IdGenerator() IdGenerator {
+// NewUUIDV4IdGenerator create a uuid v4 generator
+func NewUUIDV4IdGenerator() IDGenerator {
 	return &UUIDV4IdGenerator{}
 }
 
@@ -44,8 +52,10 @@ type sessionMap struct {
 	sessions map[interface{}]IOSession
 }
 
-const DEFAULT_SESSION_SIZE = 64
+// DefaultSessionBucketSize default bucket size of session map
+const DefaultSessionBucketSize = 64
 
+// Server tcp server
 type Server struct {
 	addr     string
 	listener *net.TCPListener
@@ -57,20 +67,22 @@ type Server struct {
 	decoder Decoder
 	encoder Encoder
 
-	generator IdGenerator
+	generator IDGenerator
 
 	stopOnce *sync.Once
 	stopped  bool
 }
 
-func NewServer(addr string, decoder Decoder, encoder Encoder, generator IdGenerator) *Server {
-	return NewServerSize(addr, decoder, encoder, BUF_READ_SIZE, BUF_WRITE_SIZE, generator)
+// NewServer create server
+func NewServer(addr string, decoder Decoder, encoder Encoder, generator IDGenerator) *Server {
+	return NewServerSize(addr, decoder, encoder, BufReadSize, BufWriteSize, generator)
 }
 
-func NewServerSize(addr string, decoder Decoder, encoder Encoder, readBufSize, writeBufSize int, generator IdGenerator) *Server {
+// NewServerSize create server
+func NewServerSize(addr string, decoder Decoder, encoder Encoder, readBufSize, writeBufSize int, generator IDGenerator) *Server {
 	s := &Server{
 		addr:        addr,
-		sessionMaps: make(map[int]*sessionMap, DEFAULT_SESSION_SIZE),
+		sessionMaps: make(map[int]*sessionMap, DefaultSessionBucketSize),
 
 		decoder:      decoder,
 		encoder:      encoder,
@@ -82,7 +94,7 @@ func NewServerSize(addr string, decoder Decoder, encoder Encoder, readBufSize, w
 		stopOnce: &sync.Once{},
 	}
 
-	for i := 0; i < DEFAULT_SESSION_SIZE; i++ {
+	for i := 0; i < DefaultSessionBucketSize; i++ {
 		s.sessionMaps[i] = &sessionMap{
 			sessions: make(map[interface{}]IOSession),
 		}
@@ -91,12 +103,13 @@ func NewServerSize(addr string, decoder Decoder, encoder Encoder, readBufSize, w
 	return s
 }
 
-func (self *Server) Stop() {
-	self.stopOnce.Do(func() {
-		self.stopped = true
-		self.listener.Close()
+// Stop stop server
+func (s *Server) Stop() {
+	s.stopOnce.Do(func() {
+		s.stopped = true
+		s.listener.Close()
 
-		for _, sessions := range self.sessionMaps {
+		for _, sessions := range s.sessionMaps {
 			for _, session := range sessions.sessions {
 				session.Close()
 			}
@@ -104,14 +117,15 @@ func (self *Server) Stop() {
 	})
 }
 
-func (self *Server) Serve(loopFn func(IOSession) error) error {
-	addr, err := net.ResolveTCPAddr("tcp", self.addr)
+// Start start the server, this method will block until occur a error
+func (s *Server) Start(loopFn func(IOSession) error) error {
+	addr, err := net.ResolveTCPAddr("tcp", s.addr)
 
 	if err != nil {
 		return err
 	}
 
-	self.listener, err = net.ListenTCP("tcp", addr)
+	s.listener, err = net.ListenTCP("tcp", addr)
 
 	if err != nil {
 		return err
@@ -119,9 +133,9 @@ func (self *Server) Serve(loopFn func(IOSession) error) error {
 
 	var tempDelay time.Duration
 	for {
-		conn, err := self.listener.AcceptTCP()
+		conn, err := s.listener.AcceptTCP()
 
-		if self.stopped {
+		if s.stopped {
 			if nil != conn {
 				conn.Close()
 			}
@@ -146,40 +160,41 @@ func (self *Server) Serve(loopFn func(IOSession) error) error {
 		}
 		tempDelay = 0
 
-		session := newClientIOSession(self.generator.NewId(), conn, self)
-		self.addSession(session)
+		session := newClientIOSession(s.generator.NewID(), conn, s)
+		s.addSession(session)
 
 		go func() {
 			loopFn(session)
-			self.deleteSession(session)
+			session.Close()
+			s.deleteSession(session)
 		}()
 	}
 }
 
-func (self *Server) closeSession(session IOSession) {
-	self.deleteSession(session)
+func (s *Server) closeSession(session IOSession) {
+	s.deleteSession(session)
 	session.Close()
 }
 
-func (self *Server) addSession(session IOSession) {
-	m := self.sessionMaps[session.Hash()%DEFAULT_SESSION_SIZE]
+func (s *Server) addSession(session IOSession) {
+	m := s.sessionMaps[session.Hash()%DefaultSessionBucketSize]
 	m.Lock()
-	m.sessions[session.Id()] = session
+	m.sessions[session.ID()] = session
 	m.Unlock()
 }
 
-func (self *Server) deleteSession(session IOSession) {
-	m := self.sessionMaps[session.Hash()%DEFAULT_SESSION_SIZE]
+func (s *Server) deleteSession(session IOSession) {
+	m := s.sessionMaps[session.Hash()%DefaultSessionBucketSize]
 	m.Lock()
-	delete(m.sessions, session.Id())
+	delete(m.sessions, session.ID())
 	m.Unlock()
 }
 
-func (self *Server) GetSession(id interface{}) IOSession {
-	m := self.sessionMaps[getHash(id)%DEFAULT_SESSION_SIZE]
+// GetSession get session by id
+func (s *Server) GetSession(id interface{}) IOSession {
+	m := s.sessionMaps[getHash(id)%DefaultSessionBucketSize]
 	m.RLock()
-	s := m.sessions[id]
+	session := m.sessions[id]
 	m.RUnlock()
-	return s
+	return session
 }
-

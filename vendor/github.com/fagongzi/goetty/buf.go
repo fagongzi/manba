@@ -6,6 +6,7 @@ import (
 	"io"
 )
 
+// ReadN read n bytes from a reader
 func ReadN(r io.Reader, n int) ([]byte, error) {
 	data := make([]byte, n)
 	_, err := r.Read(data)
@@ -17,6 +18,7 @@ func ReadN(r io.Reader, n int) ([]byte, error) {
 	return data, nil
 }
 
+//ReadInt read a int value from a reader
 func ReadInt(r io.Reader) (int, error) {
 	data, err := ReadN(r, 4)
 
@@ -27,15 +29,18 @@ func ReadInt(r io.Reader) (int, error) {
 	return Byte2Int(data), nil
 }
 
+// Byte2Int byte array to int value using big order
 func Byte2Int(data []byte) int {
 	return int((int(data[0])&0xff)<<24 | (int(data[1])&0xff)<<16 | (int(data[2])&0xff)<<8 | (int(data[3]) & 0xff))
 }
 
+// Byte2Int64 byte array to int64 value using big order
 func Byte2Int64(data []byte) int64 {
 	return int64((int64(data[0])&0xff)<<56 | (int64(data[1])&0xff)<<48 | (int64(data[2])&0xff)<<40 | (int64(data[3])&0xff)<<32 | (int64(data[4])&0xff)<<24 | (int64(data[5])&0xff)<<16 | (int64(data[6])&0xff)<<8 | (int64(data[7]) & 0xff))
 }
 
-func WriteInt(v int) []byte {
+// Int2Bytes int value to bytes array using big order
+func Int2Bytes(v int) []byte {
 	ret := make([]byte, 4)
 	ret[0] = byte(v >> 24)
 	ret[1] = byte(v >> 16)
@@ -44,7 +49,8 @@ func WriteInt(v int) []byte {
 	return ret
 }
 
-func WriteLong(v int64) []byte {
+// Int64ToBytes int64 value to bytes array using big order
+func Int64ToBytes(v int64) []byte {
 	ret := make([]byte, 8)
 
 	ret[0] = byte(v >> 56)
@@ -71,12 +77,10 @@ func makeSlice(n int) []byte {
 	return make([]byte, n)
 }
 
-// ----------- bytes buffer, implemention Netty
-
-// +--------------------+--------------------+--------------------+
+// ByteBuf a buf with byte arrays
+//
 // | discardable bytes  |   readable bytes   |   writeable bytes  |
 // |                    |                    |                    |
-// +--------------------+--------------------+--------------------|
 // |                    |                    |                    |
 // 0      <=       readerIndex    <=     writerIndex    <=     capacity
 //
@@ -88,17 +92,22 @@ type ByteBuf struct {
 	scale       int // scale min size
 }
 
+// ErrTooLarge too larger error
 var ErrTooLarge = errors.New("goetty.ByteBuf: too large")
 
 const (
-	DEFAULT_MIN_SCALE = 512
-	GC                = 1024
+	// DefaultScaleMinSize default size for scale byte buf size
+	DefaultScaleMinSize = 512
+	// GC gc
+	GC = 1024
 )
 
+// NewByteBuf create a new bytebuf
 func NewByteBuf(capacity int) *ByteBuf {
-	return NewByteBufSize(capacity, DEFAULT_MIN_SCALE)
+	return NewByteBufSize(capacity, DefaultScaleMinSize)
 }
 
+// NewByteBufSize create a new bytebuf using scale size
 func NewByteBufSize(capacity int, scale int) *ByteBuf {
 	return &ByteBuf{
 		buf:         make([]byte, capacity),
@@ -108,19 +117,23 @@ func NewByteBufSize(capacity int, scale int) *ByteBuf {
 	}
 }
 
+// RawBuf get the raw byte array
 func (b *ByteBuf) RawBuf() []byte {
 	return b.buf
 }
 
+// Clear reset the write and read index
 func (b *ByteBuf) Clear() {
 	b.readerIndex = 0
 	b.writerIndex = 0
 }
 
+// Capacity get the capacity
 func (b *ByteBuf) Capacity() int {
 	return cap(b.buf)
 }
 
+// SetReaderIndex set the read index
 func (b *ByteBuf) SetReaderIndex(newReaderIndex int) error {
 	if newReaderIndex < 0 || newReaderIndex > b.writerIndex {
 		return io.ErrShortBuffer
@@ -131,14 +144,17 @@ func (b *ByteBuf) SetReaderIndex(newReaderIndex int) error {
 	return nil
 }
 
+// GetReaderIndex get the read index
 func (b *ByteBuf) GetReaderIndex() int {
 	return b.readerIndex
 }
 
+// GetWriteIndex get the write index
 func (b *ByteBuf) GetWriteIndex() int {
 	return b.writerIndex
 }
 
+// SetWriterIndex set the write index
 func (b *ByteBuf) SetWriterIndex(newWriterIndex int) error {
 	if newWriterIndex < b.readerIndex || newWriterIndex > b.Capacity() {
 		return io.ErrShortBuffer
@@ -149,10 +165,12 @@ func (b *ByteBuf) SetWriterIndex(newWriterIndex int) error {
 	return nil
 }
 
+// MarkN mark a index offset based by currently read index
 func (b *ByteBuf) MarkN(n int) error {
 	return b.MarkIndex(b.readerIndex + n)
 }
 
+// MarkIndex mark a index
 func (b *ByteBuf) MarkIndex(index int) error {
 	if index >= b.Capacity() || index <= b.readerIndex {
 		return io.ErrShortBuffer
@@ -162,6 +180,7 @@ func (b *ByteBuf) MarkIndex(index int) error {
 	return nil
 }
 
+// Skip skip bytes, after this option, read index will change to readerIndex+n
 func (b *ByteBuf) Skip(n int) error {
 	if n > b.Readable() {
 		return io.ErrShortBuffer
@@ -171,24 +190,32 @@ func (b *ByteBuf) Skip(n int) error {
 	return nil
 }
 
+// Readable current readable byte size
 func (b *ByteBuf) Readable() int {
 	return b.writerIndex - b.readerIndex
 }
 
+// ReadBytes read bytes from buf
+// return readedBytesCount, byte array, error
 func (b *ByteBuf) ReadBytes(n int) (int, []byte, error) {
 	data := make([]byte, n)
 	n, err := b.Read(data)
 	return n, data, err
 }
 
+// ReadAll read all data from buf
+// return readedBytesCount, byte array, error
 func (b *ByteBuf) ReadAll() (int, []byte, error) {
 	return b.ReadBytes(b.Readable())
 }
 
+// ReadMarkedBytes read data from buf in the range [markedIndex, readerIndex)
 func (b *ByteBuf) ReadMarkedBytes() (int, []byte, error) {
 	return b.ReadBytes(b.markedIndex - b.readerIndex)
 }
 
+// Read read bytes
+// return readedBytesCount, byte array, error
 func (b *ByteBuf) Read(p []byte) (n int, err error) {
 	if len(p) > b.Readable() {
 		return 0, io.ErrShortBuffer
@@ -199,6 +226,7 @@ func (b *ByteBuf) Read(p []byte) (n int, err error) {
 	return n, nil
 }
 
+// PeekInt get int value from buf based on currently read index, after read, read index not modifed
 func (b *ByteBuf) PeekInt(offset int) (int, error) {
 	if b.Readable() < 4+offset {
 		return 0, io.ErrShortBuffer
@@ -208,6 +236,7 @@ func (b *ByteBuf) PeekInt(offset int) (int, error) {
 	return ReadInt(bytes.NewReader(b.buf[start : start+4]))
 }
 
+// PeekN get bytes from buf based on currently read index, after read, read index not modifed
 func (b *ByteBuf) PeekN(offset int, n int) ([]byte, error) {
 	if b.Readable() < n+offset {
 		return nil, io.ErrShortBuffer
@@ -248,10 +277,9 @@ func (b *ByteBuf) ReadFrom(r io.Reader) (n int64, err error) {
 			return n, nil
 		}
 	}
-
-	return n, nil // err is EOF, so return nil explicitly
 }
 
+// Writeable return how many bytes can be wirte into buf
 func (b *ByteBuf) Writeable() int {
 	return b.Capacity() - b.writerIndex
 }
@@ -265,16 +293,22 @@ func (b *ByteBuf) Write(p []byte) (n int, err error) {
 	return int(m), err
 }
 
+// WriteInt write int value to buf using big order
+// return write bytes count, error
 func (b *ByteBuf) WriteInt(v int) (n int, err error) {
 	b.expansion(4)
-	return b.Write(WriteInt(v))
+	return b.Write(Int2Bytes(v))
 }
 
-func (b *ByteBuf) WriteLong(v int64) (n int, err error) {
+// WriteInt64 write int64 value to buf using big order
+// return write bytes count, error
+func (b *ByteBuf) WriteInt64(v int64) (n int, err error) {
 	b.expansion(8)
-	return b.Write(WriteLong(v))
+	return b.Write(Int64ToBytes(v))
 }
 
+// WriteByte write a byte value to buf
+// return write bytes count, error
 func (b *ByteBuf) WriteByte(v byte) (n int, err error) {
 	b.expansion(1)
 	return b.Write([]byte{v})

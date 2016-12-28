@@ -6,8 +6,9 @@ import (
 	"time"
 )
 
+// IOSession session
 type IOSession interface {
-	Id() interface{}
+	ID() interface{}
 	Hash() int
 	Close() error
 	Read() (interface{}, error)
@@ -37,31 +38,33 @@ func newClientIOSession(id interface{}, conn net.Conn, svr *Server) IOSession {
 	}
 }
 
-func (self clientIOSession) Read() (interface{}, error) {
-	return self.ReadTimeout(0)
+// Read read a msg, block until read msg or get a error
+func (s clientIOSession) Read() (interface{}, error) {
+	return s.ReadTimeout(0)
 }
 
-func (self clientIOSession) ReadTimeout(timeout time.Duration) (interface{}, error) {
+// ReadTimeout read a msg  with a timeout duration
+func (s clientIOSession) ReadTimeout(timeout time.Duration) (interface{}, error) {
 	var msg interface{}
 	var err error
 	var complete bool
 
 	for {
 		if 0 != timeout {
-			self.conn.SetReadDeadline(time.Now().Add(timeout))
+			s.conn.SetReadDeadline(time.Now().Add(timeout))
 		}
 
-		_, err = self.buf.ReadFrom(self.conn)
+		_, err = s.buf.ReadFrom(s.conn)
 
 		if err != nil {
-			self.buf.Clear()
+			s.buf.Clear()
 			return nil, err
 		}
 
-		complete, msg, err = self.svr.decoder.Decode(self.buf)
+		complete, msg, err = s.svr.decoder.Decode(s.buf)
 
 		if nil != err {
-			self.buf.Clear()
+			s.buf.Clear()
 			return nil, err
 		}
 
@@ -70,21 +73,22 @@ func (self clientIOSession) ReadTimeout(timeout time.Duration) (interface{}, err
 		}
 	}
 
-	if self.buf.Readable() == 0 {
-		self.buf.Clear()
+	if s.buf.Readable() == 0 {
+		s.buf.Clear()
 	}
 
 	return msg, err
 }
 
-func (self clientIOSession) Write(msg interface{}) error {
+// Write wrirte a msg
+func (s clientIOSession) Write(msg interface{}) error {
 	buf, ok := out.Get().(*ByteBuf)
 
 	if !ok {
-		buf = NewByteBuf(self.svr.writeBufSize)
+		buf = NewByteBuf(s.svr.writeBufSize)
 	}
 
-	err := self.svr.encoder.Encode(msg, buf)
+	err := s.svr.encoder.Encode(msg, buf)
 
 	if err != nil {
 		buf.Clear()
@@ -94,7 +98,7 @@ func (self clientIOSession) Write(msg interface{}) error {
 
 	_, bytes, _ := buf.ReadAll()
 
-	n, err := self.conn.Write(bytes)
+	n, err := s.conn.Write(bytes)
 
 	if err != nil {
 		buf.Clear()
@@ -105,7 +109,7 @@ func (self clientIOSession) Write(msg interface{}) error {
 	if n != len(bytes) {
 		buf.Clear()
 		out.Put(buf)
-		return WriteErr
+		return ErrWrite
 	}
 
 	buf.Clear()
@@ -113,34 +117,37 @@ func (self clientIOSession) Write(msg interface{}) error {
 	return nil
 }
 
-func (self clientIOSession) Close() error {
-	return self.conn.Close()
+// Close close
+func (s clientIOSession) Close() error {
+	return s.conn.Close()
 }
 
-func (self clientIOSession) Id() interface{} {
-	return self.id
+// Id get id
+func (s clientIOSession) ID() interface{} {
+	return s.id
 }
 
-func (self clientIOSession) Hash() int {
-	return getHash(self.id)
+func (s clientIOSession) Hash() int {
+	return getHash(s.id)
 }
 
-func (self clientIOSession) SetAttr(key string, value interface{}) {
-	self.Lock()
-	self.attrs[key] = value
-	self.Unlock()
+func (s clientIOSession) SetAttr(key string, value interface{}) {
+	s.Lock()
+	s.attrs[key] = value
+	s.Unlock()
 }
 
-func (self clientIOSession) GetAttr(key string) interface{} {
-	self.Lock()
-	v := self.attrs[key]
-	self.Unlock()
+func (s clientIOSession) GetAttr(key string) interface{} {
+	s.Lock()
+	v := s.attrs[key]
+	s.Unlock()
 	return v
 }
 
-func (self clientIOSession) RemoteAddr() string {
-	if nil != self.conn {
-		return self.conn.RemoteAddr().String()
+// RemoteAddr get remote address
+func (s clientIOSession) RemoteAddr() string {
+	if nil != s.conn {
+		return s.conn.RemoteAddr().String()
 	}
 
 	return ""
@@ -157,4 +164,3 @@ func getHash(id interface{}) int {
 
 	return 0
 }
-

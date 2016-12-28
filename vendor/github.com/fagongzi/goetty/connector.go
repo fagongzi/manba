@@ -8,11 +8,15 @@ import (
 )
 
 var (
-	WriteErr        = errors.New("goetty.net: Write failed")
-	EmptyServersErr = errors.New("goetty.Connector: Empty servers pool")
-	IllegalStateErr = errors.New("goetty.Connector: Not connected")
+	// ErrWrite write error
+	ErrWrite = errors.New("goetty.net: Write failed")
+	// ErrEmptyServers empty server error
+	ErrEmptyServers = errors.New("goetty.Connector: Empty servers pool")
+	// ErrIllegalState illegal state error
+	ErrIllegalState = errors.New("goetty.Connector: Not connected")
 )
 
+// Conf config for connector
 type Conf struct {
 	Addr                   string
 	TimeoutConnectToServer time.Duration
@@ -22,6 +26,7 @@ type Conf struct {
 	WriteTimeoutFn func(string, *Connector)
 }
 
+// Connector client connector
 type Connector struct {
 	cnf *Conf
 
@@ -38,10 +43,12 @@ type Connector struct {
 	out sync.Pool
 }
 
+// NewConnector create a new connector
 func NewConnector(cnf *Conf, decoder Decoder, encoder Encoder) *Connector {
-	return NewConnectorSize(cnf, decoder, encoder, BUF_READ_SIZE, BUF_WRITE_SIZE)
+	return NewConnectorSize(cnf, decoder, encoder, BufReadSize, BufWriteSize)
 }
 
+// NewConnectorSize create a new connector
 func NewConnectorSize(cnf *Conf, decoder Decoder, encoder Encoder, readBufSize, writeBufSize int) *Connector {
 	return &Connector{
 		cnf:          cnf,
@@ -52,6 +59,7 @@ func NewConnectorSize(cnf *Conf, decoder Decoder, encoder Encoder, readBufSize, 
 	}
 }
 
+// Connect connect server
 func (c *Connector) Connect() (bool, error) {
 	e := c.Close() // Close current connection
 
@@ -73,6 +81,7 @@ func (c *Connector) Connect() (bool, error) {
 	return true, nil
 }
 
+// Close close
 func (c *Connector) Close() error {
 	if nil != c.conn {
 		err := c.conn.Close()
@@ -86,6 +95,7 @@ func (c *Connector) Close() error {
 	return nil
 }
 
+// IsConnected is connected
 func (c *Connector) IsConnected() bool {
 	return nil != c.conn && c.connected
 }
@@ -95,13 +105,15 @@ func (c *Connector) reset() {
 	c.conn = nil
 }
 
+// Read read data from server, block until a msg arrived or  get a error
 func (c *Connector) Read() (interface{}, error) {
 	return c.ReadTimeout(0)
 }
 
+// ReadTimeout read data from server with a timeout duration
 func (c *Connector) ReadTimeout(timeout time.Duration) (interface{}, error) {
 	if !c.IsConnected() {
-		return nil, IllegalStateErr
+		return nil, ErrIllegalState
 	}
 
 	var msg interface{}
@@ -130,6 +142,7 @@ func (c *Connector) ReadTimeout(timeout time.Duration) (interface{}, error) {
 	return msg, err
 }
 
+// Write write a msg to server
 func (c *Connector) Write(msg interface{}) error {
 	if c.IsConnected() {
 		buf, ok := c.out.Get().(*ByteBuf)
@@ -158,14 +171,14 @@ func (c *Connector) Write(msg interface{}) error {
 
 		if n != len(bytes) {
 			c.writeRelease(buf)
-			return WriteErr
+			return ErrWrite
 		}
 
 		c.writeRelease(buf)
 		return nil
 	}
 
-	return IllegalStateErr
+	return ErrIllegalState
 }
 
 func (c *Connector) writeRelease(buf *ByteBuf) {
