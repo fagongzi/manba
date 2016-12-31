@@ -111,7 +111,7 @@ func (f CircuitBreakeFilter) changeToClose(server *model.Server) {
 
 	log.Warnf("Circuit Server <%s> change to close.", server.Addr)
 
-	f.proxy.routeTable.GetTimeWheel().AddWithId(time.Second*time.Duration(server.HalfToOpen), getKey(server.Addr), f.changeToHalf)
+	f.proxy.routeTable.GetTimeWheel().AddWithID(time.Second*time.Duration(server.HalfToOpen), getKey(server.Addr), f.changeToHalf)
 }
 
 func (f CircuitBreakeFilter) changeToOpen(server *model.Server) {

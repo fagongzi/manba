@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-// ReadN read n bytes from a reader
+//ReadN read n bytes from a reader
 func ReadN(r io.Reader, n int) ([]byte, error) {
 	data := make([]byte, n)
 	_, err := r.Read(data)

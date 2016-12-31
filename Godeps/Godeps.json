@@ -53,7 +53,7 @@
 		},
 		{
 			"ImportPath": "github.com/fagongzi/goetty",
-			"Rev": "0ffe6f16b683dd3585b3a5ad3c9c721b5472ba5f"
+			"Rev": "c248b4206145cfb10fe366960ffebbff083e9c15"
 		},
 		{
 			"ImportPath": "github.com/fgrid/uuid",
@@ -165,11 +165,11 @@
 		},
 		{
 			"ImportPath": "github.com/fagongzi/goetty/vendor/github.com/CodisLabs/codis/pkg/utils/atomic2",
-			"Rev": "0ffe6f16b683dd3585b3a5ad3c9c721b5472ba5f"
+			"Rev": "c248b4206145cfb10fe366960ffebbff083e9c15"
 		},
 		{
 			"ImportPath": "github.com/fagongzi/goetty/vendor/github.com/satori/go.uuid",
-			"Rev": "0ffe6f16b683dd3585b3a5ad3c9c721b5472ba5f"
+			"Rev": "c248b4206145cfb10fe366960ffebbff083e9c15"
 		}
 	]
 }

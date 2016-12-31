@@ -48,8 +48,8 @@ func NewSimpleTimeWheel(tick time.Duration, periodCount int64) *SimpleTimeWheel 
 	return timeWheel
 }
 
-// AddWithId add a timeout calc with spec id
-func (t *SimpleTimeWheel) AddWithId(timeout time.Duration, key string, callback func(key string)) {
+// AddWithID add a timeout calc with spec id
+func (t *SimpleTimeWheel) AddWithID(timeout time.Duration, key string, callback func(key string)) {
 	index := t.passed() + int64(float64(timeout.Nanoseconds())/float64(t.tick.Nanoseconds())+0.5)
 
 	t.timeoutLock.Lock()
@@ -70,7 +70,7 @@ func (t *SimpleTimeWheel) AddWithId(timeout time.Duration, key string, callback 
 // Add add a timeout calc
 func (t *SimpleTimeWheel) Add(timeout time.Duration, callback func(key string)) string {
 	key := NewKey()
-	t.AddWithId(timeout, key, callback)
+	t.AddWithID(timeout, key, callback)
 	return key
 }
 
@@ -167,14 +167,14 @@ func NewHashedTimeWheel(duration time.Duration, periodCount int64, powOf2 int) *
 // Add add a timeout calc
 func (h *HashedTimeWheel) Add(timeout time.Duration, callback func(key string)) string {
 	key := NewKey()
-	h.AddWithId(timeout, key, callback)
+	h.AddWithID(timeout, key, callback)
 	return key
 }
 
-// AddWithId add a timeout calc using spec id
-func (h *HashedTimeWheel) AddWithId(timeout time.Duration, key string, callback func(key string)) string {
+// AddWithID add a timeout calc using spec id
+func (h *HashedTimeWheel) AddWithID(timeout time.Duration, key string, callback func(key string)) string {
 	index := hashCode(key) & h.mask
-	h.wheelBucket[index].AddWithId(timeout, key, callback)
+	h.wheelBucket[index].AddWithID(timeout, key, callback)
 	return key
 }
 
@@ -215,4 +215,3 @@ func hashCode(v string) int {
 	code := h.Sum32()
 	return int(code)
 }
-

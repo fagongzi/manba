@@ -602,7 +602,7 @@ func (r *RouteTable) Load() {
 }
 
 func (r *RouteTable) loadFromServiceDiscovery(timeoutKey string) {
-	r.tw.AddWithId(time.Second*time.Duration(r.cnf.ServiceDiscoveryDuration), timeoutKey, r.loadFromServiceDiscovery)
+	r.tw.AddWithID(time.Second*time.Duration(r.cnf.ServiceDiscoveryDuration), timeoutKey, r.loadFromServiceDiscovery)
 	r.syncChan <- true
 }
 
@@ -731,7 +731,7 @@ func (r *RouteTable) removeFromCheck(svr *Server) {
 }
 
 func (r *RouteTable) addToCheck(svr *Server) {
-	r.tw.AddWithId(time.Duration(svr.useCheckDuration)*time.Second, svr.Addr, r.check)
+	r.tw.AddWithID(time.Duration(svr.useCheckDuration)*time.Second, svr.Addr, r.check)
 }
 
 func (r *RouteTable) check(addr string) {
