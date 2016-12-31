@@ -9,9 +9,6 @@ A cluster contains 3 field:
 * Cluster Name
   It's a uniq string at hole metedata store.
 
-* Cluster URL Pattern
-  It's a regular expressions for match http request path. e.g. /api/*.
-
 * Cluster Load Balance
   The load balance algorithm for cluster select a backend server in the set.
 
@@ -25,16 +22,3 @@ You can delete a cluster, even though the proxy is running. Once a cluster has u
 
 # Bind Servers
 The next step is bind backend servers in the cluster. The proxy will auto add、update、delete bind info. In gateway all metedata changed be perceived by all proxy, not need to restart the proxy node.
-
-# Example
-You have 3 servers which provide user API: `127.0.0.1:8080`, `127.0.0.1:8081`,`127.0.0.1:8082`. The user query api is: `/api/users/{id}`. You can use gateway through steps as below:
-
-* create a cluster
-  Cluster Name field set to `app`, Cluster URL Pattern field set to `/api/users/*`, Cluster Load Balance set to roundrobin.
-  
-* create 3 servers
-  use above 3 address.
-
-* bind 3 servers with cluster
-
-Than you can access your proxy url to access backend servers: `http://127.0.0.1/api/users/xxx`, try it!

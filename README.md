@@ -8,6 +8,8 @@ Gateway
 -------
 Gateway is a http restful API gateway. 
 
+[简体中文](./docs-cn/README.md)
+
 # Features
 * Traffic Control
 * Circuit Breaker
@@ -128,4 +130,4 @@ Gateway proxy used http for communicate with plugin. Plugin must implementation 
 
 |URL|Method|
 |:---|:---|
-|/plugins\/$type|POST|
+|/plugins/$type|POST|

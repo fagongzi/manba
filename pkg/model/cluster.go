@@ -153,22 +153,24 @@ func (c *Cluster) bind(svr *Server) {
 // Select return a server using spec loadbalance
 func (c *Cluster) Select(req *fasthttp.Request) string {
 	c.rwLock.RLock()
-	defer c.rwLock.RUnlock()
 
 	index := c.lb.Select(req, c.svrs)
 
 	if 0 > index {
+		c.rwLock.RUnlock()
 		return ""
 	}
 
 	e := util.Get(c.svrs, index)
 
 	if nil == e {
+		c.rwLock.RUnlock()
 		return ""
 	}
 
 	s, _ := e.Value.(string)
 
+	c.rwLock.RUnlock()
 	return s
 }
 

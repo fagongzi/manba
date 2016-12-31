@@ -91,11 +91,3 @@ API is the core concept in gateway. You can use admin to manage your APIs.
         }
     ]
     ``` 
-
-# What can API do
-
-## Redefine backend server API
-Through API rewite, we can redefine backend server's API. 
-
-## Response merge
-For mobile application, we can use this funcation to providing combined API for saving traffic and improving performance. 
