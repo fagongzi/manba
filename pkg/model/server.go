@@ -60,10 +60,13 @@ type Server struct {
 	Status Status `json:"status,omitempty"`
 
 	// MaxQPS the backend server max qps support
-	MaxQPS          int `json:"maxQPS,omitempty"`
-	HalfToOpen      int `json:"halfToOpen,omitempty"`
-	HalfTrafficRate int `json:"halfTrafficRate,omitempty"`
-	CloseCount      int `json:"closeCount,omitempty"`
+	MaxQPS                    int `json:"maxQPS,omitempty"`
+	HalfToOpenSeconds         int `json:"halfToOpenSeconds,omitempty"`
+	HalfTrafficRate           int `json:"halfTrafficRate,omitempty"`
+	HalfToOpenSucceedRate     int `json:"halfToOpenSucceedRate,omitempty"`
+	HalfToOpenCollectSeconds  int `json:"halfToOpenCollectSeconds,omitempty"`
+	OpenToCloseFailureRate    int `json:"openToCloseFailureRate,omitempty"`
+	OpenToCloseCollectSeconds int `json:"openToCloseCollectSeconds,omitempty"`
 
 	BindClusters []string `json:"bindClusters,omitempty"`
 
@@ -150,9 +153,12 @@ func (s *Server) updateFrom(svr *Server) {
 	}
 
 	s.MaxQPS = svr.MaxQPS
-	s.HalfToOpen = svr.HalfToOpen
+	s.HalfToOpenSeconds = svr.HalfToOpenSeconds
 	s.HalfTrafficRate = svr.HalfTrafficRate
-	s.CloseCount = svr.CloseCount
+	s.HalfToOpenCollectSeconds = svr.HalfToOpenCollectSeconds
+	s.HalfToOpenSucceedRate = svr.HalfToOpenSucceedRate
+	s.OpenToCloseCollectSeconds = svr.OpenToCloseCollectSeconds
+	s.OpenToCloseFailureRate = svr.OpenToCloseFailureRate
 
 	log.Infof("Server <%s> updated, %+v", s.Addr, s)
 }

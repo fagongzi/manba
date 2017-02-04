@@ -238,6 +238,9 @@ func (r *RouteTable) UpdateServer(svr *Server) error {
 		return ErrServerNotFound
 	}
 
+	r.GetAnalysis().AddRecentCount(svr.Addr, svr.OpenToCloseCollectSeconds)
+	r.GetAnalysis().AddRecentCount(svr.Addr, svr.OpenToCloseCollectSeconds)
+
 	old.updateFrom(svr)
 
 	log.Infof("Server <%s> updated", svr.Addr)
@@ -306,6 +309,8 @@ func (r *RouteTable) AddNewServer(svr *Server) error {
 	r.analysiser.addNewAnalysis(svr.Addr)
 	// 1 secs default add to use
 	r.analysiser.AddRecentCount(svr.Addr, 1)
+	r.analysiser.AddRecentCount(svr.Addr, svr.OpenToCloseCollectSeconds)
+	r.analysiser.AddRecentCount(svr.Addr, svr.HalfToOpenCollectSeconds)
 
 	log.Infof("Server <%s> added", svr.Addr)
 

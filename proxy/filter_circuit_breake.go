@@ -59,10 +59,9 @@ func (f CircuitBreakeFilter) Name() string {
 // Pre execute before proxy
 func (f CircuitBreakeFilter) Pre(c *filterContext) (statusCode int, err error) {
 	status := c.result.Svr.GetCircuit()
-	count := c.rb.GetAnalysis().GetContinuousFailureCount(c.result.Svr.Addr)
 
 	if status == model.CircuitOpen {
-		if count > c.result.Svr.CloseCount {
+		if f.getFailureRate(c) >= c.result.Svr.OpenToCloseFailureRate {
 			f.changeToClose(c.result.Svr)
 			return http.StatusServiceUnavailable, ErrCircuitClose
 		}
@@ -83,7 +82,7 @@ func (f CircuitBreakeFilter) Pre(c *filterContext) (statusCode int, err error) {
 func (f CircuitBreakeFilter) Post(c *filterContext) (statusCode int, err error) {
 	status := c.result.Svr.GetCircuit()
 
-	if status == model.CircuitHalf {
+	if status == model.CircuitHalf && f.getSucceedRate(c) >= c.result.Svr.HalfToOpenSucceedRate {
 		f.changeToOpen(c.result.Svr)
 	}
 
@@ -101,9 +100,9 @@ func (f CircuitBreakeFilter) PostErr(c *filterContext) {
 
 func (f CircuitBreakeFilter) changeToClose(server *model.Server) {
 	server.Lock()
-	defer server.UnLock()
 
 	if server.GetCircuit() == model.CircuitClose {
+		server.UnLock()
 		return
 	}
 
@@ -111,20 +110,24 @@ func (f CircuitBreakeFilter) changeToClose(server *model.Server) {
 
 	log.Warnf("Circuit Server <%s> change to close.", server.Addr)
 
-	f.proxy.routeTable.GetTimeWheel().AddWithID(time.Second*time.Duration(server.HalfToOpen), getKey(server.Addr), f.changeToHalf)
+	f.proxy.routeTable.GetTimeWheel().AddWithID(time.Second*time.Duration(server.HalfToOpenSeconds), getKey(server.Addr), f.changeToHalf)
+
+	server.UnLock()
 }
 
 func (f CircuitBreakeFilter) changeToOpen(server *model.Server) {
 	server.Lock()
-	defer server.UnLock()
 
 	if server.GetCircuit() == model.CircuitOpen || server.GetCircuit() != model.CircuitHalf {
+		server.UnLock()
 		return
 	}
 
 	server.OpenCircuit()
 
 	log.Warnf("Circuit Server <%s> change to open.", server.Addr)
+
+	server.UnLock()
 }
 
 func (f CircuitBreakeFilter) changeToHalf(key string) {
@@ -132,10 +135,34 @@ func (f CircuitBreakeFilter) changeToHalf(key string) {
 	server := f.proxy.routeTable.GetServer(addr)
 
 	if nil != server {
+		server.Lock()
 		server.HalfCircuit()
+		server.UnLock()
 
 		log.Warnf("Circuit Server <%s> change to half.", server.Addr)
 	}
+}
+
+func (f CircuitBreakeFilter) getFailureRate(c *filterContext) int {
+	failureCount := c.rb.GetAnalysis().GetRecentlyRequestFailureCount(c.result.Svr.Addr, c.result.Svr.OpenToCloseCollectSeconds)
+	totalCount := c.rb.GetAnalysis().GetRecentlyRequestCount(c.result.Svr.Addr, c.result.Svr.OpenToCloseCollectSeconds)
+
+	if totalCount == 0 {
+		return 0
+	}
+
+	return int(failureCount * 100 / totalCount)
+}
+
+func (f CircuitBreakeFilter) getSucceedRate(c *filterContext) int {
+	succeedCount := c.rb.GetAnalysis().GetRecentlyRequestSuccessedCount(c.result.Svr.Addr, c.result.Svr.OpenToCloseCollectSeconds)
+	totalCount := c.rb.GetAnalysis().GetRecentlyRequestCount(c.result.Svr.Addr, c.result.Svr.OpenToCloseCollectSeconds)
+
+	if totalCount == 0 {
+		return 0
+	}
+
+	return int(succeedCount * 100 / totalCount)
 }
 
 func getKey(addr string) string {

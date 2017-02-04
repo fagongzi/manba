@@ -39,7 +39,7 @@
 
         <div class="form-group">
             <label for="serverHalfToOpen">Server Half To Open Seconds</label>
-            <input type="number" class="form-control" ng-model="server.halfToOpen" id="serverHalfToOpen"  placeholder="wait seconds, half to open, default 300 sec"/>
+            <input type="number" class="form-control" ng-model="server.halfToOpenSeconds" id="serverHalfToOpen"  placeholder="wait seconds, half to open, default 300 sec"/>
         </div>
 
         <div class="form-group">
@@ -48,8 +48,23 @@
         </div>
 
         <div class="form-group">
-            <label for="serverToCloseCount">Server To Close Count</label>
-            <input type="number" class="form-control" ng-model="server.closeCount" id="serverToCloseCount" placeholder="how continue failure request, when server to circuit breaken"/>
+            <label for="serverHalfToOpenSucceedRate">Server close to half: succeed rate</label>
+            <input type="number" class="form-control" ng-model="server.halfToOpenSucceedRate" id="serverHalfToOpenSucceedRate" placeholder="how succeed request rate in last HalfToOpenCollectSeconds, when server to normal status"/>
+        </div>
+
+        <div class="form-group">
+            <label for="serverHalfToOpenCollectSeconds">Server close to half: collect seconds</label>
+            <input type="number" class="form-control" ng-model="server.halfToOpenCollectSeconds" id="serverHalfToOpenCollectSeconds" placeholder="how failure request rate in last HalfToOpenCollectSeconds, when server to normal status"/>
+        </div>
+
+        <div class="form-group">
+            <label for="serverOpenToCloseFailureRate">Server open to close: failure rate</label>
+            <input type="number" class="form-control" ng-model="server.openToCloseFailureRate" id="serverOpenToCloseFailureRate" placeholder="how failure request rate in last OpenToCloseCollectSeconds, when server to circuit breaken"/>
+        </div>
+
+        <div class="form-group">
+            <label for="serverOpenToCloseCollectSeconds">Server open to close: collect seconds</label>
+            <input type="number" class="form-control" ng-model="server.openToCloseCollectSeconds" id="serverOpenToCloseCollectSeconds" placeholder="how failure request rate in last OpenToCloseCollectSeconds, when server to circuit breaken"/>
         </div>
 
         <button type="button" class="btn btn-default" ng-click="update()">Update</button>
@@ -57,23 +72,23 @@
 </div>
 
 <div class="table-responsive">
-            <table class="table table-bordered table-striped">
-                <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Unbind</th>
-                </tr>
-                </thead>
+    <table class="table table-bordered table-striped">
+        <thead>
+        <tr>
+            <th>Name</th>
+            <th>Unbind</th>
+        </tr>
+        </thead>
 
-                <tbody>
-                    <tr ng-repeat="cluster in server.bindClusters">
-                        <td>
-                            <a href="#/clusters/{{cluster}}">{{cluster}}</a>
-                        </td>
-                        <td>
-                            <button type="button" class="btn btn-default btn-sm" ng-click="unbind(server.addr, cluster)">UnBind</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <tbody>
+            <tr ng-repeat="cluster in server.bindClusters">
+                <td>
+                    <a href="#/clusters/{{cluster}}">{{cluster}}</a>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-default btn-sm" ng-click="unbind(server.addr, cluster)">UnBind</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

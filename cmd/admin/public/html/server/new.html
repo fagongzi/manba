@@ -29,7 +29,7 @@
 
         <div class="form-group">
             <label for="serverHalfToOpen">Server Half To Open Seconds</label>
-            <input type="number" class="form-control" ng-model="newServerHalfToOpen" id="serverHalfToOpen" value="300" placeholder="wait seconds, half to open, default 300 sec"/>
+            <input type="number" class="form-control" ng-model="newServerHalfToOpenSeconds" id="serverHalfToOpen" value="300" placeholder="wait seconds, half to open, default 300 sec"/>
         </div>
 
         <div class="form-group">
@@ -38,8 +38,23 @@
         </div>
 
         <div class="form-group">
-            <label for="serverToCloseCount">Server To Close Count</label>
-            <input type="number" class="form-control" ng-model="newServerToCloseCount" id="serverToCloseCount" placeholder="how continue failure request, when server to circuit breaken"/>
+            <label for="serverHalfToOpenSucceedRate">Server close to half: succeed rate</label>
+            <input type="number" class="form-control" ng-model="newHalfToOpenSucceedRate" id="serverHalfToOpenSucceedRate" placeholder="how succeed request rate in last HalfToOpenCollectSeconds, when server to normal status"/>
+        </div>
+
+        <div class="form-group">
+            <label for="serverHalfToOpenCollectSeconds">Server close to half: collect seconds</label>
+            <input type="number" class="form-control" ng-model="newHalfToOpenCollectSeconds" id="serverHalfToOpenCollectSeconds" placeholder="how failure request rate in last HalfToOpenCollectSeconds, when server to normal status"/>
+        </div>
+
+        <div class="form-group">
+            <label for="serverOpenToCloseFailureRate">Server open to close: failure rate</label>
+            <input type="number" class="form-control" ng-model="newOpenToCloseFailureRate" id="serverOpenToCloseFailureRate" placeholder="how failure request rate in last OpenToCloseCollectSeconds, when server to circuit breaken"/>
+        </div>
+
+        <div class="form-group">
+            <label for="serverOpenToCloseCollectSeconds">Server open to close: collect seconds</label>
+            <input type="number" class="form-control" ng-model="newOpenToCloseCollectSeconds" id="serverOpenToCloseCollectSeconds" placeholder="how failure request rate in last OpenToCloseCollectSeconds, when server to circuit breaken"/>
         </div>
 
         <button type="button" class="btn btn-default" ng-click="add()">Submit</button>

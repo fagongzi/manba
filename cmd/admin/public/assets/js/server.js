@@ -21,9 +21,12 @@ function ServerCreateController($scope, $routeParams, $http, $location, $route) 
             "checkTimeout": $scope.newServerCheckTimeout,
             "checkDuration": $scope.newServerCheckDuration,
             "maxQPS": $scope.newServerMaxQPS,
-            "halfToOpen": $scope.newServerHalfToOpen,
+            "halfToOpenSeconds": $scope.newServerHalfToOpenSeconds,
             "halfTrafficRate": $scope.newHalfTrafficRate,
-            "closeCount": $scope.newServerToCloseCount,
+            "halfToOpenSucceedRate": $scope.newHalfToOpenSucceedRate,
+            "halfToOpenCollectSeconds": $scope.newHalfToOpenCollectSeconds,
+            "openToCloseFailureRate": $scope.newOpenToCloseFailureRate,
+            "openToCloseCollectSeconds": $scope.newOpenToCloseCollectSeconds,
         };
 
         $http.post('api/servers', c).success(function (data) {

@@ -36,7 +36,7 @@ func createRouteTable(t *testing.T) {
 
 	store.Clean()
 
-	rt = NewRouteTable(store)
+	rt = NewRouteTable(nil, store, nil)
 	time.Sleep(time.Second * 1)
 }
 
@@ -68,15 +68,16 @@ func TestEtcdWatchNewServer(t *testing.T) {
 	go createLocalServer()
 
 	server := &Server{
-		Schema:          "http",
-		Addr:            serverAddr,
-		CheckPath:       "/check",
-		CheckDuration:   checkDuration,
-		CheckTimeout:    checkTimeout,
-		MaxQPS:          1500,
-		HalfToOpen:      10,
-		HalfTrafficRate: 10,
-		CloseCount:      100,
+		Schema:                    "http",
+		Addr:                      serverAddr,
+		CheckPath:                 "/check",
+		CheckDuration:             checkDuration,
+		CheckTimeout:              checkTimeout,
+		MaxQPS:                    1500,
+		HalfToOpenSeconds:         10,
+		HalfTrafficRate:           10,
+		OpenToCloseCollectSeconds: 1,
+		OpenToCloseFailureRate:    100,
 	}
 
 	err := rt.store.SaveServer(server)
@@ -202,15 +203,16 @@ func TestEtcdWatchNewAPI(t *testing.T) {
 
 func TestEtcdWatchUpdateServer(t *testing.T) {
 	server := &Server{
-		Schema:          "http",
-		Addr:            serverAddr,
-		CheckPath:       "/check",
-		CheckDuration:   checkDuration,
-		CheckTimeout:    checkTimeout * 2,
-		MaxQPS:          3000,
-		HalfToOpen:      100,
-		HalfTrafficRate: 30,
-		CloseCount:      200,
+		Schema:                    "http",
+		Addr:                      serverAddr,
+		CheckPath:                 "/check",
+		CheckDuration:             checkDuration,
+		CheckTimeout:              checkTimeout * 2,
+		MaxQPS:                    3000,
+		HalfToOpenSeconds:         100,
+		HalfTrafficRate:           30,
+		OpenToCloseCollectSeconds: 1,
+		OpenToCloseFailureRate:    100,
 	}
 
 	err := rt.store.UpdateServer(server)
@@ -229,8 +231,8 @@ func TestEtcdWatchUpdateServer(t *testing.T) {
 		return
 	}
 
-	if svr.HalfToOpen != server.HalfToOpen {
-		t.Errorf("HalfToOpen expect:<%d>, acture:<%d>. ", server.HalfToOpen, svr.HalfToOpen)
+	if svr.HalfToOpenSeconds != server.HalfToOpenSeconds {
+		t.Errorf("HalfToOpen expect:<%d>, acture:<%d>. ", server.HalfToOpenSeconds, svr.HalfToOpenSeconds)
 		return
 	}
 
@@ -239,8 +241,13 @@ func TestEtcdWatchUpdateServer(t *testing.T) {
 		return
 	}
 
-	if svr.CloseCount != server.CloseCount {
-		t.Errorf("CloseCount expect:<%d>, acture:<%d>. ", server.CloseCount, svr.CloseCount)
+	if svr.OpenToCloseCollectSeconds != server.OpenToCloseCollectSeconds {
+		t.Errorf("OpenToCloseCollectSeconds expect:<%d>, acture:<%d>. ", server.OpenToCloseCollectSeconds, svr.OpenToCloseCollectSeconds)
+		return
+	}
+
+	if svr.OpenToCloseFailureRate != server.OpenToCloseFailureRate {
+		t.Errorf("OpenToCloseFailureRate expect:<%d>, acture:<%d>. ", server.OpenToCloseFailureRate, svr.OpenToCloseFailureRate)
 		return
 	}
 
@@ -308,10 +315,15 @@ func TestEtcdWatchUpdateAPI(t *testing.T) {
 }
 
 func TestEtcdWatchDeleteCluster(t *testing.T) {
+	rt.store.UnBind(&Bind{
+		ClusterName: clusterName,
+		ServerAddr:  serverAddr,
+	})
+
 	err := rt.store.DeleteCluster(clusterName)
 
 	if nil != err {
-		t.Error("delete cluster err.")
+		t.Error("delete cluster err.", err)
 		return
 	}
 
@@ -331,10 +343,15 @@ func TestEtcdWatchDeleteCluster(t *testing.T) {
 }
 
 func TestEtcdWatchDeleteServer(t *testing.T) {
+	rt.store.UnBind(&Bind{
+		ClusterName: clusterName,
+		ServerAddr:  serverAddr,
+	})
+
 	err := rt.store.DeleteServer(serverAddr)
 
 	if nil != err {
-		t.Error("delete server err.")
+		t.Error("delete server err.", err)
 		return
 	}
 

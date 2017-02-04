@@ -27,7 +27,8 @@
             <th >Max QPS</th>
             <th >Half to Open Secs</th>
             <th >Half Traffic Rate</th>
-            <th >To Close Count</th>
+            <th >To Open Succeed Rate</th>
+            <th >To Close Failure Rate</th>
             <th width="25%">opts</th>
         </tr>
         </thead>
@@ -39,9 +40,10 @@
                 <td>{{server.checkTimeout}} sec</td>
                 <td>{{server.checkDuration}} sec</td>
                 <td>{{server.maxQPS}}</td>
-                <td>{{server.halfToOpen}}</td>
+                <td>{{server.halfToOpenSeconds}}</td>
                 <td>{{server.halfTrafficRate}}</td>
-                <td>{{server.closeCount}}</td>
+                <td>{{server.halfToOpenSucceedRate}}% in {{server.halfToOpenCollectSeconds}} secs</td>
+                <td>{{server.openToCloseFailureRate}}% in {{server.openToCloseCollectSeconds}} secs</td>
          <!--        <td>{{server.status | status}}</td> -->
                 <td>
                         <button type="button" class="btn btn-success btn-sm" ng-click="goAnalysis(server.addr)">Analysis</button>
