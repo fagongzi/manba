@@ -148,7 +148,7 @@ func (f CircuitBreakeFilter) getFailureRate(c *filterContext) int {
 	totalCount := c.rb.GetAnalysis().GetRecentlyRequestCount(c.result.Svr.Addr, c.result.Svr.OpenToCloseCollectSeconds)
 
 	if totalCount == 0 {
-		return 0
+		return -1
 	}
 
 	return int(failureCount * 100 / totalCount)
@@ -159,7 +159,7 @@ func (f CircuitBreakeFilter) getSucceedRate(c *filterContext) int {
 	totalCount := c.rb.GetAnalysis().GetRecentlyRequestCount(c.result.Svr.Addr, c.result.Svr.OpenToCloseCollectSeconds)
 
 	if totalCount == 0 {
-		return 0
+		return 100
 	}
 
 	return int(succeedCount * 100 / totalCount)
@@ -178,3 +178,4 @@ func limitAllow(rate int) bool {
 	randValue := rand.Intn(RateBase)
 	return randValue < rate
 }
+
