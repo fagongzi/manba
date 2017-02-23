@@ -3,7 +3,7 @@ package proxy
 import (
 	"errors"
 
-	"github.com/fagongzi/gateway/pkg/conf"
+	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/valyala/fasthttp"
 )
 
@@ -14,16 +14,11 @@ var (
 
 // ValidationFilter validation request
 type ValidationFilter struct {
-	baseFilter
-	config *conf.Conf
-	proxy  *Proxy
+	filter.BaseFilter
 }
 
-func newValidationFilter(config *conf.Conf, proxy *Proxy) Filter {
-	return ValidationFilter{
-		config: config,
-		proxy:  proxy,
-	}
+func newValidationFilter() filter.Filter {
+	return &ValidationFilter{}
 }
 
 // Name return name of this filter
@@ -32,9 +27,9 @@ func (v ValidationFilter) Name() string {
 }
 
 // Pre pre filter, before proxy reuqest
-func (v ValidationFilter) Pre(c *filterContext) (statusCode int, err error) {
-	if c.result.Node.Validate(c.outreq) {
-		return v.baseFilter.Pre(c)
+func (v ValidationFilter) Pre(c filter.Context) (statusCode int, err error) {
+	if c.ValidateProxyOuterRequest() {
+		return v.BaseFilter.Pre(c)
 	}
 
 	return fasthttp.StatusBadRequest, ErrValidationFailure

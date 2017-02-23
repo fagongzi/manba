@@ -3,7 +3,7 @@ package proxy
 import (
 	"errors"
 
-	"github.com/fagongzi/gateway/pkg/conf"
+	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/valyala/fasthttp"
 )
 
@@ -14,14 +14,11 @@ var (
 
 // WhiteListFilter whitelist filter
 type WhiteListFilter struct {
-	baseFilter
-	proxy *Proxy
+	filter.BaseFilter
 }
 
-func newWhiteListFilter(config *conf.Conf, proxy *Proxy) Filter {
-	return WhiteListFilter{
-		proxy: proxy,
-	}
+func newWhiteListFilter() filter.Filter {
+	return &WhiteListFilter{}
 }
 
 // Name return name of this filter
@@ -30,10 +27,10 @@ func (f WhiteListFilter) Name() string {
 }
 
 // Pre execute before proxy
-func (f WhiteListFilter) Pre(c *filterContext) (statusCode int, err error) {
-	if !c.result.API.AccessCheckWhitelist(GetRealClientIP(c.ctx)) {
+func (f WhiteListFilter) Pre(c filter.Context) (statusCode int, err error) {
+	if !c.InWhitelist(GetRealClientIP(c.GetOriginRequestCtx())) {
 		return fasthttp.StatusForbidden, ErrWhitelist
 	}
 
-	return f.baseFilter.Pre(c)
+	return f.BaseFilter.Pre(c)
 }

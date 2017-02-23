@@ -10,11 +10,7 @@ type Conf struct {
 	EtcdAddrs  []string `json:"etcdAddrs"`
 	EtcdPrefix string   `json:"etcdPrefix"`
 
-	Filers []string `json:"filers"`
-
-	PluginDir string `json:"pluginDir"`
-
-	ServiceDiscoveryDuration int `json:"serviceDiscoveryDuration"`
+	Filers []*FilterSpec `json:"filers"`
 
 	// Maximum number of connections which may be established to server
 	MaxConns int `json:"maxConns"`
@@ -37,4 +33,11 @@ type Conf struct {
 	EnablePPROF bool `json:"enablePPROF"`
 	// PPROFAddr pprof addr
 	PPROFAddr string `json:"pprofAddr,omitempty"`
+}
+
+// FilterSpec filter spec
+type FilterSpec struct {
+	Name               string `json:"name"`
+	External           bool   `json:"external,omitempty"`
+	ExternalPluginFile string `json:"externalPluginFile,omitempty"`
 }

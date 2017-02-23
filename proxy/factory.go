@@ -2,9 +2,11 @@ package proxy
 
 import (
 	"errors"
+	"plugin"
 	"strings"
 
 	"github.com/fagongzi/gateway/pkg/conf"
+	"github.com/fagongzi/gateway/pkg/filter"
 )
 
 var (
@@ -33,29 +35,48 @@ const (
 	FilterValidation = "VALIDATION"
 )
 
-func newFilter(name string, config *conf.Conf, proxy *Proxy) (Filter, error) {
-	input := strings.ToUpper(name)
+func newFilter(filterSpec *conf.FilterSpec) (filter.Filter, error) {
+	if filterSpec.External {
+		return newExternalFilter(filterSpec)
+	}
+
+	input := strings.ToUpper(filterSpec.Name)
 
 	switch input {
 	case FilterHTTPAccess:
-		return newAccessFilter(config, proxy), nil
+		return newAccessFilter(), nil
 	case FilterHeader:
-		return newHeadersFilter(config, proxy), nil
+		return newHeadersFilter(), nil
 	case FilterXForward:
-		return newXForwardForFilter(config, proxy), nil
+		return newXForwardForFilter(), nil
 	case FilterAnalysis:
-		return newAnalysisFilter(config, proxy), nil
+		return newAnalysisFilter(), nil
 	case FilterBlackList:
-		return newBlackListFilter(config, proxy), nil
+		return newBlackListFilter(), nil
 	case FilterWhiteList:
-		return newWhiteListFilter(config, proxy), nil
+		return newWhiteListFilter(), nil
 	case FilterRateLimiting:
-		return newRateLimitingFilter(config, proxy), nil
+		return newRateLimitingFilter(), nil
 	case FilterCircuitBreake:
-		return newCircuitBreakeFilter(config, proxy), nil
+		return newCircuitBreakeFilter(), nil
 	case FilterValidation:
-		return newValidationFilter(config, proxy), nil
+		return newValidationFilter(), nil
 	default:
 		return nil, ErrKnownFilter
 	}
+}
+
+func newExternalFilter(filterSpec *conf.FilterSpec) (filter.Filter, error) {
+	p, err := plugin.Open(filterSpec.ExternalPluginFile)
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := p.Lookup("NewExternalFilter")
+	if err != nil {
+		return nil, err
+	}
+
+	sf := s.(func() (filter.Filter, error))
+	return sf()
 }

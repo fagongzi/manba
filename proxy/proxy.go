@@ -11,7 +11,6 @@ import (
 	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/pkg/conf"
 	"github.com/fagongzi/gateway/pkg/model"
-	"github.com/fagongzi/gateway/pkg/plugin"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/valyala/fasthttp"
 )
@@ -38,11 +37,10 @@ var (
 
 // Proxy Proxy
 type Proxy struct {
-	cnf                  *conf.Conf
-	filters              *list.List
-	fastHTTPClient       *util.FastHTTPClient
-	routeTable           *model.RouteTable
-	pluginRegistryCenter *plugin.RegistryCenter
+	cnf            *conf.Conf
+	filters        *list.List
+	fastHTTPClient *util.FastHTTPClient
+	routeTable     *model.RouteTable
 }
 
 // NewProxy create a new proxy
@@ -59,12 +57,7 @@ func NewProxy(config *conf.Conf) *Proxy {
 }
 
 func (p *Proxy) init() {
-	err := p.initPlugins()
-	if nil != err {
-		log.PanicErrorf(err, "Proxy load plugins failure at <%s>.", p.cnf.PluginDir)
-	}
-
-	err = p.initRouteTable()
+	err := p.initRouteTable()
 	if err != nil {
 		log.PanicError(err, "init etcd store error")
 	}
@@ -85,22 +78,17 @@ func (p *Proxy) initRouteTable() error {
 		Conf: p.cnf,
 	})
 
-	p.routeTable = model.NewRouteTable(p.cnf, store, model.NewServiceDiscoveryDriver(p.pluginRegistryCenter))
+	p.routeTable = model.NewRouteTable(p.cnf, store)
 	p.routeTable.Load()
 
 	return nil
 }
 
-func (p *Proxy) initPlugins() error {
-	p.pluginRegistryCenter = plugin.NewRegistryCenter(p.cnf, p.fastHTTPClient)
-	return p.pluginRegistryCenter.Load()
-}
-
 func (p *Proxy) initFilters() {
 	for _, filter := range p.cnf.Filers {
-		f, err := newFilter(filter, p.cnf, p)
+		f, err := newFilter(filter)
 		if nil != err {
-			log.Panicf("Proxy unknow filter <%s>.", filter)
+			log.Panicf("Proxy unknow filter <%+v>.", filter)
 		}
 
 		p.filters.PushBack(f)
@@ -225,13 +213,7 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *mo
 		}
 	}
 
-	c := &filterContext{
-		ctx:        ctx,
-		outreq:     outreq,
-		result:     result,
-		rb:         p.routeTable,
-		runtimeVar: make(map[string]string),
-	}
+	c := newContext(p.routeTable, ctx, outreq, result)
 
 	// pre filters
 	filterName, code, err := p.doPreFilters(c)
@@ -242,9 +224,9 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *mo
 		return
 	}
 
-	c.startAt = time.Now().UnixNano()
+	c.SetStartAt(time.Now().UnixNano())
 	res, err := p.fastHTTPClient.Do(outreq, svr.Addr)
-	c.endAt = time.Now().UnixNano()
+	c.SetEndAt(time.Now().UnixNano())
 
 	result.Res = res
 

@@ -1,8 +1,6 @@
 package proxy
 
-import (
-	"github.com/fagongzi/gateway/pkg/conf"
-)
+import "github.com/fagongzi/gateway/pkg/filter"
 
 // Hop-by-hop headers. These are removed when sent to the backend.
 // http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html
@@ -19,16 +17,11 @@ var hopHeaders = []string{
 
 // HeadersFilter HeadersFilter
 type HeadersFilter struct {
-	baseFilter
-	config *conf.Conf
-	proxy  *Proxy
+	filter.BaseFilter
 }
 
-func newHeadersFilter(config *conf.Conf, proxy *Proxy) Filter {
-	return HeadersFilter{
-		config: config,
-		proxy:  proxy,
-	}
+func newHeadersFilter() filter.Filter {
+	return &HeadersFilter{}
 }
 
 // Name return name of this filter
@@ -37,25 +30,25 @@ func (f HeadersFilter) Name() string {
 }
 
 // Pre execute before proxy
-func (f HeadersFilter) Pre(c *filterContext) (statusCode int, err error) {
+func (f HeadersFilter) Pre(c filter.Context) (statusCode int, err error) {
 	for _, h := range hopHeaders {
-		c.outreq.Header.Del(h)
+		c.GetProxyOuterRequest().Header.Del(h)
 	}
 
-	return f.baseFilter.Pre(c)
+	return f.BaseFilter.Pre(c)
 }
 
 // Post execute after proxy
-func (f HeadersFilter) Post(c *filterContext) (statusCode int, err error) {
+func (f HeadersFilter) Post(c filter.Context) (statusCode int, err error) {
 	for _, h := range hopHeaders {
-		c.result.Res.Header.Del(h)
+		c.GetProxyResponse().Header.Del(h)
 	}
 
 	// 需要合并处理的，不做header的复制，由proxy做合并
-	if !c.result.Merge {
-		c.ctx.Response.Header.Reset()
-		c.result.Res.Header.CopyTo(&c.ctx.Response.Header)
+	if !c.NeedMerge() {
+		c.GetOriginRequestCtx().Response.Header.Reset()
+		c.GetProxyResponse().Header.CopyTo(&c.GetOriginRequestCtx().Response.Header)
 	}
 
-	return f.baseFilter.Post(c)
+	return f.BaseFilter.Post(c)
 }

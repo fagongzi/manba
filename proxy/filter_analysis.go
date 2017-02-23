@@ -1,21 +1,14 @@
 package proxy
 
-import (
-	"github.com/fagongzi/gateway/pkg/conf"
-)
+import "github.com/fagongzi/gateway/pkg/filter"
 
 // AnalysisFilter analysis filter
 type AnalysisFilter struct {
-	baseFilter
-	proxy  *Proxy
-	config *conf.Conf
+	filter.BaseFilter
 }
 
-func newAnalysisFilter(config *conf.Conf, proxy *Proxy) Filter {
-	return AnalysisFilter{
-		config: config,
-		proxy:  proxy,
-	}
+func newAnalysisFilter() filter.Filter {
+	return &AnalysisFilter{}
 }
 
 // Name return name of this filter
@@ -24,18 +17,18 @@ func (f AnalysisFilter) Name() string {
 }
 
 // Pre execute before proxy
-func (f AnalysisFilter) Pre(c *filterContext) (statusCode int, err error) {
-	c.rb.GetAnalysis().Request(c.result.Svr.Addr)
-	return f.baseFilter.Pre(c)
+func (f AnalysisFilter) Pre(c filter.Context) (statusCode int, err error) {
+	c.RecordMetricsForRequest()
+	return f.BaseFilter.Pre(c)
 }
 
 // Post execute after proxy
-func (f AnalysisFilter) Post(c *filterContext) (statusCode int, err error) {
-	c.rb.GetAnalysis().Response(c.result.Svr.Addr, c.endAt-c.startAt)
-	return f.baseFilter.Post(c)
+func (f AnalysisFilter) Post(c filter.Context) (statusCode int, err error) {
+	c.RecordMetricsForResponse()
+	return f.BaseFilter.Post(c)
 }
 
 // PostErr execute proxy has errors
-func (f AnalysisFilter) PostErr(c *filterContext) {
-	c.rb.GetAnalysis().Failure(c.result.Svr.Addr)
+func (f AnalysisFilter) PostErr(c filter.Context) {
+	c.RecordMetricsForFailure()
 }
