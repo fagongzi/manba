@@ -27,6 +27,8 @@ Gateway 是一个基于HTTP协议的restful的API网关.
 Gateway 依赖 [etcd](https://github.com/coreos/etcd)
 
 ## 从源码编译
+必须使用go1.8以上版本，由于使用了go1.8的plugin机制
+
 ```
 git clone https://github.com/fagongzi.git
 cd $GOPATH/src/github.com/fagongzi/gateway
@@ -113,19 +115,9 @@ Gateway 通过 **流控** and **熔断** 的功能保护后端服务。
 ## AB Test
 Gateway 通过 **Routing** 功能可以做AB测试。
 
-# 如何扩展Gateway
-Gateway支持插件的方式扩展自身功能，目前支持的插件只有服务发现。
+# 插件机制
+Gateway以go1.8的plugin机制提供如下的扩展点
 
-Gateway启动后，会扫描 `pluginDir` 目录加载插件. 在`PluginDir`目录中 , 插件是以JSON的格式定义，一个文件代表一个插件，JSON的格式为:
-```json
-{
-    "type": "service-discovery",
-    "address": "127.0.0.1:8080"
-}
-```
+* filter
+  使用go1.8的plugin的机制，编写自定义插件，扩展gateway功能。[如何编写自定义filter](./plugin-filter.md)
 
-Gateway 通过HTTP和插件通信. Plugin 必须实现注册的API:
-
-|URL|Method|
-|:---|:---|
-|/plugins/$type|POST|

@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	// ErrKnownFilter known filter error
-	ErrKnownFilter = errors.New("unknow filter")
+	// ErrUnknownFilter unknown filter error
+	ErrUnknownFilter = errors.New("unknow filter")
 )
 
 const (
@@ -62,7 +62,7 @@ func newFilter(filterSpec *conf.FilterSpec) (filter.Filter, error) {
 	case FilterValidation:
 		return newValidationFilter(), nil
 	default:
-		return nil, ErrKnownFilter
+		return nil, ErrUnknownFilter
 	}
 }
 
