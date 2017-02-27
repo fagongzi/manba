@@ -4,22 +4,17 @@ import (
 	"time"
 
 	"github.com/CodisLabs/codis/pkg/utils/log"
-	"github.com/fagongzi/gateway/pkg/conf"
+	"github.com/fagongzi/gateway/pkg/filter"
 )
 
 // AccessFilter record the http access log
 // log format: $remoteip "$method $path" $code "$agent" $svr $cost
 type AccessFilter struct {
-	baseFilter
-	config *conf.Conf
-	proxy  *Proxy
+	filter.BaseFilter
 }
 
-func newAccessFilter(config *conf.Conf, proxy *Proxy) Filter {
-	return AccessFilter{
-		config: config,
-		proxy:  proxy,
-	}
+func newAccessFilter() filter.Filter {
+	return &AccessFilter{}
 }
 
 // Name return name of this filter
@@ -28,17 +23,17 @@ func (f AccessFilter) Name() string {
 }
 
 // Post execute after proxy
-func (f AccessFilter) Post(c *filterContext) (statusCode int, err error) {
-	cost := (c.endAt - c.startAt)
+func (f AccessFilter) Post(c filter.Context) (statusCode int, err error) {
+	cost := (c.GetStartAt() - c.GetEndAt())
 
 	log.Infof("%s %s \"%s\" %d \"%s\" %s %s",
-		GetRealClientIP(c.ctx),
-		c.ctx.Method(),
-		c.outreq.RequestURI(),
-		c.result.Res.StatusCode(),
-		c.ctx.UserAgent(),
-		c.result.Svr.Addr,
+		GetRealClientIP(c.GetOriginRequestCtx()),
+		c.GetOriginRequestCtx().Method(),
+		c.GetProxyOuterRequest().RequestURI(),
+		c.GetProxyResponse().StatusCode(),
+		c.GetOriginRequestCtx().UserAgent(),
+		c.GetProxyServerAddr(),
 		time.Duration(cost))
 
-	return f.baseFilter.Post(c)
+	return f.BaseFilter.Post(c)
 }

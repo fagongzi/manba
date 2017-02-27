@@ -29,6 +29,8 @@ Gateway is a http restful API gateway.
 Gateway dependency [etcd](https://github.com/coreos/etcd)
 
 ## Compile from source
+You are must used go1.8 beause of the plugin mechanism.
+
 ```
 git clone https://github.com/fagongzi.git
 cd $GOPATH/src/github.com/fagongzi/gateway
@@ -115,19 +117,8 @@ Gateway can use **Traffic Control** and **Circuit Breaker** functions to avoid b
 ## AB Test
 Gateway's **Routing** fucntion can help your AB Test.
 
-# How to extend the gateway
-Gateway support plugin mechanism, currently it only support service discovery plugin. 
+# Plugin mechanism
+Gateway provides the following extension points with the plugin mechanism of go1.8
 
-Once gateway proxy started, it scan `pluginDir` for plugins. In `PluginDir`, a json file is correspond a external plugin. The json file formart is:
-```json
-{
-    "type": "service-discovery",
-    "address": "127.0.0.1:8080"
-}
-```
-
-Gateway proxy used http for communicate with plugin. Plugin must implementation this API for Registration:
-
-|URL|Method|
-|:---|:---|
-|/plugins/$type|POST|
+* Filter
+   Use the plugin mechanism of go1.8 to write custom plugins and extend the gateway function. [How to write a custom filter] (./docs/plugin-filter.md)

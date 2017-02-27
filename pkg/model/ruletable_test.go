@@ -36,7 +36,7 @@ func createRouteTable(t *testing.T) {
 
 	store.Clean()
 
-	rt = NewRouteTable(nil, store, nil)
+	rt = NewRouteTable(nil, store)
 	time.Sleep(time.Second * 1)
 }
 
