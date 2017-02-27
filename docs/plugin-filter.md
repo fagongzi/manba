@@ -12,7 +12,7 @@ The entire logic process conforms to the following rules:
 * Forward request, back-end return to the status code `> = 500`, call the filter error handling interface
 
 ### Filter interface definition
-`` `Golang
+```Golang
 // Filter filter interface
 Type Filter interface {
 Name () string
@@ -81,12 +81,12 @@ Return http.StatusOK, nil
 Func (f BaseFilter) PostErr (c Context) {
 
 }
-`` ``
+```
 
 These related definitions are in the `github.com / fagongzi / gateway / pkg / filter` package, and each filter needs to be imported. One of the context of the Context Context provides the ability to interact with the Filter and Gateway; `BaseFilter` defines the default behavior.
 
 ### Gateway loads the Filter plugin mechanism
-`` `Golang
+```Golang
 Func newExternalFilter (filterSpec * conf.FilterSpec) (filter.Filter, error) {
 P, err: = plugin.Open (filterSpec.ExternalPluginFile)
 If err! = Nil {
@@ -101,7 +101,7 @@ Return nil, err
 Sf: = s. (Func () (filter.Filter, error))
 Return sf ()
 }
-`` ``
+```
 
 Each of the external Filter plugins, supplied with `NewExternalFilter`, returns a` filter.Filter` implementation, or an error.
 
