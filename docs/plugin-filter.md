@@ -107,3 +107,47 @@ Each of the external Filter plugins, supplied with `NewExternalFilter`, returns 
 
 ### Go1.8 Plugin problem
 When writing a custom plugin, there is a problem related to Go1.8 [bugs] (https://github.com/golang/go/issues/19233). So the custom plugin must be compiled under the `Gateway project`.
+
+### Configure an external filter
+```json
+"filers": [
+        {
+            "name": "whitelist"
+        },
+        {
+            "name": "blacklist"
+        },
+        {
+            "name": "analysis"
+        },
+        {
+            "name": "rate-limiting"
+        },
+        {
+            "name": "circuit-breake"
+        },
+        {
+            "name": "http-access"
+        },
+        {
+            "name": "head"
+        },
+        {
+            "name": "xforward"
+        },
+        {
+            "name": "validation"
+        },
+        {
+            "name": "custom-plugin-1",
+            "external": true,
+            "externalPluginFile": ".so file path"
+        }
+        ,
+        {
+            "name": "custom-plugin-2",
+            "external": true,
+            "externalPluginFile": ".so file path"
+        }
+    ],
+```

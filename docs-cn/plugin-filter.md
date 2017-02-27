@@ -107,3 +107,6 @@ func newExternalFilter(filterSpec *conf.FilterSpec) (filter.Filter, error) {
 
 ### Go1.8 Plugin的问题
 当编写的自定义插件的时候，有一个问题涉及到Go1.8的一个[Bug](https://github.com/golang/go/issues/19233)。所以编写的自定义插件必须在`Gateway的Project`下编译的插件才能被正确加载。
+
+### 配置一个外部Filter
+配置Proxy启动的配置文件
