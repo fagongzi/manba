@@ -7,7 +7,7 @@
 Gateway目前支持Etcd作为元数据区的存储，所以需要一个Etcd环境，参考：[etcd environment](https://github.com/coreos/etcd)
 
 ## Golang
-如果你希望从源码编译Gateway，你需要一个[golang 环境](https://github.com/golang/go)，建议使用`1.7`的版本。
+如果你希望从源码编译Gateway，你需要一个[golang 环境](https://github.com/golang/go)，必须使用`1.8`的版本。
 
 # 从源码编译
 执行如下命令：
