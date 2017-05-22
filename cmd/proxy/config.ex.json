@@ -32,6 +32,11 @@
         },
         {
             "name": "validation"
+        },
+        {
+            "name": "custom-plugin-1",
+            "external": true,
+            "externalPluginFile": ".so file path"
         }
     ],
     "maxConns": 512,
