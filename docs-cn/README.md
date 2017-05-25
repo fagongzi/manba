@@ -121,3 +121,5 @@ Gateway以go1.8的plugin机制提供如下的扩展点
 * filter
   使用go1.8的plugin的机制，编写自定义插件，扩展gateway功能。[如何编写自定义filter](./plugin-filter.md)
 
+# 交流方式
+微信: 13675153174
