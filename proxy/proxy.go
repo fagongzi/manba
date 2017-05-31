@@ -37,18 +37,20 @@ var (
 
 // Proxy Proxy
 type Proxy struct {
-	cnf            *conf.Conf
-	filters        *list.List
-	fastHTTPClient *util.FastHTTPClient
-	routeTable     *model.RouteTable
+	sync.RWMutex
+
+	cnf             *conf.Conf
+	filters         *list.List
+	fastHTTPClients map[string]*util.FastHTTPClient
+	routeTable      *model.RouteTable
 }
 
 // NewProxy create a new proxy
 func NewProxy(config *conf.Conf) *Proxy {
 	p := &Proxy{
-		fastHTTPClient: util.NewFastHTTPClient(config),
-		cnf:            config,
-		filters:        list.New(),
+		fastHTTPClients: make(map[string]*util.FastHTTPClient),
+		cnf:             config,
+		filters:         list.New(),
 	}
 
 	p.init()
@@ -225,7 +227,7 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *mo
 	}
 
 	c.SetStartAt(time.Now().UnixNano())
-	res, err := p.fastHTTPClient.Do(outreq, svr.Addr)
+	res, err := p.getClient(svr.Addr).Do(outreq, svr.Addr)
 	c.SetEndAt(time.Now().UnixNano())
 
 	result.Res = res
@@ -266,4 +268,25 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *mo
 func (p *Proxy) writeResult(ctx *fasthttp.RequestCtx, res *fasthttp.Response) {
 	ctx.SetStatusCode(res.StatusCode())
 	ctx.Write(res.Body())
+}
+
+func (p *Proxy) getClient(addr string) *util.FastHTTPClient {
+	p.RLock()
+	c, ok := p.fastHTTPClients[addr]
+	if ok {
+		p.RUnlock()
+		return c
+	}
+	p.RUnlock()
+
+	p.Lock()
+	c, ok = p.fastHTTPClients[addr]
+	if ok {
+		p.Unlock()
+		return c
+	}
+
+	p.fastHTTPClients[addr] = util.NewFastHTTPClient(p.cnf)
+	p.Unlock()
+	return c
 }
