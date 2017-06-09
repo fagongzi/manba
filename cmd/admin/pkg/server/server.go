@@ -26,9 +26,8 @@ type AdminServer struct {
 }
 
 // NewAdminServer create a AdminServer
-func NewAdminServer(addr string, etcdAddrs []string, etcdPrefix string, user string, pwd string) *AdminServer {
-	st, _ := model.NewEtcdStore(etcdAddrs, etcdPrefix)
-
+func NewAdminServer(addr string, registryAddr string, prefix string, user string, pwd string) *AdminServer {
+	st, _ := model.GetStoreFrom(registryAddr, prefix)
 	st.GC()
 
 	server := &AdminServer{

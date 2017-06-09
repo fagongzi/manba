@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	cpus       = flag.Int("cpus", 1, "use cpu nums")
-	addr       = flag.String("addr", ":8080", "listen addr.(e.g. ip:port)")
-	etcdAddr   = flag.String("etcd-addr", "http://localhost:2379", "etcd address, use ',' to splite.")
-	etcdPrefix = flag.String("etcd-prefix", "/gateway", "etcd node prefix.")
+	cpus         = flag.Int("cpus", 1, "use cpu nums")
+	addr         = flag.String("addr", ":8080", "listen addr.(e.g. ip:port)")
+	registryAddr = flag.String("registry-addr", "[ectd|consul]://127.0.0.1:8500", "registry address")
+	prefix       = flag.String("prefix", "/gateway", "node prefix.")
 )
 
 var (
@@ -21,10 +21,7 @@ var (
 
 func main() {
 	flag.Parse()
-
 	runtime.GOMAXPROCS(*cpus)
-
-	address := []string{*etcdAddr}
-	s := server.NewAdminServer(*addr, address, *etcdPrefix, *userName, *pwd)
+	s := server.NewAdminServer(*addr, *registryAddr, *prefix, *userName, *pwd)
 	s.Start()
 }

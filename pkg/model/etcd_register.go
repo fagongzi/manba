@@ -2,18 +2,10 @@ package model
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/toolkits/net"
-)
-
-var (
-	// TICKER ticket
-	TICKER = time.Second * 3
-	// TTL timeout
-	TTL = uint64(5)
 )
 
 // Registry registry self
@@ -110,16 +102,4 @@ func (e EtcdStore) GetAnalysisPoint(proxyAddr, serverAddr string, secs int) (*Ge
 	err = rpcClient.Call("Manager.GetAnalysisPoint", req, rsp)
 
 	return rsp, err
-}
-
-func convertIP(addr string) string {
-	if strings.HasPrefix(addr, ":") {
-		ips, err := net.IntranetIP()
-
-		if err == nil {
-			addr = strings.Replace(addr, ":", fmt.Sprintf("%s:", ips[0]), 1)
-		}
-	}
-
-	return addr
 }
