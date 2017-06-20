@@ -24,7 +24,7 @@ Gateway 是一个基于HTTP协议的restful的API网关.
 * 后台管理UI
 
 # Install
-Gateway 依赖 [etcd](https://github.com/coreos/etcd)
+Gateway 依赖 [etcd](https://github.com/coreos/etcd) 或者 [consul](https://github.com/hashicorp/consul)
 
 ## 从源码编译
 必须使用go1.8以上版本，由于使用了go1.8的plugin机制
@@ -78,8 +78,8 @@ Proxy是Gateway对终端用户提供服务的组件，Proxy是一个无状态的
 ### Admin 
 Admin是一个WEBUI的管理组件，它同样是无状态的节点，一个Admin节点管理一组连接到同一个Etcd，同一个Path下的Proxy
 
-### Etcd
-Etcd用来存储Gateway的元数据，例如集群信息、后端服务信息、API信息等
+### Etcd 或 consul
+Etcd（或者consul）用来存储Gateway的元数据，例如集群信息、后端服务信息、API信息等
 
 ## Gateway中的概念
 

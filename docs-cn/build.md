@@ -6,6 +6,9 @@
 ## Etcd
 Gateway目前支持Etcd作为元数据区的存储，所以需要一个Etcd环境，参考：[etcd environment](https://github.com/coreos/etcd)
 
+## Consul
+Gateway目前支持Consul作为元数据区的存储，所以需要一个Consul环境，参考：[consul environment](https://github.com/hashicorp/consul)
+
 ## Golang
 如果你希望从源码编译Gateway，你需要一个[golang 环境](https://github.com/golang/go)，必须使用`1.8`的版本。
 
@@ -39,10 +42,10 @@ Usage of $GOPATH/src/github.com/fagongzi/gateway/cmd/admin/admin:
         listen addr.(e.g. ip:port) (default ":8080")
   -cpus int
         use cpu nums (default 1)
-  -etcd-addr string
-        etcd address, use ',' to splite. (default "http://127.0.0.1:2379")
-  -etcd-prefix string
-        etcd node prefix. (default "/dev")
+  -registry-addr string
+        registry address. (default "[ectd|consul]://127.0.0.1:8500")
+  -prefix string
+        node prefix. (default "/dev")
   -pwd string
         admin user pwd (default "admin")
   -user string
@@ -52,11 +55,11 @@ Usage of $GOPATH/src/github.com/fagongzi/gateway/cmd/admin/admin:
 执行一下命令启动Admin:
 
 ```bash
-./admin --addr=:8080  --etcd-addr=http://etcdIP:etcdPort --ectd-prefix=dev 
+./admin --addr=:8080  --registry-addr=ectd://etcdIP:etcdPort --prefix=dev 
 ```
 启动后，Admin监听8080端口，你可以再浏览器上访问`http://127.0.0.1:8080`，默认的用户名和密码是`admin/admin`
 
-可以使用`etcd-prefix`参数隔离多个Gateway环境。
+可以使用`prefix`参数隔离多个Gateway环境。
 
 ## 运行 proxy
 You can get help info use:
@@ -80,10 +83,10 @@ Proxy启动以来一个JSON的配置文件，这个配置文件样例可以在`$
 {
     "addr": ":80", 
     "mgrAddr": ":8081",
-    "etcdAddrs": [
-        "http://127.0.0.1:2379"
+    "registryAddr": [
+        "ectd://127.0.0.1:2379"
     ],
-    "etcdPrefix": "/dev",
+    "prefix": "/dev",
     "filers": [
         "analysis",
         "rate-limiting",
@@ -114,4 +117,4 @@ Proxy启动以来一个JSON的配置文件，这个配置文件样例可以在`$
 ./proxy --cpus=number of you cpu core ---config ./proxy.json --log-file ./proxy.log --log-level=info
 ```
 
-启动后，Proxy监听80端口，并且加载Etcd中的元数据，同时监听Ectd元数据的变化，并且实时更新。在第一次启动的时候，会有一些`Warn`的信息提示，这个是因为一开始Ectd中没有相关数据造成的，可以忽略。
+启动后，Proxy监听80端口，并且加载Etcd中的元数据，同时监听Ectd元数据的变化，并且实时更新。在第一次启动的时候，会有一些`Warn`的信息提示，这个是因为一开始Ectd（consul）中没有相关数据造成的，可以忽略。
