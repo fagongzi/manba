@@ -7,8 +7,8 @@ type Conf struct {
 	Addr    string `json:"addr"`
 	MgrAddr string `json:"mgrAddr"`
 
-	EtcdAddrs  []string `json:"etcdAddrs"`
-	EtcdPrefix string   `json:"etcdPrefix"`
+	RegistryAddr string `json:"registryAddr"`
+	Prefix       string `json:"prefix"`
 
 	Filers []*FilterSpec `json:"filers"`
 

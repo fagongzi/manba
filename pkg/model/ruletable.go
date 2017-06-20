@@ -115,8 +115,6 @@ func NewRouteTable(cnf *conf.Conf, store Store) *RouteTable {
 	}
 
 	go rt.changed()
-	go rt.watch()
-
 	return rt
 }
 
@@ -330,8 +328,6 @@ func (r *RouteTable) UpdateCluster(cluster *Cluster) error {
 
 	old.updateFrom(cluster)
 
-	log.Infof("Cluster <%s> updated", cluster.Name)
-
 	return nil
 }
 
@@ -511,8 +507,7 @@ func (r *RouteTable) watch() {
 
 	go r.doEvtReceive()
 	err := r.store.Watch(r.watchReceiveCh, r.watchStopCh)
-
-	log.Errorf("RouteTable watch err: %s", err)
+	log.Errorf("RouteTable watch err: %+v", err)
 }
 
 func (r *RouteTable) doEvtReceive() {
@@ -589,6 +584,9 @@ func (r *RouteTable) doReceiveBind(evt *Evt) {
 	if evt.Type == EventTypeNew {
 		r.Bind(bind.ServerAddr, bind.ClusterName)
 	} else if evt.Type == EventTypeDelete {
+		if bind == nil {
+			bind = UnMarshalBindFromString(evt.Key)
+		}
 		r.UnBind(bind.ServerAddr, bind.ClusterName)
 	}
 }
@@ -600,6 +598,8 @@ func (r *RouteTable) Load() {
 	r.loadBinds()
 	r.loadAPIs()
 	r.loadRoutings()
+
+	go r.watch()
 }
 
 func (r *RouteTable) loadClusters() {

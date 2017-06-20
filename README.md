@@ -26,7 +26,7 @@ Gateway is a http restful API gateway.
 * Admin WEBUI
 
 # Install
-Gateway dependency [etcd](https://github.com/coreos/etcd)
+Gateway dependency [etcd](https://github.com/coreos/etcd) or [consul](https://github.com/hashicorp/consul)
 
 ## Compile from source
 You are must used go1.8 beause of the plugin mechanism.
@@ -80,8 +80,8 @@ The proxy provide http server. Proxy is stateless, you can scale proxy node to d
 ### Admin 
 The admin is a backend manager system. Admin also is a stateless node, you can use a Nginx node for HA. One Admin node can manager a set of proxy which has a same etcd prefix configuration.
 
-### Etcd
-The Etcd store gateway's mete data.
+### Etcd Or Consul
+The Etcd or consul store gateway's mete data.
 
 ## Concept of gateway
 

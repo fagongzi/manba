@@ -1,10 +1,10 @@
 package server
 
 import (
-	"fmt"
+	"net/http"
+
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/labstack/echo"
-	"net/http"
 )
 
 func (server *AdminServer) getRoutings() echo.HandlerFunc {
@@ -33,13 +33,9 @@ func (server *AdminServer) newRouting() echo.HandlerFunc {
 
 		routing, err := model.UnMarshalRoutingFromReader(c.Request().Body())
 
-		fmt.Printf("%+v\n", routing)
-
 		if err == nil {
 			err = routing.Check()
 		}
-
-		fmt.Printf("%+v, %s\n", routing, err)
 
 		if nil != err {
 			errstr = err.Error()

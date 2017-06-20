@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	etcdAddr   = "http://192.168.70.13:2379"
-	etcdPrefix = "/gateway2"
+	registryAddr = "consul://127.0.0.1:8500"
+	prefix       = "/gateway-test"
 )
 
 var (
@@ -28,7 +28,7 @@ var (
 var rt *RouteTable
 
 func createRouteTable(t *testing.T) {
-	store, err := NewEtcdStore([]string{etcdAddr}, etcdPrefix)
+	store, err := GetStoreFrom(registryAddr, prefix)
 
 	if nil != err {
 		t.Fatalf("create etcd store err.addr:<%s>", err)
@@ -37,6 +37,7 @@ func createRouteTable(t *testing.T) {
 	store.Clean()
 
 	rt = NewRouteTable(nil, store)
+	go rt.watch()
 	time.Sleep(time.Second * 1)
 }
 

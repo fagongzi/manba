@@ -34,7 +34,9 @@ func UnMarshalCluster(data []byte) *Cluster {
 		return v
 	}
 
-	v.init()
+	if len(data) > 0 && v.LbName != "" {
+		v.init()
+	}
 
 	return v
 }
@@ -111,7 +113,7 @@ func (c *Cluster) updateFrom(cluster *Cluster) {
 	c.LbName = cluster.LbName
 	c.lb = lb.NewLoadBalance(c.LbName)
 
-	log.Infof("Cluster <%s> updated, %+v", c.Name, c)
+	log.Infof("Cluster <%s> updated", c.Name)
 }
 
 func (c *Cluster) doInEveryBindServers(callback func(string)) {

@@ -6,8 +6,11 @@ This section help you build gateway environment.
 ## Etcd
 Currently, Gateway use etcd store it's mete data, so you need a [etcd environment](https://github.com/coreos/etcd).
 
+## Consul
+Currently, Gateway use consul store it's mete data, so you need a [consul environment](https://github.com/hashicorp/consul).
+
 ## Golang
-If you want to build gateway with source, you need a [golang environment](https://github.com/golang/go). Otherwise, you can get last binary package from [here](http://7xtbpp.com1.z0.glb.clouddn.com/gateway-linux64.tar.gz)
+If you want to build gateway with source, you need a [golang environment](https://github.com/golang/go). 
 
 # Build with source 
 Build gateway use commands as below：
@@ -33,10 +36,10 @@ Usage of xxx/src/github.com/fagongzi/gateway/cmd/admin/admin:
         listen addr.(e.g. ip:port) (default ":8080")
   -cpus int
         use cpu nums (default 1)
-  -etcd-addr string
-        etcd address, use ',' to splite. (default "http://192.168.159.130:2379")
-  -etcd-prefix string
-        etcd node prefix. (default "/gateway")
+  -registry-addr string
+        registry address. (default "[ectd|consul]://127.0.0.1:8500")
+  -prefix string
+        node prefix. (default "/dev")
   -pwd string
         admin user pwd (default "admin")
   -user string
@@ -46,7 +49,7 @@ Usage of xxx/src/github.com/fagongzi/gateway/cmd/admin/admin:
 Than you can run admin use:
 
 ```bash
-./admin --addr=:8080  --etcd-addr=http://etcdIP:etcdPort --ectd-prefix=dev 
+./admin --addr=:8080  --etcd-addr=ectd://etcdIP:etcdPort --prefix=dev 
 ```
 
 It listen at 8080 port, you can you your web browser access `http://127.0.0.1:8080`, the input the user name and password to access admin system.
@@ -73,10 +76,10 @@ Proxy use a json config file like this:
 {
     "addr": ":80", 
     "mgrAddr": ":8081",
-    "etcdAddrs": [
-        "http://127.0.0.1:2379"
+    "registryAddr": [
+        "ectd://127.0.0.1:2379"
     ],
-    "etcdPrefix": "/dev",
+    "prefix": "/dev",
     "filers": [
         "analysis",
         "rate-limiting",
@@ -107,4 +110,4 @@ Run proxy:
 ./proxy --cpus=number of you cpu core ---config ./proxy.json --log-file ./proxy.log --log-level=info
 ```
 
-Than you can see proxy start at 80 port. And load mete data from ectd. At first time, there will be have some warn message, ingore these, because ectd has no mete data in ectd. 
+Than you can see proxy start at 80 port. And load mete data from ectd. At first time, there will be have some warn message, ingore these, because has no mete data in ectd(consul). 
