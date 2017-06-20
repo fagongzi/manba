@@ -61,6 +61,29 @@
 			"Rev": "6f72a2d331c927473b9b19f590d43ccb5018c844"
 		},
 		{
+			"ImportPath": "github.com/hashicorp/consul/api",
+			"Comment": "v0.8.3",
+			"Rev": "ea2a82b221c3e0a466a4f38ab4e8718ad8c60621"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/consul/watch",
+			"Comment": "v0.8.3",
+			"Rev": "ea2a82b221c3e0a466a4f38ab4e8718ad8c60621"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/go-cleanhttp",
+			"Rev": "3573b8b52aa7b37b9358d966a898feb387f62437"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/go-rootcerts",
+			"Rev": "6bb64b370b90e7ef1fa532be9e591a81c3493e00"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/serf/coordinate",
+			"Comment": "v0.8.1-50-g91fd53b",
+			"Rev": "91fd53b1d3e624389ed9a295a3fa380e5c7b9dfc"
+		},
+		{
 			"ImportPath": "github.com/klauspost/compress/flate",
 			"Comment": "v1.0-14-gd0763f1",
 			"Rev": "d0763f13d86e630f5d3ea9fa848a6ecc68255297"
@@ -129,6 +152,10 @@
 			"Rev": "56b76bdf51f7708750eac80fa38b952bb9f32639"
 		},
 		{
+			"ImportPath": "github.com/mitchellh/go-homedir",
+			"Rev": "b8bc1bf767474819792c23f32d8286a45736f1c6"
+		},
+		{
 			"ImportPath": "github.com/satori/go.uuid",
 			"Comment": "v1.0.0",
 			"Rev": "f9ab0dce87d815821e221626b772e3475a0d2749"
@@ -162,14 +189,6 @@
 		{
 			"ImportPath": "golang.org/x/sys/unix",
 			"Rev": "8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9"
-		},
-		{
-			"ImportPath": "github.com/fagongzi/goetty/vendor/github.com/CodisLabs/codis/pkg/utils/atomic2",
-			"Rev": "c248b4206145cfb10fe366960ffebbff083e9c15"
-		},
-		{
-			"ImportPath": "github.com/fagongzi/goetty/vendor/github.com/satori/go.uuid",
-			"Rev": "c248b4206145cfb10fe366960ffebbff083e9c15"
 		}
 	]
 }
