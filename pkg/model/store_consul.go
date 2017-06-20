@@ -9,40 +9,11 @@ import (
 
 	"encoding/json"
 
+	"sync"
+
 	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/watch"
 )
-
-const (
-	consulCustomEvent = "consul-custom-event"
-)
-
-type event struct {
-	Data []*eventData `json:"data"`
-}
-
-type eventData struct {
-	Key   string  `json:"key"`
-	Type  EvtType `json:"type"`
-	Src   EvtSrc  `json:"src"`
-	Value []byte  `json:"value"`
-}
-
-func (e *event) add(data *eventData) {
-	e.Data = append(e.Data, data)
-}
-
-func (e *event) marshal() []byte {
-	value, _ := json.Marshal(e)
-	return value
-}
-
-func unMarshal(data []byte) *event {
-	e := new(event)
-	json.Unmarshal(data, e)
-
-	return e
-}
 
 type consulStore struct {
 	consulAddr string
@@ -83,6 +54,10 @@ func NewConsulStore(consulAddr string, prefix string) (Store, error) {
 	}
 
 	store.client = client
+	if err != nil {
+		return nil, err
+	}
+
 	return store, nil
 }
 
@@ -107,7 +82,7 @@ func (s *consulStore) SaveBind(bind *Bind) error {
 		&api.KVTxnOp{
 			Verb:  api.KVSet,
 			Key:   bindKey,
-			Value: []byte(""),
+			Value: bind.Marshal(),
 		},
 		&api.KVTxnOp{
 			Verb:  api.KVSet,
@@ -127,30 +102,6 @@ func (s *consulStore) SaveBind(bind *Bind) error {
 	} else if !ok {
 		return errors.New("transaction should have failed")
 	}
-
-	evt := &event{}
-	evt.add(&eventData{
-		Key:  bindKey,
-		Src:  EventSrcBind,
-		Type: EventTypeNew,
-	})
-	evt.add(&eventData{
-		Key:   svrKey,
-		Src:   EventSrcServer,
-		Type:  EventTypeNew,
-		Value: svr.Marshal(),
-	})
-	evt.add(&eventData{
-		Key:   clusterKey,
-		Src:   EventSrcCluster,
-		Type:  EventTypeNew,
-		Value: cluster.Marshal(),
-	})
-
-	s.client.Event().Fire(&api.UserEvent{
-		Name:    consulCustomEvent,
-		Payload: evt.marshal(),
-	}, nil)
 
 	return nil
 }
@@ -196,30 +147,6 @@ func (s *consulStore) UnBind(bind *Bind) error {
 		return errors.New("transaction should have failed")
 	}
 
-	evt := &event{}
-	evt.add(&eventData{
-		Key:  bindKey,
-		Src:  EventSrcBind,
-		Type: EventTypeDelete,
-	})
-	evt.add(&eventData{
-		Key:   svrKey,
-		Src:   EventSrcServer,
-		Type:  EventTypeUpdate,
-		Value: svr.Marshal(),
-	})
-	evt.add(&eventData{
-		Key:   clusterKey,
-		Src:   EventSrcCluster,
-		Type:  EventTypeUpdate,
-		Value: c.Marshal(),
-	})
-
-	s.client.Event().Fire(&api.UserEvent{
-		Name:    consulCustomEvent,
-		Payload: evt.marshal(),
-	}, nil)
-
 	return nil
 }
 
@@ -231,6 +158,10 @@ func (s *consulStore) GetServer(serverAddr string) (*Server, error) {
 		return nil, err
 	}
 
+	if nil == pair {
+		return new(Server), nil
+	}
+
 	return UnMarshalServer(pair.Value), nil
 }
 
@@ -239,6 +170,10 @@ func (s *consulStore) GetCluster(clusterName string) (*Cluster, error) {
 	pair, _, err := s.client.KV().Get(key, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if nil == pair {
+		return new(Cluster), nil
 	}
 
 	return UnMarshalCluster(pair.Value), nil
@@ -270,6 +205,10 @@ func (s *consulStore) GetBinds() ([]*Bind, error) {
 }
 
 func (s *consulStore) SaveCluster(cluster *Cluster) error {
+	return s.doPutCluster(cluster, EventTypeNew)
+}
+
+func (s *consulStore) doPutCluster(cluster *Cluster, et EvtType) error {
 	key := fmt.Sprintf("%s/%s", s.clustersDir, cluster.Name)
 	_, err := s.client.KV().Put(&api.KVPair{
 		Key:   key,
@@ -279,19 +218,6 @@ func (s *consulStore) SaveCluster(cluster *Cluster) error {
 	if err != nil {
 		return err
 	}
-
-	evt := &event{}
-	evt.add(&eventData{
-		Key:   key,
-		Src:   EventSrcCluster,
-		Type:  EventTypeUpdate,
-		Value: cluster.Marshal(),
-	})
-
-	s.client.Event().Fire(&api.UserEvent{
-		Name:    consulCustomEvent,
-		Payload: evt.marshal(),
-	}, nil)
 
 	return nil
 }
@@ -303,7 +229,7 @@ func (s *consulStore) UpdateCluster(cluster *Cluster) error {
 	}
 
 	old.updateFrom(cluster)
-	return s.SaveCluster(old)
+	return s.doPutCluster(old, EventTypeUpdate)
 }
 
 func (s *consulStore) DeleteCluster(name string) error {
@@ -321,18 +247,6 @@ func (s *consulStore) DeleteCluster(name string) error {
 	if err != nil {
 		return err
 	}
-
-	evt := &event{}
-	evt.add(&eventData{
-		Key:  key,
-		Src:  EventSrcCluster,
-		Type: EventTypeDelete,
-	})
-
-	s.client.Event().Fire(&api.UserEvent{
-		Name:    consulCustomEvent,
-		Payload: evt.marshal(),
-	}, nil)
 
 	return nil
 }
@@ -357,6 +271,10 @@ func (s *consulStore) GetClusters() ([]*Cluster, error) {
 }
 
 func (s *consulStore) SaveServer(svr *Server) error {
+	return s.doPutServer(svr)
+}
+
+func (s *consulStore) doPutServer(svr *Server) error {
 	key := fmt.Sprintf("%s/%s", s.serversDir, svr.Addr)
 	_, err := s.client.KV().Put(&api.KVPair{
 		Key:   key,
@@ -366,19 +284,6 @@ func (s *consulStore) SaveServer(svr *Server) error {
 	if err != nil {
 		return err
 	}
-
-	evt := &event{}
-	evt.add(&eventData{
-		Key:   key,
-		Src:   EventSrcServer,
-		Type:  EventTypeUpdate,
-		Value: svr.Marshal(),
-	})
-
-	s.client.Event().Fire(&api.UserEvent{
-		Name:    consulCustomEvent,
-		Payload: evt.marshal(),
-	}, nil)
 
 	return nil
 }
@@ -391,7 +296,7 @@ func (s *consulStore) UpdateServer(svr *Server) error {
 	}
 
 	old.updateFrom(svr)
-	return s.SaveServer(old)
+	return s.doPutServer(old)
 }
 
 func (s *consulStore) DeleteServer(addr string) error {
@@ -409,18 +314,6 @@ func (s *consulStore) DeleteServer(addr string) error {
 	if err != nil {
 		return err
 	}
-
-	evt := &event{}
-	evt.add(&eventData{
-		Key:  key,
-		Src:  EventSrcServer,
-		Type: EventTypeDelete,
-	})
-
-	s.client.Event().Fire(&api.UserEvent{
-		Name:    consulCustomEvent,
-		Payload: evt.marshal(),
-	}, nil)
 
 	return nil
 }
@@ -444,6 +337,10 @@ func (s *consulStore) GetServers() ([]*Server, error) {
 }
 
 func (s *consulStore) SaveAPI(ap *API) error {
+	return s.doPutAPI(ap, EventTypeNew)
+}
+
+func (s *consulStore) doPutAPI(ap *API, et EvtType) error {
 	key := fmt.Sprintf("%s/%s", s.apisDir, getAPIKey(ap.URL, ap.Method))
 	_, err := s.client.KV().Put(&api.KVPair{
 		Key:   key,
@@ -454,24 +351,11 @@ func (s *consulStore) SaveAPI(ap *API) error {
 		return err
 	}
 
-	evt := &event{}
-	evt.add(&eventData{
-		Key:   key,
-		Src:   EventSrcAPI,
-		Type:  EventTypeUpdate,
-		Value: ap.Marshal(),
-	})
-
-	s.client.Event().Fire(&api.UserEvent{
-		Name:    consulCustomEvent,
-		Payload: evt.marshal(),
-	}, nil)
-
 	return nil
 }
 
 func (s *consulStore) UpdateAPI(api *API) error {
-	return s.SaveAPI(api)
+	return s.doPutAPI(api, EventTypeUpdate)
 }
 
 func (s *consulStore) DeleteAPI(url string, method string) error {
@@ -480,18 +364,6 @@ func (s *consulStore) DeleteAPI(url string, method string) error {
 	if err != nil {
 		return nil
 	}
-
-	evt := &event{}
-	evt.add(&eventData{
-		Key:  key,
-		Src:  EventSrcAPI,
-		Type: EventTypeDelete,
-	})
-
-	s.client.Event().Fire(&api.UserEvent{
-		Name:    consulCustomEvent,
-		Payload: evt.marshal(),
-	}, nil)
 
 	return nil
 }
@@ -526,6 +398,10 @@ func (s *consulStore) GetAPI(url string, method string) (*API, error) {
 }
 
 func (s *consulStore) SaveRouting(routing *Routing) error {
+	return s.doPutRouting(routing, EventTypeNew)
+}
+
+func (s *consulStore) doPutRouting(routing *Routing, et EvtType) error {
 	key := fmt.Sprintf("%s/%s", s.routingsDir, routing.ID)
 
 	_, err := s.client.KV().Put(&api.KVPair{
@@ -536,19 +412,6 @@ func (s *consulStore) SaveRouting(routing *Routing) error {
 	if err != nil {
 		return nil
 	}
-
-	evt := &event{}
-	evt.add(&eventData{
-		Key:   key,
-		Src:   EventSrcRouting,
-		Type:  EventTypeUpdate,
-		Value: routing.Marshal(),
-	})
-
-	s.client.Event().Fire(&api.UserEvent{
-		Name:    consulCustomEvent,
-		Payload: evt.marshal(),
-	}, nil)
 
 	return nil
 }
@@ -571,39 +434,141 @@ func (s *consulStore) GetRoutings() ([]*Routing, error) {
 	return values, nil
 }
 
-func (s *consulStore) Watch(evtCh chan *Evt, stopCh chan bool) error {
-	plan, err := watch.Parse(makeParams(fmt.Sprintf(`{"type":"event", "name":"%s"}`, consulCustomEvent)))
+func (s *consulStore) watchPrefix(evtCh chan *Evt, src EvtSrc, prefix string, fn func([]byte, *Evt)) (*watch.Plan, error) {
+	watchPrefix := fmt.Sprintf("%s/", prefix)
+	plan, err := watch.Parse(makeParams(fmt.Sprintf(`{"type":"keyprefix", "prefix":"%s"}`, watchPrefix)))
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	var lastIdx uint64
+	keys := make(map[string]struct{})
 
 	plan.Handler = func(idx uint64, val interface{}) {
 		if val == nil {
 			return
 		}
 
-		events := val.([]*api.UserEvent)
+		v, ok := val.(api.KVPairs)
 
-		for _, e := range events {
-			ent := unMarshal(e.Payload)
+		var newest map[string]struct{}
+		hasDelete := false
+		if lastIdx != 0 && len(keys) != len(v) {
+			hasDelete = true
+			newest = make(map[string]struct{}, len(v))
+		}
 
-			for _, data := range ent.Data {
-				evtCh <- &Evt{
-					Src:   data.Src,
-					Type:  data.Type,
-					Key:   data.Key,
-					Value: data.Value,
+		if ok {
+			for _, p := range v {
+				if hasDelete {
+					newest[p.Key] = struct{}{}
+				}
+
+				if lastIdx == 0 {
+					keys[p.Key] = struct{}{}
+				} else {
+					if _, ok := keys[p.Key]; !ok {
+						keys[p.Key] = struct{}{}
+						e := &Evt{
+							Src:  src,
+							Type: EventTypeNew,
+							Key:  strings.Replace(p.Key, watchPrefix, "", 1),
+						}
+						fn(p.Value, e)
+						evtCh <- e
+					} else if p.ModifyIndex > p.CreateIndex {
+						e := &Evt{
+							Src:  src,
+							Type: EventTypeUpdate,
+							Key:  strings.Replace(p.Key, watchPrefix, "", 1),
+						}
+						fn(p.Value, e)
+						evtCh <- e
+					}
 				}
 			}
+
+			if hasDelete {
+				for key := range keys {
+					if _, ok := newest[key]; !ok {
+						evtCh <- &Evt{
+							Src:  src,
+							Type: EventTypeDelete,
+							Key:  strings.Replace(key, watchPrefix, "", 1),
+						}
+					}
+				}
+
+				keys = newest
+			}
 		}
+
+		lastIdx = idx
 	}
 
-	go plan.Run(s.consulAddr)
+	return plan, nil
+}
+
+func (s *consulStore) Watch(evtCh chan *Evt, stopCh chan bool) error {
+	var plans []*watch.Plan
+
+	p, err := s.watchPrefix(evtCh, EventSrcCluster, s.clustersDir, func(data []byte, e *Evt) {
+		if nil != data {
+			e.Value = UnMarshalCluster(data)
+		}
+	})
+	if err != nil {
+		return err
+	}
+	plans = append(plans, p)
+
+	p, err = s.watchPrefix(evtCh, EventSrcAPI, s.apisDir, func(data []byte, e *Evt) {
+		e.Value = UnMarshalAPI(data)
+	})
+	if err != nil {
+		return err
+	}
+	plans = append(plans, p)
+
+	p, err = s.watchPrefix(evtCh, EventSrcServer, s.serversDir, func(data []byte, e *Evt) {
+		e.Value = UnMarshalServer(data)
+	})
+	if err != nil {
+		return err
+	}
+	plans = append(plans, p)
+
+	p, err = s.watchPrefix(evtCh, EventSrcRouting, s.routingsDir, func(data []byte, e *Evt) {
+		e.Value = UnMarshalRouting(data)
+	})
+	if err != nil {
+		return err
+	}
+	plans = append(plans, p)
+
+	p, err = s.watchPrefix(evtCh, EventSrcBind, s.bindsDir, func(data []byte, e *Evt) {
+		e.Value = UnMarshalBind(data)
+	})
+	if err != nil {
+		return err
+	}
+	plans = append(plans, p)
+
+	wg := &sync.WaitGroup{}
 	go func() {
 		<-stopCh
-		plan.Stop()
+		for _, p := range plans {
+			p.Stop()
+			wg.Done()
+		}
 	}()
 
+	for _, p := range plans {
+		wg.Add(1)
+		go p.Run(s.consulAddr)
+	}
+
+	wg.Wait()
 	return nil
 }
 

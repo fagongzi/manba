@@ -10,7 +10,7 @@ import (
 var (
 	cpus         = flag.Int("cpus", 1, "use cpu nums")
 	addr         = flag.String("addr", ":8080", "listen addr.(e.g. ip:port)")
-	registryAddr = flag.String("registry-addr", "[ectd|consul]://127.0.0.1:8500", "registry address")
+	registryAddr = flag.String("registry-addr", "consul://127.0.0.1:8500", "registry address")
 	prefix       = flag.String("prefix", "/gateway", "node prefix.")
 )
 

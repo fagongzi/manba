@@ -68,7 +68,7 @@ func (p *Proxy) init() {
 }
 
 func (p *Proxy) initRouteTable() error {
-	store, err := model.NewEtcdStore(p.cnf.EtcdAddrs, p.cnf.EtcdPrefix)
+	store, err := model.GetStoreFrom(p.cnf.RegistryAddr, p.cnf.Prefix)
 
 	if err != nil {
 		return err
