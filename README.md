@@ -32,7 +32,7 @@ Gateway dependency [etcd](https://github.com/coreos/etcd) or [consul](https://gi
 You are must used go1.8 beause of the plugin mechanism.
 
 ```
-git clone https://github.com/fagongzi.git
+git clone https://github.com/fagongzi/gateway.git
 cd $GOPATH/src/github.com/fagongzi/gateway
 go build cmd/proxy/proxy.go
 go build cmd/admin/admin.go
