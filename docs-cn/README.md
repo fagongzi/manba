@@ -30,7 +30,7 @@ Gateway 依赖 [etcd](https://github.com/coreos/etcd) 或者 [consul](https://gi
 必须使用go1.8以上版本，由于使用了go1.8的plugin机制
 
 ```
-git clone https://github.com/fagongzi.git
+git clone https://github.com/fagongzi/gateway.git
 cd $GOPATH/src/github.com/fagongzi/gateway
 go build cmd/proxy/proxy.go
 go build cmd/admin/admin.go
