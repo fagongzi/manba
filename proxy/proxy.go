@@ -287,6 +287,7 @@ func (p *Proxy) getClient(addr string) *util.FastHTTPClient {
 	}
 
 	p.fastHTTPClients[addr] = util.NewFastHTTPClient(p.cnf)
+	c = p.fastHTTPClients[addr]
 	p.Unlock()
 	return c
 }
