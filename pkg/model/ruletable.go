@@ -683,13 +683,7 @@ func (r *RouteTable) removeFromCheck(svr *Server) {
 }
 
 func (r *RouteTable) addToCheck(svr *Server) {
-	r.tw.AddWithID(time.Duration(svr.useCheckDuration)*time.Second, svr.Addr, r.check)
-}
-
-func (r *RouteTable) check(addr string) {
-	svr, _ := r.svrs[addr]
-
-	if svr.check(r.addToCheck) {
+	if svr.check() {
 		svr.changeTo(Up)
 
 		if svr.statusChanged() {
@@ -701,6 +695,16 @@ func (r *RouteTable) check(addr string) {
 		if svr.statusChanged() {
 			log.Warnf("Server <%s, %s> DOWN.", svr.Addr, svr.CheckPath)
 		}
+	}
+
+	r.tw.AddWithID(time.Duration(svr.useCheckDuration)*time.Second, svr.Addr, r.check)
+}
+
+func (r *RouteTable) check(addr string) {
+	svr, _ := r.svrs[addr]
+
+	if !svr.checkStopped {
+		r.addToCheck(svr)
 	}
 
 	r.evtChan <- svr
