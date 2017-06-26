@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	registryAddr = "consul://127.0.0.1:8500"
+	registryAddr = "etcd://127.0.0.1:2379"
 	prefix       = "/gateway-test"
 )
 
@@ -115,7 +115,7 @@ func TestServerCheckTimeout(t *testing.T) {
 	}()
 
 	sleep = true
-	time.Sleep(time.Second * time.Duration(checkDuration*2+1)) // 等待两个周期
+	time.Sleep(time.Second * time.Duration(checkDuration*2+1))
 
 	if rt.svrs[serverAddr].Status == Up {
 		t.Errorf("status check timeout err.expect:<DOWN>, acture:<%v>", Up)

@@ -58,6 +58,7 @@ type Evt struct {
 
 func init() {
 	supportSchema["consul"] = getConsulStoreFrom
+	supportSchema["etcd"] = getEtcdStoreFrom
 }
 
 // GetStoreFrom returns a store implemention, if not support returns error
@@ -70,7 +71,7 @@ func GetStoreFrom(registryAddr, prefix string) (Store, error) {
 	schema := strings.ToLower(u.Scheme)
 	fn, ok := supportSchema[schema]
 	if ok {
-		return fn(u.Path, prefix)
+		return fn(u.Host, prefix)
 	}
 
 	return nil, fmt.Errorf("not support: %s", registryAddr)
@@ -80,7 +81,7 @@ func getConsulStoreFrom(addr, prefix string) (Store, error) {
 	return NewConsulStore(addr, prefix)
 }
 
-func getEctdStoreFrom(addr, prefix string) (Store, error) {
+func getEtcdStoreFrom(addr, prefix string) (Store, error) {
 	var addrs []string
 	values := strings.Split(addr, ",")
 
