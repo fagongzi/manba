@@ -12,12 +12,12 @@ RUN ETCD_VER=v3.0.14 \
     && tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /app/gateway --strip-components=1
 
 RUN cd /go/src/github.com/fagongzi/gateway/cmd/admin \
-    && go build admin.go \
+    && go build -ldflags "-w -s" admin.go \
     && mv ./admin /app/gateway \
     && mv ./public /app/gateway
 
 RUN cd /go/src/github.com/fagongzi/gateway/cmd/proxy \
-    && go build proxy.go \
+    && go build -ldflags "-w -s" proxy.go \
     && mv ./proxy /app/gateway \
     && mv ./config_etcd.json  /app/gateway
 
