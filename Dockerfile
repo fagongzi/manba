@@ -1,4 +1,4 @@
-FROM golang:1.7.3
+FROM golang
 
 RUN mkdir -p /app/gateway
 RUN mkdir -p /app/gateway/plugins
@@ -19,7 +19,7 @@ RUN cd /go/src/github.com/fagongzi/gateway/cmd/admin \
 RUN cd /go/src/github.com/fagongzi/gateway/cmd/proxy \
     && go build proxy.go \
     && mv ./proxy /app/gateway \
-    && mv ./config.json  /app/gateway
+    && mv ./config_etcd.json  /app/gateway
 
 COPY ./entrypoint.sh /app/gateway
 RUN chmod +x /app/gateway/entrypoint.sh
