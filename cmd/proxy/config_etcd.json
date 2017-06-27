@@ -1,7 +1,7 @@
 {
     "addr": ":80",
     "mgrAddr": ":8081",
-    "registryAddr": "ectd://127.0.0.1:2379",
+    "registryAddr": "etcd://127.0.0.1:2379",
     "prefix": "/gateway",
     "filers": [
         {
