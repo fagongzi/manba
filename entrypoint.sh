@@ -5,7 +5,7 @@ start_etcd() {
 }
 
 start_admin() {
-    ./admin --registry-addr etcd://127.0.0.1:2379 --addr=127.0.0.1:8080 &
+    ./admin --registry-addr etcd://127.0.0.1:2379 --addr=:8080 &
 }
 
 start_proxy() {
