@@ -109,29 +109,6 @@ func TestServerCheckOk(t *testing.T) {
 	}
 }
 
-func TestServerCheckTimeout(t *testing.T) {
-	defer func() {
-		sleep = false
-	}()
-
-	sleep = true
-	time.Sleep(time.Second * time.Duration(checkDuration*2+1))
-
-	if rt.svrs[serverAddr].Status == Up {
-		t.Errorf("status check timeout err.expect:<DOWN>, acture:<%v>", Up)
-		return
-	}
-}
-
-func TestServerCheckTimeoutRecovery(t *testing.T) {
-	time.Sleep(time.Second * time.Duration(checkDuration*2+1)) // 等待两个周期
-
-	if rt.svrs[serverAddr].Status == Down {
-		t.Errorf("status check timeout recovery err.expect:<UP>, acture:<%v>", Up)
-		return
-	}
-}
-
 func TestEtcdWatchNewCluster(t *testing.T) {
 	cluster := &Cluster{
 		Name:   clusterName,
@@ -344,11 +321,6 @@ func TestEtcdWatchDeleteCluster(t *testing.T) {
 }
 
 func TestEtcdWatchDeleteServer(t *testing.T) {
-	rt.store.UnBind(&Bind{
-		ClusterName: clusterName,
-		ServerAddr:  serverAddr,
-	})
-
 	err := rt.store.DeleteServer(serverAddr)
 
 	if nil != err {
@@ -425,7 +397,7 @@ func TestEtcdWatchDeleteRouting(t *testing.T) {
 		return
 	}
 
-	time.Sleep(time.Second * 30)
+	time.Sleep(time.Second * 4)
 
 	if len(rt.routings) == 0 {
 		return

@@ -195,6 +195,18 @@ func (b *ByteBuf) Readable() int {
 	return b.writerIndex - b.readerIndex
 }
 
+// ReadByte read a byte from buf
+// return byte value, error
+func (b *ByteBuf) ReadByte() (byte, error) {
+	if b.Readable() == 0 {
+		return 0, nil
+	}
+
+	v := b.buf[b.readerIndex]
+	b.readerIndex++
+	return v, nil
+}
+
 // ReadBytes read bytes from buf
 // return readedBytesCount, byte array, error
 func (b *ByteBuf) ReadBytes(n int) (int, []byte, error) {
@@ -218,7 +230,7 @@ func (b *ByteBuf) ReadMarkedBytes() (int, []byte, error) {
 // return readedBytesCount, byte array, error
 func (b *ByteBuf) Read(p []byte) (n int, err error) {
 	if len(p) > b.Readable() {
-		return 0, io.ErrShortBuffer
+		return 0, nil
 	}
 
 	n = copy(p, b.buf[b.readerIndex:b.readerIndex+len(p)])
@@ -234,6 +246,15 @@ func (b *ByteBuf) PeekInt(offset int) (int, error) {
 
 	start := b.readerIndex + offset
 	return ReadInt(bytes.NewReader(b.buf[start : start+4]))
+}
+
+// PeekByte get byte value from buf based on currently read index, after read, read index not modifed
+func (b *ByteBuf) PeekByte(offset int) (byte, error) {
+	if b.Readable() < offset || offset < 0 {
+		return 0, io.ErrShortBuffer
+	}
+
+	return b.buf[b.readerIndex+offset], nil
 }
 
 // PeekN get bytes from buf based on currently read index, after read, read index not modifed

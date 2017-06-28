@@ -16,3 +16,14 @@ type Encoder interface {
 type Decoder interface {
 	Decode(in *ByteBuf) (complete bool, msg interface{}, err error)
 }
+
+type emptyEncoder struct{}
+
+func (e *emptyEncoder) Encode(data interface{}, out *ByteBuf) error {
+	return nil
+}
+
+// NewEmptyEncoder returns a empty encoder
+func NewEmptyEncoder() Encoder {
+	return &emptyEncoder{}
+}

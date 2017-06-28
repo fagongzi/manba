@@ -5,11 +5,12 @@ import (
 	"time"
 
 	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/toolkits/net"
 )
 
 // Registry registry self
-func (e EtcdStore) Registry(proxyInfo *ProxyInfo) error {
+func (e *EtcdStore) Registry(proxyInfo *ProxyInfo) error {
 	timer := time.NewTicker(TICKER)
 
 	go func() {
@@ -23,12 +24,12 @@ func (e EtcdStore) Registry(proxyInfo *ProxyInfo) error {
 	return nil
 }
 
-func (e EtcdStore) doRegistry(proxyInfo *ProxyInfo) {
+func (e *EtcdStore) doRegistry(proxyInfo *ProxyInfo) {
 	proxyInfo.Conf.Addr = convertIP(proxyInfo.Conf.Addr)
 	proxyInfo.Conf.MgrAddr = convertIP(proxyInfo.Conf.MgrAddr)
 
 	key := fmt.Sprintf("%s/%s", e.proxiesDir, proxyInfo.Conf.Addr)
-	_, err := e.cli.Set(key, proxyInfo.Marshal(), TTL)
+	err := e.putTTL(key, string(proxyInfo.Marshal()), TTL)
 
 	if err != nil {
 		log.ErrorError(err, "Registry fail.")
@@ -36,25 +37,17 @@ func (e EtcdStore) doRegistry(proxyInfo *ProxyInfo) {
 }
 
 // GetProxies return runable proxies
-func (e EtcdStore) GetProxies() ([]*ProxyInfo, error) {
-	rsp, err := e.cli.Get(e.proxiesDir, true, false)
+func (e *EtcdStore) GetProxies() ([]*ProxyInfo, error) {
+	var values []*ProxyInfo
+	err := e.getList(e.proxiesDir, func(item *mvccpb.KeyValue) {
+		values = append(values, UnMarshalProxyInfo(item.Value))
+	})
 
-	if nil != err {
-		return nil, err
-	}
-
-	l := rsp.Node.Nodes.Len()
-	proxies := make([]*ProxyInfo, l)
-
-	for i := 0; i < l; i++ {
-		proxies[i] = UnMarshalProxyInfo([]byte(rsp.Node.Nodes[i].Value))
-	}
-
-	return proxies, nil
+	return values, err
 }
 
 // ChangeLogLevel change proxy log level
-func (e EtcdStore) ChangeLogLevel(addr string, level string) error {
+func (e *EtcdStore) ChangeLogLevel(addr string, level string) error {
 	rpcClient, _ := net.RpcClient("tcp", addr, time.Second*5)
 
 	req := SetLogReq{
@@ -69,7 +62,7 @@ func (e EtcdStore) ChangeLogLevel(addr string, level string) error {
 }
 
 // AddAnalysisPoint add a analysis point
-func (e EtcdStore) AddAnalysisPoint(proxyAddr, serverAddr string, secs int) error {
+func (e *EtcdStore) AddAnalysisPoint(proxyAddr, serverAddr string, secs int) error {
 	rpcClient, _ := net.RpcClient("tcp", proxyAddr, time.Second*5)
 
 	req := AddAnalysisPointReq{
@@ -85,7 +78,7 @@ func (e EtcdStore) AddAnalysisPoint(proxyAddr, serverAddr string, secs int) erro
 }
 
 // GetAnalysisPoint return analysis point data
-func (e EtcdStore) GetAnalysisPoint(proxyAddr, serverAddr string, secs int) (*GetAnalysisPointRsp, error) {
+func (e *EtcdStore) GetAnalysisPoint(proxyAddr, serverAddr string, secs int) (*GetAnalysisPointRsp, error) {
 	rpcClient, err := net.RpcClient("tcp", proxyAddr, time.Second*5)
 
 	if nil != err {
