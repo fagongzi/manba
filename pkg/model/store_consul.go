@@ -577,10 +577,6 @@ func (s *consulStore) Clean() error {
 	return err
 }
 
-func (s *consulStore) GC() error {
-	return nil
-}
-
 func makeParams(s string) map[string]interface{} {
 	var out map[string]interface{}
 	dec := json.NewDecoder(bytes.NewReader([]byte(s)))

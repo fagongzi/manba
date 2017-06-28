@@ -13,7 +13,7 @@ var (
 	// TICKER ticket
 	TICKER = time.Second * 3
 	// TTL timeout
-	TTL = uint64(5)
+	TTL = int64(5)
 )
 
 var (
@@ -134,5 +134,4 @@ type Store interface {
 	Watch(evtCh chan *Evt, stopCh chan bool) error
 
 	Clean() error
-	GC() error
 }
