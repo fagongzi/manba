@@ -14,18 +14,23 @@ type IOSession interface {
 	Read() (interface{}, error)
 	ReadTimeout(timeout time.Duration) (interface{}, error)
 	Write(msg interface{}) error
+	OutBuf() *ByteBuf
+	WriteOutBuf() error
 	SetAttr(key string, value interface{})
 	GetAttr(key string) interface{}
 	RemoteAddr() string
 }
 
 type clientIOSession struct {
+	id   interface{}
+	conn net.Conn
+	svr  *Server
+
 	sync.RWMutex
-	id    interface{}
-	conn  net.Conn
-	svr   *Server
 	attrs map[string]interface{}
-	buf   *ByteBuf
+
+	in  *ByteBuf
+	out *ByteBuf
 }
 
 func newClientIOSession(id interface{}, conn net.Conn, svr *Server) IOSession {
@@ -34,17 +39,18 @@ func newClientIOSession(id interface{}, conn net.Conn, svr *Server) IOSession {
 		conn:  conn,
 		svr:   svr,
 		attrs: make(map[string]interface{}),
-		buf:   NewByteBuf(svr.readBufSize),
+		in:    NewByteBuf(svr.readBufSize),
+		out:   NewByteBuf(svr.writeBufSize),
 	}
 }
 
 // Read read a msg, block until read msg or get a error
-func (s clientIOSession) Read() (interface{}, error) {
+func (s *clientIOSession) Read() (interface{}, error) {
 	return s.ReadTimeout(0)
 }
 
 // ReadTimeout read a msg  with a timeout duration
-func (s clientIOSession) ReadTimeout(timeout time.Duration) (interface{}, error) {
+func (s *clientIOSession) ReadTimeout(timeout time.Duration) (interface{}, error) {
 	var msg interface{}
 	var err error
 	var complete bool
@@ -54,17 +60,17 @@ func (s clientIOSession) ReadTimeout(timeout time.Duration) (interface{}, error)
 			s.conn.SetReadDeadline(time.Now().Add(timeout))
 		}
 
-		_, err = s.buf.ReadFrom(s.conn)
+		_, err = s.in.ReadFrom(s.conn)
 
 		if err != nil {
-			s.buf.Clear()
+			s.in.Clear()
 			return nil, err
 		}
 
-		complete, msg, err = s.svr.decoder.Decode(s.buf)
+		complete, msg, err = s.svr.decoder.Decode(s.in)
 
 		if nil != err {
-			s.buf.Clear()
+			s.in.Clear()
 			return nil, err
 		}
 
@@ -73,79 +79,81 @@ func (s clientIOSession) ReadTimeout(timeout time.Duration) (interface{}, error)
 		}
 	}
 
-	if s.buf.Readable() == 0 {
-		s.buf.Clear()
+	if s.in.Readable() == 0 {
+		s.in.Clear()
 	}
 
 	return msg, err
 }
 
 // Write wrirte a msg
-func (s clientIOSession) Write(msg interface{}) error {
-	buf, ok := out.Get().(*ByteBuf)
-
-	if !ok {
-		buf = NewByteBuf(s.svr.writeBufSize)
-	}
-
-	err := s.svr.encoder.Encode(msg, buf)
+func (s *clientIOSession) Write(msg interface{}) error {
+	err := s.svr.encoder.Encode(msg, s.out)
 
 	if err != nil {
-		buf.Clear()
-		out.Put(buf)
 		return err
 	}
 
-	_, bytes, _ := buf.ReadAll()
+	return s.WriteOutBuf()
+}
+
+// OutBuf returns internal bytebuf that used for write to client
+func (s *clientIOSession) OutBuf() *ByteBuf {
+	return s.out
+}
+
+// WriteOutBuf writes bytes that in the internal bytebuf
+func (s *clientIOSession) WriteOutBuf() error {
+	_, bytes, _ := s.out.ReadAll()
 
 	n, err := s.conn.Write(bytes)
 
 	if err != nil {
-		buf.Clear()
-		out.Put(buf)
+		s.out.Clear()
 		return err
 	}
 
 	if n != len(bytes) {
-		buf.Clear()
-		out.Put(buf)
+		s.out.Clear()
 		return ErrWrite
 	}
 
-	buf.Clear()
-	out.Put(buf)
+	s.out.Clear()
 	return nil
 }
 
 // Close close
-func (s clientIOSession) Close() error {
+func (s *clientIOSession) Close() error {
 	return s.conn.Close()
 }
 
-// Id get id
-func (s clientIOSession) ID() interface{} {
+// ID get id
+func (s *clientIOSession) ID() interface{} {
 	return s.id
 }
 
-func (s clientIOSession) Hash() int {
+// Hash get hash value use id
+func (s *clientIOSession) Hash() int {
 	return getHash(s.id)
 }
 
-func (s clientIOSession) SetAttr(key string, value interface{}) {
+// SetAttr add a attr on session
+func (s *clientIOSession) SetAttr(key string, value interface{}) {
 	s.Lock()
 	s.attrs[key] = value
 	s.Unlock()
 }
 
-func (s clientIOSession) GetAttr(key string) interface{} {
-	s.Lock()
+// GetAttr get attr from session
+func (s *clientIOSession) GetAttr(key string) interface{} {
+	s.RLock()
 	v := s.attrs[key]
-	s.Unlock()
+	s.RUnlock()
 	return v
 }
 
 // RemoteAddr get remote address
-func (s clientIOSession) RemoteAddr() string {
+func (s *clientIOSession) RemoteAddr() string {
 	if nil != s.conn {
 		return s.conn.RemoteAddr().String()
 	}

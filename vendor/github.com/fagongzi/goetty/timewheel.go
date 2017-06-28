@@ -1,10 +1,5 @@
 package goetty
 
-// timer wheel impl
-// author:  zhangxu
-// date:    2015-6-26
-// version: 1.0.0
-
 import (
 	"container/list"
 	"hash/fnv"
@@ -18,8 +13,8 @@ type SimpleTimeWheel struct {
 	timer *time.Ticker
 
 	tick        time.Duration
-	periodCount int64 // 每轮多少次
 	pos         int64 // 当前指针
+	periodCount int64 // 每轮多少次
 	period      int64 // 轮数
 
 	callbacks  map[string]func(key string)
@@ -51,7 +46,6 @@ func NewSimpleTimeWheel(tick time.Duration, periodCount int64) *SimpleTimeWheel 
 // AddWithID add a timeout calc with spec id
 func (t *SimpleTimeWheel) AddWithID(timeout time.Duration, key string, callback func(key string)) {
 	index := t.passed() + int64(float64(timeout.Nanoseconds())/float64(t.tick.Nanoseconds())+0.5)
-
 	t.timeoutLock.Lock()
 	l, ok := t.timeoutMap[index]
 	if !ok {

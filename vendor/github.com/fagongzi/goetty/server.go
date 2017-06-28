@@ -3,9 +3,8 @@ package goetty
 import (
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
-
-	"github.com/CodisLabs/codis/pkg/utils/atomic2"
 )
 
 // IDGenerator ID Generator interface
@@ -15,7 +14,7 @@ type IDGenerator interface {
 
 // Int64IDGenerator int64 id Generator
 type Int64IDGenerator struct {
-	counter atomic2.Int64
+	counter int64
 }
 
 // NewInt64IDGenerator create a uuid v4 generator
@@ -24,8 +23,8 @@ func NewInt64IDGenerator() IDGenerator {
 }
 
 // NewID return a id
-func (g Int64IDGenerator) NewID() interface{} {
-	return g.counter.Incr()
+func (g *Int64IDGenerator) NewID() interface{} {
+	return atomic.AddInt64(&g.counter, 1)
 }
 
 // UUIDV4IdGenerator uuid v4 generator
@@ -33,7 +32,7 @@ type UUIDV4IdGenerator struct {
 }
 
 // NewID return a id
-func (g UUIDV4IdGenerator) NewID() interface{} {
+func (g *UUIDV4IdGenerator) NewID() interface{} {
 	return NewV4UUID()
 }
 
@@ -41,11 +40,6 @@ func (g UUIDV4IdGenerator) NewID() interface{} {
 func NewUUIDV4IdGenerator() IDGenerator {
 	return &UUIDV4IdGenerator{}
 }
-
-var (
-	in  sync.Pool
-	out sync.Pool
-)
 
 type sessionMap struct {
 	sync.RWMutex
@@ -69,6 +63,7 @@ type Server struct {
 
 	generator IDGenerator
 
+	startCh  chan struct{}
 	stopOnce *sync.Once
 	stopped  bool
 }
@@ -92,6 +87,7 @@ func NewServerSize(addr string, decoder Decoder, encoder Encoder, readBufSize, w
 		generator: generator,
 
 		stopOnce: &sync.Once{},
+		startCh:  make(chan struct{}, 1),
 	}
 
 	for i := 0; i < DefaultSessionBucketSize; i++ {
@@ -101,6 +97,11 @@ func NewServerSize(addr string, decoder Decoder, encoder Encoder, readBufSize, w
 	}
 
 	return s
+}
+
+// Started returns a chan that used for server started
+func (s *Server) Started() chan struct{} {
+	return s.startCh
 }
 
 // Stop stop server
@@ -114,6 +115,8 @@ func (s *Server) Stop() {
 				session.Close()
 			}
 		}
+
+		close(s.startCh)
 	})
 }
 
@@ -130,6 +133,8 @@ func (s *Server) Start(loopFn func(IOSession) error) error {
 	if err != nil {
 		return err
 	}
+
+	s.startCh <- struct{}{}
 
 	var tempDelay time.Duration
 	for {
