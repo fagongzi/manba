@@ -398,7 +398,7 @@ func TestEtcdWatchDeleteRouting(t *testing.T) {
 		return
 	}
 
-	time.Sleep(time.Second * 4)
+	time.Sleep(time.Second * 6)
 
 	if len(rt.routings) == 0 {
 		return
