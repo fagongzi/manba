@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -13,12 +14,14 @@ import (
 func (e *EtcdStore) Registry(proxyInfo *ProxyInfo) error {
 	timer := time.NewTicker(TICKER)
 
-	go func() {
-		for {
-			<-timer.C
+	e.taskRunner.RunCancelableTask(func(ctx context.Context) {
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+		case <-timer.C:
 			e.doRegistry(proxyInfo)
 		}
-	}()
+	})
 
 	return nil
 }

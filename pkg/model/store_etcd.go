@@ -10,6 +10,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/task"
 	"golang.org/x/net/context"
 )
 
@@ -85,10 +86,12 @@ type EtcdStore struct {
 	cli                *clientv3.Client
 	evtCh              chan *Evt
 	watchMethodMapping map[EvtSrc]func(EvtType, *mvccpb.KeyValue) *Evt
+
+	taskRunner *task.Runner
 }
 
 // NewEtcdStore create a etcd store
-func NewEtcdStore(etcdAddrs []string, prefix string) (Store, error) {
+func NewEtcdStore(etcdAddrs []string, prefix string, taskRunner *task.Runner) (Store, error) {
 	store := &EtcdStore{
 		prefix:             prefix,
 		clustersDir:        fmt.Sprintf("%s/clusters", prefix),
@@ -98,6 +101,7 @@ func NewEtcdStore(etcdAddrs []string, prefix string) (Store, error) {
 		proxiesDir:         fmt.Sprintf("%s/proxy", prefix),
 		routingsDir:        fmt.Sprintf("%s/routings", prefix),
 		watchMethodMapping: make(map[EvtSrc]func(EvtType, *mvccpb.KeyValue) *Evt),
+		taskRunner:         taskRunner,
 	}
 
 	cli, err := clientv3.New(clientv3.Config{

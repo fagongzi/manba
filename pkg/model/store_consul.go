@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/fagongzi/util/task"
 	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/watch"
 )
@@ -24,10 +25,12 @@ type consulStore struct {
 	apisDir     string
 	proxiesDir  string
 	routingsDir string
+
+	taskRunner *task.Runner
 }
 
 // NewConsulStore returns a consul implemention store
-func NewConsulStore(consulAddr string, prefix string) (Store, error) {
+func NewConsulStore(consulAddr string, prefix string, taskRunner *task.Runner) (Store, error) {
 	if strings.HasPrefix(prefix, "/") {
 		prefix = prefix[1:]
 	}
@@ -41,6 +44,7 @@ func NewConsulStore(consulAddr string, prefix string) (Store, error) {
 		apisDir:     fmt.Sprintf("%s/apis", prefix),
 		proxiesDir:  fmt.Sprintf("%s/proxy", prefix),
 		routingsDir: fmt.Sprintf("%s/routings", prefix),
+		taskRunner:  taskRunner,
 	}
 
 	conf := api.DefaultConfig()

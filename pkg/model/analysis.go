@@ -4,21 +4,21 @@ import (
 	"context"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/atomic2"
 	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/atomic"
 	"github.com/fagongzi/util/task"
 )
 
 type point struct {
-	requests          atomic2.Int64
-	rejects           atomic2.Int64
-	failure           atomic2.Int64
-	successed         atomic2.Int64
-	continuousFailure atomic2.Int64
+	requests          atomic.Int64
+	rejects           atomic.Int64
+	failure           atomic.Int64
+	successed         atomic.Int64
+	continuousFailure atomic.Int64
 
-	costs atomic2.Int64
-	max   atomic2.Int64
-	min   atomic2.Int64
+	costs atomic.Int64
+	max   atomic.Int64
+	min   atomic.Int64
 }
 
 func (p *point) dump(target *point) {

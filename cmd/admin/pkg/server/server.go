@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/util/task"
 	"github.com/labstack/echo"
 	sd "github.com/labstack/echo/engine/standard"
 	mw "github.com/labstack/echo/middleware"
@@ -18,16 +19,18 @@ type Result struct {
 
 // AdminServer http interface server
 type AdminServer struct {
-	user  string
-	pwd   string
-	addr  string
-	e     *echo.Echo
-	store model.Store
+	user       string
+	pwd        string
+	addr       string
+	e          *echo.Echo
+	store      model.Store
+	taskRunner *task.Runner
 }
 
 // NewAdminServer create a AdminServer
 func NewAdminServer(addr string, registryAddr string, prefix string, user string, pwd string) *AdminServer {
-	st, _ := model.GetStoreFrom(registryAddr, prefix)
+	taskRunner := task.NewRunner()
+	st, _ := model.GetStoreFrom(registryAddr, prefix, taskRunner)
 
 	server := &AdminServer{
 		user:  user,

@@ -182,7 +182,7 @@ func (p *Proxy) init() {
 }
 
 func (p *Proxy) initRouteTable() error {
-	store, err := model.GetStoreFrom(p.cnf.RegistryAddr, p.cnf.Prefix)
+	store, err := model.GetStoreFrom(p.cnf.RegistryAddr, p.cnf.Prefix, p.taskRunner)
 
 	if err != nil {
 		return err

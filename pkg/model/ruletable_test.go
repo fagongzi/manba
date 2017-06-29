@@ -29,7 +29,7 @@ var (
 var rt *RouteTable
 
 func createRouteTable(t *testing.T) {
-	store, err := GetStoreFrom(registryAddr, prefix)
+	store, err := GetStoreFrom(registryAddr, prefix, task.NewRunner())
 
 	if nil != err {
 		t.Fatalf("create etcd store err.addr:<%s>", err)
