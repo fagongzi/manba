@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fagongzi/util/task"
 	"github.com/toolkits/net"
 )
 
@@ -17,7 +18,7 @@ var (
 )
 
 var (
-	supportSchema = make(map[string]func(string, string) (Store, error))
+	supportSchema = make(map[string]func(string, string, *task.Runner) (Store, error))
 )
 
 // EvtType event type
@@ -62,7 +63,7 @@ func init() {
 }
 
 // GetStoreFrom returns a store implemention, if not support returns error
-func GetStoreFrom(registryAddr, prefix string) (Store, error) {
+func GetStoreFrom(registryAddr, prefix string, taskRunner *task.Runner) (Store, error) {
 	u, err := url.Parse(registryAddr)
 	if err != nil {
 		panic(fmt.Sprintf("parse registry addr failed, errors:%+v", err))
@@ -71,17 +72,17 @@ func GetStoreFrom(registryAddr, prefix string) (Store, error) {
 	schema := strings.ToLower(u.Scheme)
 	fn, ok := supportSchema[schema]
 	if ok {
-		return fn(u.Host, prefix)
+		return fn(u.Host, prefix, taskRunner)
 	}
 
 	return nil, fmt.Errorf("not support: %s", registryAddr)
 }
 
-func getConsulStoreFrom(addr, prefix string) (Store, error) {
-	return NewConsulStore(addr, prefix)
+func getConsulStoreFrom(addr, prefix string, taskRunner *task.Runner) (Store, error) {
+	return NewConsulStore(addr, prefix, taskRunner)
 }
 
-func getEtcdStoreFrom(addr, prefix string) (Store, error) {
+func getEtcdStoreFrom(addr, prefix string, taskRunner *task.Runner) (Store, error) {
 	var addrs []string
 	values := strings.Split(addr, ",")
 
@@ -89,7 +90,7 @@ func getEtcdStoreFrom(addr, prefix string) (Store, error) {
 		addrs = append(addrs, fmt.Sprintf("http://%s", value))
 	}
 
-	return NewEtcdStore(addrs, prefix)
+	return NewEtcdStore(addrs, prefix, taskRunner)
 }
 
 func convertIP(addr string) string {

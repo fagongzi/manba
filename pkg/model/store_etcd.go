@@ -7,9 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/task"
 	"golang.org/x/net/context"
 )
 
@@ -85,10 +86,12 @@ type EtcdStore struct {
 	cli                *clientv3.Client
 	evtCh              chan *Evt
 	watchMethodMapping map[EvtSrc]func(EvtType, *mvccpb.KeyValue) *Evt
+
+	taskRunner *task.Runner
 }
 
 // NewEtcdStore create a etcd store
-func NewEtcdStore(etcdAddrs []string, prefix string) (Store, error) {
+func NewEtcdStore(etcdAddrs []string, prefix string, taskRunner *task.Runner) (Store, error) {
 	store := &EtcdStore{
 		prefix:             prefix,
 		clustersDir:        fmt.Sprintf("%s/clusters", prefix),
@@ -98,6 +101,7 @@ func NewEtcdStore(etcdAddrs []string, prefix string) (Store, error) {
 		proxiesDir:         fmt.Sprintf("%s/proxy", prefix),
 		routingsDir:        fmt.Sprintf("%s/routings", prefix),
 		watchMethodMapping: make(map[EvtSrc]func(EvtType, *mvccpb.KeyValue) *Evt),
+		taskRunner:         taskRunner,
 	}
 
 	cli, err := clientv3.New(clientv3.Config{
@@ -284,7 +288,6 @@ func (e *EtcdStore) SaveBind(bind *Bind) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("svr:==========%+v\n", svr)
 	svr.AddBind(bind)
 
 	cluster, err := e.GetCluster(bind.ClusterName)
@@ -366,7 +369,8 @@ func (e *EtcdStore) Clean() error {
 func (e *EtcdStore) Watch(evtCh chan *Evt, stopCh chan bool) error {
 	e.evtCh = evtCh
 
-	log.Infof("Etcd watch at: <%s>", e.prefix)
+	log.Infof("meta: etcd watch at: <%s>",
+		e.prefix)
 
 	e.doWatch()
 
@@ -415,7 +419,9 @@ func (e EtcdStore) doWatch() {
 					continue
 				}
 
-				log.Infof("Etcd changed: <%s, %v>", key, evtType)
+				log.Infof("meta: etcd changed: <%s, %v>",
+					key,
+					evtType)
 				e.evtCh <- e.watchMethodMapping[evtSrc](evtType, ev.Kv)
 			}
 		}

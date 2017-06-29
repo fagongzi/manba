@@ -1,56 +1,68 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/pkg/conf"
-	"github.com/fagongzi/gateway/pkg/util"
-	"github.com/fagongzi/gateway/proxy"
+	"github.com/fagongzi/gateway/pkg/proxy"
+	"github.com/fagongzi/log"
 )
 
 var (
-	cpus       = flag.Int("cpus", 1, "use cpu nums")
-	logFile    = flag.String("log-file", "", "which file to record log, if not set stdout to use.")
-	logLevel   = flag.String("log-level", "info", "log level.")
-	configFile = flag.String("config", "", "config file")
+	configFile = flag.String("cfg", "", "config file")
 )
 
 func main() {
 	flag.Parse()
 
-	runtime.GOMAXPROCS(*cpus)
+	log.InitLog()
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	util.InitLog(*logFile)
-	level := util.SetLogLevel(*logLevel)
+	cnf := conf.GetCfg(*configFile)
 
-	data, err := ioutil.ReadFile(*configFile)
-	if err != nil {
-		log.PanicErrorf(err, "read config file <%s> failure.", *configFile)
-	}
+	enablePPROF(cnf)
 
-	cnf := &conf.Conf{}
-	err = json.Unmarshal(data, cnf)
-	if err != nil {
-		log.PanicErrorf(err, "parse config file <%s> failure.", *configFile)
-	}
+	log.Infof("bootstrap: gateway proxy start with conf:<%+v>",
+		cnf)
 
-	cnf.LogLevel = level
+	p := proxy.NewProxy(cnf)
+	go p.Start()
 
+	waitStop(p)
+}
+
+func enablePPROF(cnf *conf.Conf) {
 	if cnf.EnablePPROF {
 		go func() {
-			log.Println(http.ListenAndServe(cnf.PPROFAddr, nil))
+			log.Errorf("bootstrap: start pprof failed, errors:\n%+v",
+				http.ListenAndServe(cnf.PPROFAddr, nil))
 		}()
 	}
+}
 
-	log.Infof("conf:<%+v>", cnf)
+func waitStop(p *proxy.Proxy) {
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
 
-	server := proxy.NewProxy(cnf)
-
-	server.Start()
+	sig := <-sc
+	p.Stop()
+	log.Infof("exit: signal=<%d>.", sig)
+	switch sig {
+	case syscall.SIGTERM:
+		log.Infof("exit: bye :-).")
+		os.Exit(0)
+	default:
+		log.Infof("exit: bye :-(.")
+		os.Exit(1)
+	}
 }
