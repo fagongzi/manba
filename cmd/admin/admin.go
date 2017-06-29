@@ -2,15 +2,18 @@ package main
 
 import (
 	"flag"
+	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 
 	"github.com/fagongzi/gateway/cmd/admin/pkg/server"
+	"github.com/fagongzi/log"
 )
 
 var (
-	cpus         = flag.Int("cpus", 1, "use cpu nums")
 	addr         = flag.String("addr", ":8080", "listen addr.(e.g. ip:port)")
-	registryAddr = flag.String("registry-addr", "[ectd|consul]://127.0.0.1:8500", "registry address")
+	registryAddr = flag.String("registry-addr", "ectd://127.0.0.1:2379", "registry address")
 	prefix       = flag.String("prefix", "/gateway", "node prefix.")
 )
 
@@ -21,7 +24,33 @@ var (
 
 func main() {
 	flag.Parse()
-	runtime.GOMAXPROCS(*cpus)
+
+	log.InitLog()
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	s := server.NewAdminServer(*addr, *registryAddr, *prefix, *userName, *pwd)
-	s.Start()
+	go s.Start()
+
+	waitStop(s)
+}
+
+func waitStop(s *server.AdminServer) {
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+
+	sig := <-sc
+	p.Stop()
+	log.Infof("exit: signal=<%d>.", sig)
+	switch sig {
+	case syscall.SIGTERM:
+		log.Infof("exit: bye :-).")
+		os.Exit(0)
+	default:
+		log.Infof("exit: bye :-(.")
+		os.Exit(1)
+	}
 }

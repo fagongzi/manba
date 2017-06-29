@@ -1,9 +1,10 @@
 package server
 
 import (
-	"fmt"
+	"sync"
 
 	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/task"
 	"github.com/labstack/echo"
 	sd "github.com/labstack/echo/engine/standard"
@@ -25,6 +26,11 @@ type AdminServer struct {
 	e          *echo.Echo
 	store      model.Store
 	taskRunner *task.Runner
+
+	stopped  int32
+	stopC    chan struct{}
+	stopOnce sync.Once
+	stopWG   sync.WaitGroup
 }
 
 // NewAdminServer create a AdminServer
@@ -66,6 +72,21 @@ func (server *AdminServer) initHTTPServer() {
 
 // Start start the admin server
 func (server *AdminServer) Start() {
-	fmt.Printf("start at %s\n", server.addr)
-	server.e.Run(sd.New(server.addr))
+	go server.listenToStop()
+
+	log.Infof("bootstrap: gateway admin start at <%s>", server.addr)
+	httpSvr := sd.New(server.addr)
+	server.e.Run(httpSvr)
+}
+
+func (server *AdminServer) listenToStop() {
+	<-server.stopC
+	server.doStop()
+}
+
+func (server *AdminServer) doStop() {
+	server.stopOnce.Do(func() {
+		defer server.stopWG.Done()
+		server.taskRunner.Stop()
+	})
 }
