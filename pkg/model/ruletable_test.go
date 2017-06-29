@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fagongzi/util/task"
 	"github.com/labstack/echo"
 	sd "github.com/labstack/echo/engine/standard"
 )
@@ -36,7 +37,7 @@ func createRouteTable(t *testing.T) {
 
 	store.Clean()
 
-	rt = NewRouteTable(nil, store)
+	rt = NewRouteTable(nil, store, task.NewRunner())
 	go rt.watch()
 	time.Sleep(time.Second * 1)
 }

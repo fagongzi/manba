@@ -1,10 +1,12 @@
 package model
 
 import (
+	"context"
 	"time"
 
 	"github.com/CodisLabs/codis/pkg/utils/atomic2"
-	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/task"
 )
 
 type point struct {
@@ -34,6 +36,7 @@ func (p *point) dump(target *point) {
 
 // Analysis analysis struct
 type Analysis struct {
+	taskRunner     *task.Runner
 	points         map[string]*point
 	recentlyPoints map[string]map[int]*Recently
 }
@@ -66,10 +69,11 @@ func newPoint() *point {
 	return &point{}
 }
 
-func newAnalysis() *Analysis {
+func newAnalysis(taskRunner *task.Runner) *Analysis {
 	return &Analysis{
 		points:         make(map[string]*point),
 		recentlyPoints: make(map[string]map[int]*Recently),
+		taskRunner:     taskRunner,
 	}
 }
 
@@ -145,7 +149,9 @@ func (r *Recently) calc() {
 func (a *Analysis) AddRecentCount(key string, secs int) {
 	_, ok := a.recentlyPoints[key][secs]
 	if ok {
-		log.Infof("Analysis already <%s,%d> added", key, secs)
+		log.Infof("analysis: already added, key=<%s> secs=<%d>",
+			key,
+			secs)
 		return
 	}
 
@@ -153,20 +159,25 @@ func (a *Analysis) AddRecentCount(key string, secs int) {
 	a.recentlyPoints[key][secs] = recently
 	timer := time.NewTicker(time.Duration(secs) * time.Second)
 
-	go func() {
-		for {
-			// TODO: remove
-			<-timer.C
-
+	a.taskRunner.RunCancelableTask(func(ctx context.Context) {
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			log.Infof("stop: analysis stopped, key=<%s> secs=<%d>",
+				key,
+				secs)
+		case <-timer.C:
 			p, ok := a.points[key]
 
 			if ok {
 				recently.record(p)
 			}
 		}
-	}()
+	})
 
-	log.Infof("Analysis <%s,%d> added", key, secs)
+	log.Infof("analysis: added, key=<%s> secs=<%d>",
+		key,
+		secs)
 }
 
 func (a *Analysis) addNewAnalysis(key string) {

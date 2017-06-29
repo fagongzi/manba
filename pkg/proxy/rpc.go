@@ -1,12 +1,8 @@
 package proxy
 
 import (
-	"net"
-	"net/rpc"
-
-	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/pkg/model"
-	"github.com/fagongzi/gateway/pkg/util"
+	"github.com/fagongzi/log"
 )
 
 // Manager support runtime remote interface
@@ -20,8 +16,7 @@ func newManager(proxy *Proxy) *Manager {
 
 // SetLogLevel set log level
 func (m *Manager) SetLogLevel(req model.SetLogReq, rsp *model.SetLogRsp) error {
-	level := util.SetLogLevel(req.Level)
-	m.proxy.cnf.LogLevel = level
+	log.SetLevelByString(req.Level)
 
 	rsp.Code = 0
 	return nil
@@ -51,40 +46,6 @@ func (m *Manager) GetAnalysisPoint(req model.GetAnalysisPointReq, rsp *model.Get
 	rsp.Max = analysisor.GetRecentlyMax(req.Addr, req.Secs)
 	rsp.Min = analysisor.GetRecentlyMin(req.Addr, req.Secs)
 	rsp.Avg = analysisor.GetRecentlyAvg(req.Addr, req.Secs)
-
-	return nil
-}
-
-func (p *Proxy) startRPCServer() error {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", p.cnf.MgrAddr)
-
-	if err != nil {
-		return err
-	}
-
-	listener, err := net.ListenTCP("tcp", tcpAddr)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Mgr listen at %s.", p.cnf.MgrAddr)
-
-	server := rpc.NewServer()
-
-	mgrService := newManager(p)
-	server.Register(mgrService)
-
-	go func() {
-		for {
-			conn, err := listener.Accept()
-			if err != nil {
-				log.ErrorError(err, "Mgr error.")
-				continue
-			}
-
-			go server.ServeConn(conn)
-		}
-	}()
 
 	return nil
 }

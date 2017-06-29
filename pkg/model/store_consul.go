@@ -2,13 +2,11 @@ package model
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
-
-	"encoding/json"
-
 	"sync"
 
 	"github.com/hashicorp/consul/api"

@@ -1,8 +1,6 @@
 package filter
 
 import (
-	"net/http"
-
 	"github.com/valyala/fasthttp"
 )
 
@@ -62,12 +60,12 @@ type BaseFilter struct{}
 
 // Pre execute before proxy
 func (f BaseFilter) Pre(c Context) (statusCode int, err error) {
-	return http.StatusOK, nil
+	return fasthttp.StatusOK, nil
 }
 
 // Post execute after proxy
 func (f BaseFilter) Post(c Context) (statusCode int, err error) {
-	return http.StatusOK, nil
+	return fasthttp.StatusOK, nil
 }
 
 // PostErr execute proxy has errors

@@ -1,6 +1,8 @@
 package proxy
 
-import "github.com/fagongzi/gateway/pkg/filter"
+import (
+	"github.com/fagongzi/gateway/pkg/filter"
+)
 
 // Hop-by-hop headers. These are removed when sent to the backend.
 // http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html

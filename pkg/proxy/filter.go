@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/log"
 	"github.com/valyala/fasthttp"
 )
 
@@ -157,7 +157,7 @@ func (c *proxyContext) ChangeCircuitStatusToClose() {
 
 	server.CloseCircuit()
 
-	log.Warnf("Circuit Server <%s> change to close.", server.Addr)
+	log.Warnf("filter: circuit server <%s> change to close", server.Addr)
 
 	c.rt.GetTimeWheel().AddWithID(time.Second*time.Duration(server.HalfToOpenSeconds), getKey(server.Addr), c.changeCircuitStatusToHalf)
 
@@ -176,7 +176,7 @@ func (c *proxyContext) ChangeCircuitStatusToOpen() {
 
 	server.OpenCircuit()
 
-	log.Warnf("Circuit Server <%s> change to open.", server.Addr)
+	log.Warnf("filter: circuit server <%s> change to open", server.Addr)
 
 	server.UnLock()
 }
@@ -190,7 +190,7 @@ func (c *proxyContext) changeCircuitStatusToHalf(key string) {
 		server.HalfCircuit()
 		server.UnLock()
 
-		log.Warnf("Circuit Server <%s> change to half.", server.Addr)
+		log.Warnf("filter: circuit server <%s> change to half", server.Addr)
 	}
 }
 

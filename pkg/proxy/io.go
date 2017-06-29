@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	// "github.com/CodisLabs/codis/pkg/utils/log"
 	"io"
 	"net/http"
 	"sync"

@@ -3,15 +3,19 @@ package proxy
 import (
 	"container/list"
 	"errors"
+	"net"
 	"net/http"
+	"net/rpc"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/pkg/conf"
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/fagongzi/gateway/pkg/util"
+	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/task"
 	"github.com/valyala/fasthttp"
 )
 
@@ -35,6 +39,21 @@ var (
 	}
 )
 
+// NewProxy create a new proxy
+func NewProxy(cnf *conf.Conf) *Proxy {
+	p := &Proxy{
+		fastHTTPClients: make(map[string]*util.FastHTTPClient),
+		cnf:             cnf,
+		filters:         list.New(),
+		stopC:           make(chan struct{}),
+		taskRunner:      task.NewRunner(),
+	}
+
+	p.init()
+
+	return p
+}
+
 // Proxy Proxy
 type Proxy struct {
 	sync.RWMutex
@@ -43,25 +62,120 @@ type Proxy struct {
 	filters         *list.List
 	fastHTTPClients map[string]*util.FastHTTPClient
 	routeTable      *model.RouteTable
+
+	rpcListener net.Listener
+
+	taskRunner *task.Runner
+	stopped    int32
+	stopC      chan struct{}
+	stopOnce   sync.Once
+	stopWG     sync.WaitGroup
 }
 
-// NewProxy create a new proxy
-func NewProxy(config *conf.Conf) *Proxy {
-	p := &Proxy{
-		fastHTTPClients: make(map[string]*util.FastHTTPClient),
-		cnf:             config,
-		filters:         list.New(),
+// Start start proxy
+func (p *Proxy) Start() {
+	go p.listenToStop()
+
+	err := p.startRPC()
+	if nil != err {
+		log.Fatalf("bootstrap: rpc start failed, addr=<%s> errors:\n%+v",
+			p.cnf.MgrAddr,
+			err)
 	}
 
-	p.init()
+	log.Infof("bootstrap: gateway proxy started at <%s>", p.cnf.Addr)
+	err = fasthttp.ListenAndServe(p.cnf.Addr, p.ReverseProxyHandler)
+	if err != nil {
+		log.Errorf("bootstrap: gateway proxy start failed, errors:\n%+v",
+			err)
+		return
+	}
+}
 
-	return p
+// Stop stop the proxy
+func (p *Proxy) Stop() {
+	log.Infof("stop: start to stop gateway proxy")
+
+	p.stopWG.Add(1)
+	p.stopC <- struct{}{}
+	p.stopWG.Wait()
+
+	log.Infof("stop: gateway proxy stopped")
+}
+
+func (p *Proxy) startRPC() error {
+	tcpAddr, err := net.ResolveTCPAddr("tcp", p.cnf.MgrAddr)
+
+	if err != nil {
+		return err
+	}
+
+	p.rpcListener, err = net.ListenTCP("tcp", tcpAddr)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("rpc: listen at %s",
+		p.cnf.MgrAddr)
+	server := rpc.NewServer()
+	mgrService := newManager(p)
+	server.Register(mgrService)
+
+	go func() {
+		for {
+			if p.isStopped() {
+				return
+			}
+
+			conn, err := p.rpcListener.Accept()
+			if p.isStopped() {
+				conn.Close()
+				return
+			}
+
+			if err != nil {
+				log.Errorf("rpc: accept new conn failed, errors:\n%+v",
+					err)
+				continue
+			}
+
+			go server.ServeConn(conn)
+		}
+	}()
+
+	return nil
+}
+
+func (p *Proxy) listenToStop() {
+	<-p.stopC
+	p.doStop()
+}
+
+func (p *Proxy) doStop() {
+	p.stopOnce.Do(func() {
+		defer p.stopWG.Done()
+		p.stopRPC()
+		p.taskRunner.Stop()
+	})
+}
+
+func (p *Proxy) stopRPC() error {
+	return p.rpcListener.Close()
+}
+
+func (p *Proxy) setStopped() {
+	atomic.StoreInt32(&p.stopped, 1)
+}
+
+func (p *Proxy) isStopped() bool {
+	return atomic.LoadInt32(&p.stopped) == 1
 }
 
 func (p *Proxy) init() {
 	err := p.initRouteTable()
 	if err != nil {
-		log.PanicError(err, "init etcd store error")
+		log.Fatalf("bootstrap: init route table failed, errors:\n%+v",
+			err)
 	}
 
 	p.initFilters()
@@ -80,7 +194,7 @@ func (p *Proxy) initRouteTable() error {
 		Conf: p.cnf,
 	})
 
-	p.routeTable = model.NewRouteTable(p.cnf, store)
+	p.routeTable = model.NewRouteTable(p.cnf, store, p.taskRunner)
 	p.routeTable.Load()
 
 	return nil
@@ -90,26 +204,23 @@ func (p *Proxy) initFilters() {
 	for _, filter := range p.cnf.Filers {
 		f, err := newFilter(filter)
 		if nil != err {
-			log.Panicf("Proxy unknow filter <%+v>.", filter)
+			log.Fatalf("bootstrap: init filter failed, filter=<%+v> errors:\n%+v",
+				filter,
+				err)
 		}
 
+		log.Infof("bootstrap: filter added, filter=<%+v>", filter)
 		p.filters.PushBack(f)
 	}
 }
 
-// Start start proxy
-func (p *Proxy) Start() {
-	err := p.startRPCServer()
-
-	if nil != err {
-		log.PanicErrorf(err, "Proxy start rpc at <%s> fail.", p.cnf.MgrAddr)
-	}
-
-	log.ErrorErrorf(fasthttp.ListenAndServe(p.cnf.Addr, p.ReverseProxyHandler), "Proxy exit at %s", p.cnf.Addr)
-}
-
 // ReverseProxyHandler http reverse handler
 func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
+	if p.isStopped() {
+		ctx.SetStatusCode(fasthttp.StatusServiceUnavailable)
+		return
+	}
+
 	results := p.routeTable.Select(&ctx.Request)
 
 	if nil == results || len(results) == 0 {
@@ -204,11 +315,19 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *mo
 		// if not use rewrite, it only change uri path and query string
 		realPath := result.GetRewritePath(&ctx.Request)
 		if "" != realPath {
-			log.Infof("URL Rewrite from <%s> to <%s>", string(ctx.URI().FullURI()), realPath)
+			if log.DebugEnabled() {
+				log.Debugf("proxy: rewrite, from=<%s> to=<%s>",
+					string(ctx.URI().FullURI()),
+					realPath)
+			}
+
 			outreq.SetRequestURI(realPath)
 			outreq.SetHost(svr.Addr)
 		} else {
-			log.Warnf("URL Rewrite<%s> not matches <%s>", string(ctx.URI().FullURI()), result.Node.Rewrite)
+			log.Warnf("proxy: rewrite not matches, origin=<%s> pattern=<%s>",
+				string(ctx.URI().FullURI()),
+				result.Node.Rewrite)
+
 			result.Err = ErrRewriteNotMatch
 			result.Code = http.StatusBadRequest
 			return
@@ -220,7 +339,10 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *mo
 	// pre filters
 	filterName, code, err := p.doPreFilters(c)
 	if nil != err {
-		log.WarnErrorf(err, "Proxy Filter-Pre<%s> fail", filterName)
+		log.Warnf("proxy: call pre filter failed, filter=<%s> errors:\n%+v",
+			filterName,
+			err)
+
 		result.Err = err
 		result.Code = code
 		return
@@ -236,10 +358,14 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *mo
 		resCode := http.StatusServiceUnavailable
 
 		if nil != err {
-			log.InfoErrorf(err, "Proxy Fail <%s>", svr.Addr)
+			log.Warnf("proxy: failed, target=<%s> errors:\n%+v",
+				svr.Addr,
+				err)
 		} else {
 			resCode = res.StatusCode()
-			log.InfoErrorf(err, "Proxy Fail <%s>, Code <%d>", svr.Addr, res.StatusCode())
+			log.Warnf("proxy: returns error code, target=<%s> code=<%d>",
+				svr.Addr,
+				res.StatusCode())
 		}
 
 		// 用户取消，不计算为错误
@@ -252,12 +378,19 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *mo
 		return
 	}
 
-	log.Infof("Backend server[%s] responsed, code <%d>, body<%s>", svr.Addr, res.StatusCode(), res.Body())
+	if log.DebugEnabled() {
+		log.Debugf("proxy: return, target=<%s> code=<%d> body=<%d>",
+			svr.Addr,
+			res.StatusCode(),
+			res.Body())
+	}
 
 	// post filters
 	filterName, code, err = p.doPostFilters(c)
 	if nil != err {
-		log.InfoErrorf(err, "Proxy Filter-Post<%s> fail: %s ", filterName, err.Error())
+		log.Warnf("proxy: call post filter failed, filter=<%s> errors:\n%+v",
+			filterName,
+			err)
 
 		result.Err = err
 		result.Code = code

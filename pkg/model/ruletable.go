@@ -5,9 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/pkg/conf"
 	"github.com/fagongzi/goetty"
+	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/task"
 	"github.com/valyala/fasthttp"
 )
 
@@ -90,7 +91,7 @@ type RouteTable struct {
 }
 
 // NewRouteTable create a new RouteTable
-func NewRouteTable(cnf *conf.Conf, store Store) *RouteTable {
+func NewRouteTable(cnf *conf.Conf, store Store, taskRunner *task.Runner) *RouteTable {
 	tw := goetty.NewHashedTimeWheel(time.Second, 60, 3)
 	tw.Start()
 
@@ -99,7 +100,7 @@ func NewRouteTable(cnf *conf.Conf, store Store) *RouteTable {
 		tw:    tw,
 		store: store,
 
-		analysiser: newAnalysis(),
+		analysiser: newAnalysis(taskRunner),
 
 		rwLock: &sync.RWMutex{},
 
@@ -142,7 +143,7 @@ func (r *RouteTable) AddNewRouting(routing *Routing) error {
 
 	r.routings[routing.ID] = routing
 
-	log.Infof("Routing <%s> added", routing.Cfg)
+	log.Infof("meta: routing <%s> added", routing.Cfg)
 
 	return nil
 }
@@ -160,7 +161,7 @@ func (r *RouteTable) DeleteRouting(id string) error {
 
 	delete(r.routings, id)
 
-	log.Infof("Routing <%s> deleted", route.Cfg)
+	log.Infof("meta: routing <%s> deleted", route.Cfg)
 
 	return nil
 }
@@ -180,7 +181,7 @@ func (r *RouteTable) AddNewAPI(api *API) error {
 
 	r.apis[getAPIKey(api.URL, api.Method)] = api
 
-	log.Infof("API <%s-%s> added", api.Method, api.URL)
+	log.Infof("meta: api <%s-%s> added", api.Method, api.URL)
 
 	return nil
 }
@@ -197,7 +198,7 @@ func (r *RouteTable) UpdateAPI(api *API) error {
 	r.apis[getAPIKey(api.URL, api.Method)] = api
 	api.Parse()
 
-	log.Infof("API <%s-%s> updated", api.Method, api.URL)
+	log.Infof("meta: api <%s-%s> updated", api.Method, api.URL)
 
 	return nil
 }
@@ -215,7 +216,7 @@ func (r *RouteTable) DeleteAPI(url, method string) error {
 
 	delete(r.apis, getAPIKey(url, method))
 
-	log.Infof("API <%s-%s> deleted", method, url)
+	log.Infof("meta: api <%s-%s> deleted", method, url)
 
 	return nil
 }
@@ -236,7 +237,7 @@ func (r *RouteTable) UpdateServer(svr *Server) error {
 
 	old.updateFrom(svr)
 
-	log.Infof("Server <%s> updated", svr.Addr)
+	log.Infof("meta: server <%s> updated", svr.Addr)
 
 	return nil
 }
@@ -261,13 +262,13 @@ func (r *RouteTable) DeleteServer(serverAddr string) error {
 
 	binded, _ := r.mapping[svr.Addr]
 	delete(r.mapping, svr.Addr)
-	log.Infof("Bind <%s> stored all removed.", svr.Addr)
+	log.Infof("meta: bind <%s> stored all removed", svr.Addr)
 
 	for _, cluster := range binded {
 		cluster.unbind(svr)
 	}
 
-	log.Infof("Server <%s> deleted", svr.Addr)
+	log.Infof("meta: server <%s> deleted", svr.Addr)
 
 	return nil
 }
@@ -310,7 +311,7 @@ func (r *RouteTable) AddNewServer(svr *Server) error {
 		r.analysiser.AddRecentCount(svr.Addr, svr.HalfToOpenCollectSeconds)
 	}
 
-	log.Infof("Server <%s> added", svr.Addr)
+	log.Infof("meta: server <%s> added", svr.Addr)
 
 	return nil
 }
@@ -352,7 +353,7 @@ func (r *RouteTable) DeleteCluster(clusterName string) error {
 
 	// TODO: API node loose cluster
 
-	log.Infof("Cluster <%s> deleted", cluster.Name)
+	log.Infof("meta: cluster <%s> deleted", cluster.Name)
 
 	return nil
 }
@@ -370,7 +371,7 @@ func (r *RouteTable) AddNewCluster(cluster *Cluster) error {
 
 	r.clusters[cluster.Name] = cluster
 
-	log.Infof("Cluster <%s> added", cluster.Name)
+	log.Infof("meta: cluster <%s> added", cluster.Name)
 
 	return nil
 }
@@ -382,14 +383,17 @@ func (r *RouteTable) Bind(svrAddr string, clusterName string) error {
 
 	svr, ok := r.svrs[svrAddr]
 	if !ok {
-		log.Errorf("Bind <%s,%s> fail: %s", svrAddr, clusterName, ErrServerNotFound.Error())
-
+		log.Errorf("meta: bind <%s,%s> failed: server not found",
+			svrAddr,
+			clusterName)
 		return ErrServerNotFound
 	}
 
 	cluster, ok := r.clusters[clusterName]
 	if !ok {
-		log.Errorf("Bind <%s,%s> fail: %s", svrAddr, clusterName, ErrClusterNotFound.Error())
+		log.Errorf("meta: bind <%s,%s> failed: cluster not found",
+			svrAddr,
+			clusterName)
 		return ErrClusterNotFound
 	}
 
@@ -402,7 +406,9 @@ func (r *RouteTable) Bind(svrAddr string, clusterName string) error {
 
 	binded[cluster.Name] = cluster
 
-	log.Infof("Bind <%s,%s> stored.", svrAddr, clusterName)
+	log.Infof("meta: bind <%s,%s> stored",
+		svrAddr,
+		clusterName)
 
 	if svr.Status == Up {
 		cluster.bind(svr)
@@ -418,13 +424,17 @@ func (r *RouteTable) UnBind(svrAddr string, clusterName string) error {
 
 	svr, ok := r.svrs[svrAddr]
 	if !ok {
-		log.Errorf("UnBind <%s,%s> fail: %s", svrAddr, clusterName, ErrServerNotFound.Error())
+		log.Errorf("meta: unbind <%s,%s> failed: server not found",
+			svrAddr,
+			clusterName)
 		return ErrServerNotFound
 	}
 
 	cluster, ok := r.clusters[clusterName]
 	if !ok {
-		log.Errorf("UnBind <%s,%s> fail: %s", svrAddr, clusterName, ErrClusterNotFound.Error())
+		log.Errorf("meta: unbind <%s,%s> failed:cluster not found",
+			svrAddr,
+			clusterName)
 		return ErrClusterNotFound
 	}
 
@@ -436,7 +446,9 @@ func (r *RouteTable) UnBind(svrAddr string, clusterName string) error {
 func (r *RouteTable) doUnBind(svr *Server, cluster *Cluster, withLock bool) {
 	if binded, ok := r.mapping[svr.Addr]; ok {
 		delete(binded, cluster.Name)
-		log.Infof("Bind <%s,%s> stored removed.", svr.Addr, cluster.Name)
+		log.Infof("meta: bind <%s,%s> stored removed",
+			svr.Addr,
+			cluster.Name)
 		if withLock {
 			cluster.unbind(svr)
 		} else {
@@ -503,11 +515,12 @@ func (r *RouteTable) GetTimeWheel() *goetty.HashedTimeWheel {
 }
 
 func (r *RouteTable) watch() {
-	log.Info("RouteTable start watch.")
+	log.Info("meta: routetable start watch")
 
 	go r.doEvtReceive()
 	err := r.store.Watch(r.watchReceiveCh, r.watchStopCh)
-	log.Errorf("RouteTable watch err: %+v", err)
+	log.Errorf("meta:  routetable watch failed, errors:\n%+v",
+		err)
 }
 
 func (r *RouteTable) doEvtReceive() {
@@ -525,7 +538,7 @@ func (r *RouteTable) doEvtReceive() {
 		} else if evt.Src == EventSrcRouting {
 			r.doReceiveRouting(evt)
 		} else {
-			log.Warnf("EVT unknown <%+v>", evt)
+			log.Warnf("meta: evt unknown <%+v>", evt)
 		}
 	}
 }
@@ -605,14 +618,17 @@ func (r *RouteTable) Load() {
 func (r *RouteTable) loadClusters() {
 	clusters, err := r.store.GetClusters()
 	if nil != err {
-		log.WarnErrorf(err, "Load clusters fail.")
+		log.Errorf("meta: load clusters failed, errors:\n%+v",
+			err)
 		return
 	}
 
 	for _, cluster := range clusters {
 		err := r.AddNewCluster(cluster)
 		if nil != err {
-			log.PanicErrorf(err, "Server <%s> add fail.", cluster.Name)
+			log.Fatalf("meta: cluster <%s> add failed, errors:\n%+v",
+				cluster.Name,
+				err)
 		}
 	}
 }
@@ -620,7 +636,8 @@ func (r *RouteTable) loadClusters() {
 func (r *RouteTable) loadServers() {
 	servers, err := r.store.GetServers()
 	if nil != err {
-		log.WarnErrorf(err, "Load servers from etcd fail.")
+		log.Errorf("meta: load servers from store failed, errors:\n%+v",
+			err)
 		return
 	}
 
@@ -628,7 +645,9 @@ func (r *RouteTable) loadServers() {
 		err := r.AddNewServer(server)
 
 		if nil != err {
-			log.PanicErrorf(err, "Server <%s> add fail.", server.Addr)
+			log.Fatalf("meta: server <%s> add failed, errors:\n%+v",
+				server.Addr,
+				err)
 		}
 	}
 }
@@ -636,14 +655,17 @@ func (r *RouteTable) loadServers() {
 func (r *RouteTable) loadRoutings() {
 	routings, err := r.store.GetRoutings()
 	if nil != err {
-		log.WarnErrorf(err, "Load routings from etcd fail.")
+		log.Errorf("meta: load routings from store failed, errors:\n%+v",
+			err)
 		return
 	}
 
 	for _, route := range routings {
 		err := r.AddNewRouting(route)
 		if nil != err {
-			log.PanicError(err, "Routing <%s> add fail.", route.Cfg)
+			log.Fatalf("meta: routing <%s> add failed, errors:\n%+v",
+				route.Cfg,
+				err)
 		}
 	}
 }
@@ -651,14 +673,18 @@ func (r *RouteTable) loadRoutings() {
 func (r *RouteTable) loadBinds() {
 	binds, err := r.store.GetBinds()
 	if nil != err {
-		log.WarnErrorf(err, "Load binds from etcd fail.")
+		log.Errorf("meta: load binds from store failed, errors:\n%+v",
+			err)
 		return
 	}
 
 	for _, b := range binds {
 		err := r.Bind(b.ServerAddr, b.ClusterName)
 		if nil != err {
-			log.WarnErrorf(err, "Bind <%s, %s> add fail.", b.ServerAddr, b.ClusterName)
+			log.Fatalf("meta: bind <%s, %s> add failed, errors:\n%+v",
+				b.ServerAddr,
+				b.ClusterName,
+				err)
 		}
 	}
 }
@@ -666,14 +692,17 @@ func (r *RouteTable) loadBinds() {
 func (r *RouteTable) loadAPIs() {
 	apis, err := r.store.GetAPIs()
 	if nil != err {
-		log.WarnErrorf(err, "Load apis from etcd fail.")
+		log.Errorf("meta: load apis from store failed, errors:\n%+v",
+			err)
 		return
 	}
 
 	for _, api := range apis {
 		err := r.AddNewAPI(api)
 		if nil != err {
-			log.PanicError(err, "API <%s> add fail.", api.URL)
+			log.Fatalf("meta: api <%s> add failed, errors:\n%+v",
+				api.URL,
+				err)
 		}
 	}
 }
@@ -687,13 +716,16 @@ func (r *RouteTable) addToCheck(svr *Server) {
 		svr.changeTo(Up)
 
 		if svr.statusChanged() {
-			log.Infof("Server <%s> UP.", svr.Addr)
+			log.Infof("meta: server <%s> UP",
+				svr.Addr)
 		}
 	} else {
 		svr.changeTo(Down)
 
 		if svr.statusChanged() {
-			log.Warnf("Server <%s, %s> DOWN.", svr.Addr, svr.CheckPath)
+			log.Warnf("meta: server <%s, %s> DOWN",
+				svr.Addr,
+				svr.CheckPath)
 		}
 	}
 

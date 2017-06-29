@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"github.com/fagongzi/log"
 	"github.com/toolkits/net"
 )
 
@@ -16,7 +16,6 @@ func (e *EtcdStore) Registry(proxyInfo *ProxyInfo) error {
 	go func() {
 		for {
 			<-timer.C
-			log.Debug("Registry start")
 			e.doRegistry(proxyInfo)
 		}
 	}()
@@ -32,7 +31,8 @@ func (e *EtcdStore) doRegistry(proxyInfo *ProxyInfo) {
 	err := e.putTTL(key, string(proxyInfo.Marshal()), TTL)
 
 	if err != nil {
-		log.ErrorError(err, "Registry fail.")
+		log.Errorf("store: registry failed, errors:\n%+v",
+			err)
 	}
 }
 

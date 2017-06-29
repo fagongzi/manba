@@ -3,8 +3,8 @@ package proxy
 import (
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/pkg/filter"
+	"github.com/fagongzi/log"
 )
 
 // AccessFilter record the http access log
@@ -26,7 +26,7 @@ func (f AccessFilter) Name() string {
 func (f AccessFilter) Post(c filter.Context) (statusCode int, err error) {
 	cost := (c.GetStartAt() - c.GetEndAt())
 
-	log.Infof("%s %s \"%s\" %d \"%s\" %s %s",
+	log.Infof("filter: %s %s \"%s\" %d \"%s\" %s %s",
 		GetRealClientIP(c.GetOriginRequestCtx()),
 		c.GetOriginRequestCtx().Method(),
 		c.GetProxyOuterRequest().RequestURI(),

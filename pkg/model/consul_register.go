@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/fagongzi/log"
 	"github.com/hashicorp/consul/api"
 	"github.com/toolkits/net"
 )
@@ -34,7 +34,8 @@ func (s *consulStore) doRegistry(proxyInfo *ProxyInfo) {
 	}, nil)
 
 	if err != nil {
-		log.ErrorError(err, "Registry fail.")
+		log.Errorf("store: registry failed, errors:\n%+v",
+			err)
 	}
 }
 

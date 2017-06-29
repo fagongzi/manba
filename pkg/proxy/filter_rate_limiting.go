@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/pkg/filter"
+	"github.com/fagongzi/log"
 )
 
 var (
@@ -32,7 +32,7 @@ func (f RateLimitingFilter) Pre(c filter.Context) (statusCode int, err error) {
 	requestCounts := c.GetRecentlyRequestCount(1)
 
 	if requestCounts >= c.GetMaxQPS() {
-		log.Warnf("qps: %d, last 1 secs: %d", c.GetMaxQPS(), requestCounts)
+		log.Warnf("filter: qps: %d, last 1 secs: %d", c.GetMaxQPS(), requestCounts)
 		c.RecordMetricsForReject()
 		return http.StatusServiceUnavailable, ErrTraffixLimited
 	}
