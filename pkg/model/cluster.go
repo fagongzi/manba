@@ -6,9 +6,9 @@ import (
 	"io"
 	"sync"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/fagongzi/gateway/pkg/lb"
 	"github.com/fagongzi/gateway/pkg/util"
+	"github.com/fagongzi/log"
 	"github.com/valyala/fasthttp"
 )
 
@@ -113,7 +113,7 @@ func (c *Cluster) updateFrom(cluster *Cluster) {
 	c.LbName = cluster.LbName
 	c.lb = lb.NewLoadBalance(c.LbName)
 
-	log.Infof("Cluster <%s> updated", c.Name)
+	log.Infof("meta: cluster <%s> updated", c.Name)
 }
 
 func (c *Cluster) doInEveryBindServers(callback func(string)) {
@@ -135,7 +135,7 @@ func (c *Cluster) unbind(svr *Server) {
 
 func (c *Cluster) doUnBind(svr *Server) {
 	util.Remove(c.svrs, svr.Addr)
-	log.Infof("UnBind <%s,%s> succ.", svr.Addr, c.Name)
+	log.Infof("meta: unBind <%s,%s> succ.", svr.Addr, c.Name)
 }
 
 func (c *Cluster) bind(svr *Server) {
@@ -143,13 +143,13 @@ func (c *Cluster) bind(svr *Server) {
 	defer c.rwLock.Unlock()
 
 	if util.IndexOf(c.svrs, svr.Addr) >= 0 {
-		log.Infof("Bind <%s,%s> already created.", svr.Addr, c.Name)
+		log.Infof("meta: bind <%s,%s> already created.", svr.Addr, c.Name)
 		return
 	}
 
 	c.svrs.PushBack(svr.Addr)
 
-	log.Infof("Bind <%s,%s> created.", svr.Addr, c.Name)
+	log.Infof("meta: bind <%s,%s> created.", svr.Addr, c.Name)
 }
 
 // Select return a server using spec loadbalance

@@ -7,31 +7,6 @@
 	],
 	"Deps": [
 		{
-			"ImportPath": "github.com/CodisLabs/codis/pkg/utils/atomic2",
-			"Comment": "2.0.14",
-			"Rev": "3a771a8ccc896140856e248338bbb4388f8467d9"
-		},
-		{
-			"ImportPath": "github.com/CodisLabs/codis/pkg/utils/bytesize",
-			"Comment": "2.0.14",
-			"Rev": "3a771a8ccc896140856e248338bbb4388f8467d9"
-		},
-		{
-			"ImportPath": "github.com/CodisLabs/codis/pkg/utils/errors",
-			"Comment": "2.0.14",
-			"Rev": "3a771a8ccc896140856e248338bbb4388f8467d9"
-		},
-		{
-			"ImportPath": "github.com/CodisLabs/codis/pkg/utils/log",
-			"Comment": "2.0.14",
-			"Rev": "3a771a8ccc896140856e248338bbb4388f8467d9"
-		},
-		{
-			"ImportPath": "github.com/CodisLabs/codis/pkg/utils/trace",
-			"Comment": "2.0.14",
-			"Rev": "3a771a8ccc896140856e248338bbb4388f8467d9"
-		},
-		{
 			"ImportPath": "github.com/brettlangdon/forge",
 			"Comment": "v0.2.2",
 			"Rev": "eec119e2c248aaf770997b018f5141e95daf9c80"
@@ -76,9 +51,16 @@
 			"Rev": "8f7c55a2515da7377de4dc5ca88aba9b5a5b6c7f"
 		},
 		{
-			"ImportPath": "github.com/fgrid/uuid",
-			"Comment": "v0.1.0",
-			"Rev": "6f72a2d331c927473b9b19f590d43ccb5018c844"
+			"ImportPath": "github.com/fagongzi/log",
+			"Rev": "6797921ff7b7b7ca44e0cd5a95a44fb609cb69f1"
+		},
+		{
+			"ImportPath": "github.com/fagongzi/util/atomic",
+			"Rev": "17f765b3b7407e58f7ec79fc9c55c3770c64cc2a"
+		},
+		{
+			"ImportPath": "github.com/fagongzi/util/task",
+			"Rev": "17f765b3b7407e58f7ec79fc9c55c3770c64cc2a"
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/proto",

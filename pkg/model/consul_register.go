@@ -1,10 +1,11 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/fagongzi/log"
 	"github.com/hashicorp/consul/api"
 	"github.com/toolkits/net"
 )
@@ -13,12 +14,14 @@ import (
 func (s *consulStore) Registry(proxyInfo *ProxyInfo) error {
 	timer := time.NewTicker(TICKER)
 
-	go func() {
-		for {
-			<-timer.C
+	s.taskRunner.RunCancelableTask(func(ctx context.Context) {
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+		case <-timer.C:
 			s.doRegistry(proxyInfo)
 		}
-	}()
+	})
 
 	return nil
 }
@@ -34,7 +37,8 @@ func (s *consulStore) doRegistry(proxyInfo *ProxyInfo) {
 	}, nil)
 
 	if err != nil {
-		log.ErrorError(err, "Registry fail.")
+		log.Errorf("store: registry failed, errors:\n%+v",
+			err)
 	}
 }
 

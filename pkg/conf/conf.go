@@ -1,9 +1,14 @@
 package conf
 
+import (
+	"encoding/json"
+	"io/ioutil"
+
+	"github.com/fagongzi/log"
+)
+
 // Conf config struct
 type Conf struct {
-	LogLevel string `json:"-"`
-
 	Addr    string `json:"addr"`
 	MgrAddr string `json:"mgrAddr"`
 
@@ -40,4 +45,24 @@ type FilterSpec struct {
 	Name               string `json:"name"`
 	External           bool   `json:"external,omitempty"`
 	ExternalPluginFile string `json:"externalPluginFile,omitempty"`
+}
+
+// GetCfg returns the conf from external file
+func GetCfg(file string) *Conf {
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		log.Fatalf("bootstrap: read config file <%s> failed, errors:\n%+v",
+			file,
+			err)
+	}
+
+	cnf := &Conf{}
+	err = json.Unmarshal(data, cnf)
+	if err != nil {
+		log.Fatalf("bootstrap: parse config file <%s> failed, errors:\n%+v",
+			file,
+			err)
+	}
+
+	return cnf
 }

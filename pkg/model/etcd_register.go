@@ -1,11 +1,12 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"github.com/fagongzi/log"
 	"github.com/toolkits/net"
 )
 
@@ -13,13 +14,14 @@ import (
 func (e *EtcdStore) Registry(proxyInfo *ProxyInfo) error {
 	timer := time.NewTicker(TICKER)
 
-	go func() {
-		for {
-			<-timer.C
-			log.Debug("Registry start")
+	e.taskRunner.RunCancelableTask(func(ctx context.Context) {
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+		case <-timer.C:
 			e.doRegistry(proxyInfo)
 		}
-	}()
+	})
 
 	return nil
 }
@@ -32,7 +34,8 @@ func (e *EtcdStore) doRegistry(proxyInfo *ProxyInfo) {
 	err := e.putTTL(key, string(proxyInfo.Marshal()), TTL)
 
 	if err != nil {
-		log.ErrorError(err, "Registry fail.")
+		log.Errorf("store: registry failed, errors:\n%+v",
+			err)
 	}
 }
 

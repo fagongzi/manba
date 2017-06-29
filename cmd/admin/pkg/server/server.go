@@ -1,9 +1,11 @@
 package server
 
 import (
-	"fmt"
+	"sync"
 
 	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/task"
 	"github.com/labstack/echo"
 	sd "github.com/labstack/echo/engine/standard"
 	mw "github.com/labstack/echo/middleware"
@@ -18,16 +20,23 @@ type Result struct {
 
 // AdminServer http interface server
 type AdminServer struct {
-	user  string
-	pwd   string
-	addr  string
-	e     *echo.Echo
-	store model.Store
+	user       string
+	pwd        string
+	addr       string
+	e          *echo.Echo
+	store      model.Store
+	taskRunner *task.Runner
+
+	stopped  int32
+	stopC    chan struct{}
+	stopOnce sync.Once
+	stopWG   sync.WaitGroup
 }
 
 // NewAdminServer create a AdminServer
 func NewAdminServer(addr string, registryAddr string, prefix string, user string, pwd string) *AdminServer {
-	st, _ := model.GetStoreFrom(registryAddr, prefix)
+	taskRunner := task.NewRunner()
+	st, _ := model.GetStoreFrom(registryAddr, prefix, taskRunner)
 
 	server := &AdminServer{
 		user:  user,
@@ -63,6 +72,32 @@ func (server *AdminServer) initHTTPServer() {
 
 // Start start the admin server
 func (server *AdminServer) Start() {
-	fmt.Printf("start at %s\n", server.addr)
-	server.e.Run(sd.New(server.addr))
+	go server.listenToStop()
+
+	log.Infof("bootstrap: gateway admin start at <%s>", server.addr)
+	httpSvr := sd.New(server.addr)
+	server.e.Run(httpSvr)
+}
+
+// Stop stop the admin
+func (server *AdminServer) Stop() {
+	log.Infof("stop: start to stop gateway admin")
+
+	server.stopWG.Add(1)
+	server.stopC <- struct{}{}
+	server.stopWG.Wait()
+
+	log.Infof("stop: gateway admin stopped")
+}
+
+func (server *AdminServer) listenToStop() {
+	<-server.stopC
+	server.doStop()
+}
+
+func (server *AdminServer) doStop() {
+	server.stopOnce.Do(func() {
+		defer server.stopWG.Done()
+		server.taskRunner.Stop()
+	})
 }

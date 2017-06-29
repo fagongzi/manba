@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/fagongzi/log"
 )
 
 // Status status
@@ -160,7 +160,8 @@ func (s *Server) updateFrom(svr *Server) {
 	s.OpenToCloseCollectSeconds = svr.OpenToCloseCollectSeconds
 	s.OpenToCloseFailureRate = svr.OpenToCloseFailureRate
 
-	log.Infof("Server <%s> updated, %+v", s.Addr, s)
+	log.Infof("meta: server <%s> updated",
+		s.Addr)
 }
 
 // GetCircuit return circuit status
@@ -225,19 +226,29 @@ func (s *Server) check() bool {
 		}
 	}()
 
-	log.Debugf("Server <%s, %s> start check.", s.Addr, s.CheckPath)
+	log.Debugf("meta: server <%s, %s> start check",
+		s.Addr,
+		s.CheckPath)
 
 	resp, err := s.httpClient.Get(s.getCheckURL())
 
 	if err != nil {
-		log.Warnf("Server <%s, %s, %d> check fail.", s.Addr, s.CheckPath, s.checkFailCount+1)
+		log.Warnf("meta: server <%s, %s, %d> check failed, errors:\n%+v",
+			s.Addr,
+			s.CheckPath,
+			s.checkFailCount+1,
+			err)
 		return succ
 	}
 
 	defer resp.Body.Close()
 
 	if http.StatusOK != resp.StatusCode {
-		log.Warnf("Server <%s, %s, %d, %d> check fail.", s.Addr, s.CheckPath, resp.StatusCode, s.checkFailCount+1)
+		log.Warnf("meta: server <%s, %s, %d, %d> check failed",
+			s.Addr,
+			s.CheckPath,
+			resp.StatusCode,
+			s.checkFailCount+1)
 		return succ
 	}
 

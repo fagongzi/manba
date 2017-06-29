@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fagongzi/util/task"
 	"github.com/labstack/echo"
 	sd "github.com/labstack/echo/engine/standard"
 )
@@ -28,7 +29,7 @@ var (
 var rt *RouteTable
 
 func createRouteTable(t *testing.T) {
-	store, err := GetStoreFrom(registryAddr, prefix)
+	store, err := GetStoreFrom(registryAddr, prefix, task.NewRunner())
 
 	if nil != err {
 		t.Fatalf("create etcd store err.addr:<%s>", err)
@@ -36,7 +37,7 @@ func createRouteTable(t *testing.T) {
 
 	store.Clean()
 
-	rt = NewRouteTable(nil, store)
+	rt = NewRouteTable(nil, store, task.NewRunner())
 	go rt.watch()
 	time.Sleep(time.Second * 1)
 }
@@ -397,7 +398,7 @@ func TestEtcdWatchDeleteRouting(t *testing.T) {
 		return
 	}
 
-	time.Sleep(time.Second * 4)
+	time.Sleep(time.Second * 6)
 
 	if len(rt.routings) == 0 {
 		return
