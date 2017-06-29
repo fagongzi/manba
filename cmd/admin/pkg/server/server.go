@@ -79,6 +79,17 @@ func (server *AdminServer) Start() {
 	server.e.Run(httpSvr)
 }
 
+// Stop stop the admin
+func (server *AdminServer) Stop() {
+	log.Infof("stop: start to stop gateway admin")
+
+	server.stopWG.Add(1)
+	server.stopC <- struct{}{}
+	server.stopWG.Wait()
+
+	log.Infof("stop: gateway admin stopped")
+}
+
 func (server *AdminServer) listenToStop() {
 	<-server.stopC
 	server.doStop()

@@ -43,7 +43,7 @@ func waitStop(s *server.AdminServer) {
 		syscall.SIGQUIT)
 
 	sig := <-sc
-	p.Stop()
+	s.Stop()
 	log.Infof("exit: signal=<%d>.", sig)
 	switch sig {
 	case syscall.SIGTERM:
