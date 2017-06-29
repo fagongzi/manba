@@ -51,6 +51,18 @@
 			"Rev": "8f7c55a2515da7377de4dc5ca88aba9b5a5b6c7f"
 		},
 		{
+			"ImportPath": "github.com/fagongzi/log",
+			"Rev": "6797921ff7b7b7ca44e0cd5a95a44fb609cb69f1"
+		},
+		{
+			"ImportPath": "github.com/fagongzi/util/atomic",
+			"Rev": "17f765b3b7407e58f7ec79fc9c55c3770c64cc2a"
+		},
+		{
+			"ImportPath": "github.com/fagongzi/util/task",
+			"Rev": "17f765b3b7407e58f7ec79fc9c55c3770c64cc2a"
+		},
+		{
 			"ImportPath": "github.com/golang/protobuf/proto",
 			"Rev": "6a1fa9404c0aebf36c879bc50152edcc953910d2"
 		},
