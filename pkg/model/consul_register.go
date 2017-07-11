@@ -15,11 +15,13 @@ func (s *consulStore) Registry(proxyInfo *ProxyInfo) error {
 	timer := time.NewTicker(TICKER)
 
 	s.taskRunner.RunCancelableTask(func(ctx context.Context) {
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-		case <-timer.C:
-			s.doRegistry(proxyInfo)
+		for {
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+			case <-timer.C:
+				s.doRegistry(proxyInfo)
+			}
 		}
 	})
 

@@ -15,11 +15,13 @@ func (e *EtcdStore) Registry(proxyInfo *ProxyInfo) error {
 	timer := time.NewTicker(TICKER)
 
 	e.taskRunner.RunCancelableTask(func(ctx context.Context) {
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-		case <-timer.C:
-			e.doRegistry(proxyInfo)
+		for {
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+			case <-timer.C:
+				e.doRegistry(proxyInfo)
+			}
 		}
 	})
 
