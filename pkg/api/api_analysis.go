@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"encoding/json"
@@ -17,7 +17,7 @@ type AnalysisPoint struct {
 	Secs       int    `json:"secs,omitempty"`
 }
 
-func unMarshalAnalysisPointFromReader(r io.Reader) (*AnalysisPoint, error) {
+func unmarshalAnalysisPointFromReader(r io.Reader) (*AnalysisPoint, error) {
 	v := &AnalysisPoint{}
 
 	decoder := json.NewDecoder(r)
@@ -26,7 +26,12 @@ func unMarshalAnalysisPointFromReader(r io.Reader) (*AnalysisPoint, error) {
 	return v, err
 }
 
-func (server *AdminServer) getAnalysis() echo.HandlerFunc {
+func (s *Server) initAPIOfAnalysis() {
+	s.api.GET("/api/analysis/:proxy/:server/:secs", s.listAnalysis())
+	s.api.POST("/api/analysis", s.createAnalysis())
+}
+
+func (s *Server) listAnalysis() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
@@ -42,7 +47,7 @@ func (server *AdminServer) getAnalysis() echo.HandlerFunc {
 			})
 		}
 
-		registor, _ := server.store.(model.Register)
+		registor, _ := s.store.(model.Register)
 
 		data, err := registor.GetAnalysisPoint(proxyAddr, serverAddr, secs)
 		if err != nil {
@@ -58,18 +63,18 @@ func (server *AdminServer) getAnalysis() echo.HandlerFunc {
 	}
 }
 
-func (server *AdminServer) newAnalysis() echo.HandlerFunc {
+func (s *Server) createAnalysis() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
 
-		point, err := unMarshalAnalysisPointFromReader(c.Request().Body())
+		point, err := unmarshalAnalysisPointFromReader(c.Request().Body())
 
 		if nil != err {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			registor, _ := server.store.(model.Register)
+			registor, _ := s.store.(model.Register)
 
 			err := registor.AddAnalysisPoint(point.ProxyAddr, point.ServerAddr, point.Secs)
 			if nil != err {

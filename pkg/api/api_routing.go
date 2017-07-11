@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"net/http"
@@ -7,14 +7,17 @@ import (
 	"github.com/labstack/echo"
 )
 
-func (server *AdminServer) getProxies() echo.HandlerFunc {
+func (s *Server) initAPIOfRoutings() {
+	s.api.POST("/api/routings", s.createRouting())
+	s.api.GET("/api/routings", s.listRoutings())
+}
+
+func (s *Server) listRoutings() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
 
-		registor, _ := server.store.(model.Register)
-
-		proxies, err := registor.GetProxies()
+		routings, err := s.store.GetRoutings()
 		if err != nil {
 			errstr = err.Error()
 			code = CodeError
@@ -23,26 +26,31 @@ func (server *AdminServer) getProxies() echo.HandlerFunc {
 		return c.JSON(http.StatusOK, &Result{
 			Code:  code,
 			Error: errstr,
-			Value: proxies,
+			Value: routings,
 		})
 	}
 }
 
-func (server *AdminServer) changeLogLevel() echo.HandlerFunc {
+func (s *Server) createRouting() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
 
-		addr := c.Param("addr")
-		level := c.Param("level")
+		routing, err := model.UnMarshalRoutingFromReader(c.Request().Body())
 
-		registor, _ := server.store.(model.Register)
-
-		err := registor.ChangeLogLevel(addr, level)
+		if err == nil {
+			err = routing.Check()
+		}
 
 		if nil != err {
 			errstr = err.Error()
 			code = CodeError
+		} else {
+			err := s.store.SaveRouting(routing)
+			if nil != err {
+				errstr = err.Error()
+				code = CodeError
+			}
 		}
 
 		return c.JSON(http.StatusOK, &Result{

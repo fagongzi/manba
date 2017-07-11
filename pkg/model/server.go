@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/fagongzi/log"
+	validation "github.com/go-ozzo/ozzo-validation"
 )
 
 // Status status
@@ -40,6 +41,14 @@ const (
 	// DefaultCheckTimeoutInSeconds Default timeout to check server
 	DefaultCheckTimeoutInSeconds = 3
 )
+
+// Validate validate the model
+func (s *Server) Validate() error {
+	return validation.ValidateStruct(s,
+		validation.Field(&s.Addr, validation.Required),
+		validation.Field(&s.CheckPath, validation.Required),
+		validation.Field(&s.CheckDuration, validation.Required))
+}
 
 // Server server
 type Server struct {
@@ -253,6 +262,7 @@ func (s *Server) check() bool {
 	}
 
 	if s.CheckResponsedBody == "" {
+		succ = true
 		return true
 	}
 

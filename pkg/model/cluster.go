@@ -9,6 +9,7 @@ import (
 	"github.com/fagongzi/gateway/pkg/lb"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
+	"github.com/go-ozzo/ozzo-validation"
 	"github.com/valyala/fasthttp"
 )
 
@@ -63,6 +64,13 @@ func NewCluster(name string, lbName string) (*Cluster, error) {
 	}
 
 	return c, c.init()
+}
+
+// Validate validate the model
+func (c *Cluster) Validate() error {
+	return validation.ValidateStruct(c,
+		validation.Field(&c.Name, validation.Required),
+		validation.Field(&c.LbName, validation.Required))
 }
 
 // AddBind add bind

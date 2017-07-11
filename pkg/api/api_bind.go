@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"net/http"
@@ -7,7 +7,12 @@ import (
 	"github.com/labstack/echo"
 )
 
-func (server *AdminServer) newBind() echo.HandlerFunc {
+func (s *Server) initAPIOfBinds() {
+	s.api.POST("/api/binds", s.createBind())
+	s.api.DELETE("/api/binds", s.deleteBind())
+}
+
+func (s *Server) createBind() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
@@ -18,7 +23,7 @@ func (server *AdminServer) newBind() echo.HandlerFunc {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := server.store.SaveBind(bind)
+			err := s.store.SaveBind(bind)
 			if nil != err {
 				errstr = err.Error()
 				code = CodeError
@@ -32,7 +37,7 @@ func (server *AdminServer) newBind() echo.HandlerFunc {
 	}
 }
 
-func (server *AdminServer) unBind() echo.HandlerFunc {
+func (s *Server) deleteBind() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
@@ -43,7 +48,7 @@ func (server *AdminServer) unBind() echo.HandlerFunc {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := server.store.UnBind(bind)
+			err := s.store.UnBind(bind)
 			if nil != err {
 				errstr = err.Error()
 				code = CodeError

@@ -1,46 +1,27 @@
-package server
+package api
 
 import (
+	"encoding/base64"
 	"net/http"
 
-	"github.com/fagongzi/gateway/pkg/lb"
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/labstack/echo"
 )
 
-func (server *AdminServer) getLbs() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		return c.JSON(http.StatusOK, lb.GetSupportLBS())
-	}
+func (s *Server) initAPIOfAPIs() {
+	s.api.POST("/api/apis", s.createAPI())
+	s.api.DELETE("/api/apis/:url", s.deleteAPI())
+	s.api.PUT("/api/apis/:url", s.updateAPI())
+	s.api.GET("/api/apis", s.listAPIs())
+	s.api.GET("/api/apis/:url", s.getAPI())
 }
 
-func (server *AdminServer) getCluster() echo.HandlerFunc {
+func (s *Server) listAPIs() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
 
-		id := c.Param("id")
-		cluster, err := server.store.GetCluster(id)
-
-		if nil != err {
-			errstr = err.Error()
-			code = CodeError
-		}
-
-		return c.JSON(http.StatusOK, &Result{
-			Code:  code,
-			Error: errstr,
-			Value: cluster,
-		})
-	}
-}
-
-func (server *AdminServer) getClusters() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		var errstr string
-		code := CodeSuccess
-
-		clusters, err := server.store.GetClusters()
+		apis, err := s.store.GetAPIs()
 		if err != nil {
 			errstr = err.Error()
 			code = CodeError
@@ -49,23 +30,45 @@ func (server *AdminServer) getClusters() echo.HandlerFunc {
 		return c.JSON(http.StatusOK, &Result{
 			Code:  code,
 			Error: errstr,
-			Value: clusters,
+			Value: apis,
 		})
 	}
 }
 
-func (server *AdminServer) newCluster() echo.HandlerFunc {
+func (s *Server) getAPI() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
 
-		cluster, err := model.UnMarshalClusterFromReader(c.Request().Body())
+		u, _ := base64.RawURLEncoding.DecodeString(c.Param("url"))
+		method := c.QueryParam("method")
+
+		api, err := s.store.GetAPI(string(u), method)
+		if err != nil {
+			errstr = err.Error()
+			code = CodeError
+		}
+
+		return c.JSON(http.StatusOK, &Result{
+			Code:  code,
+			Error: errstr,
+			Value: api,
+		})
+	}
+}
+
+func (s *Server) createAPI() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var errstr string
+		code := CodeSuccess
+
+		api, err := model.UnMarshalAPIFromReader(c.Request().Body())
 
 		if nil != err {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := server.store.SaveCluster(cluster)
+			err := s.store.SaveAPI(api)
 			if nil != err {
 				errstr = err.Error()
 				code = CodeError
@@ -79,18 +82,18 @@ func (server *AdminServer) newCluster() echo.HandlerFunc {
 	}
 }
 
-func (server *AdminServer) updateCluster() echo.HandlerFunc {
+func (s *Server) updateAPI() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
 
-		cluster, err := model.UnMarshalClusterFromReader(c.Request().Body())
+		api, err := model.UnMarshalAPIFromReader(c.Request().Body())
 
 		if nil != err {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := server.store.UpdateCluster(cluster)
+			err := s.store.UpdateAPI(api)
 			if nil != err {
 				errstr = err.Error()
 				code = CodeError
@@ -104,13 +107,14 @@ func (server *AdminServer) updateCluster() echo.HandlerFunc {
 	}
 }
 
-func (server *AdminServer) deleteCluster() echo.HandlerFunc {
+func (s *Server) deleteAPI() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
 
-		id := c.Param("id")
-		err := server.store.DeleteCluster(id)
+		url, _ := base64.RawURLEncoding.DecodeString(c.Param("url"))
+		method := c.QueryParam("method")
+		err := s.store.DeleteAPI(string(url), method)
 
 		if nil != err {
 			errstr = err.Error()

@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/valyala/fasthttp"
 )
 
@@ -82,6 +83,15 @@ type API struct {
 	Nodes         []*Node        `json:"nodes"`
 	Desc          string         `json:"desc, omitempty"`
 	Pattern       *regexp.Regexp `json:"-"`
+}
+
+// Validate validate the model
+func (a *API) Validate() error {
+	return validation.ValidateStruct(a,
+		validation.Field(&a.Name, validation.Required),
+		validation.Field(&a.URL, validation.Required),
+		validation.Field(&a.Method, validation.Required),
+		validation.Field(&a.Status, validation.In(APIStatusDown, APIStatusUp)))
 }
 
 // UnMarshalAPI unmarshal

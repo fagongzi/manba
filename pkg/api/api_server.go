@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"net/http"
@@ -7,12 +7,20 @@ import (
 	"github.com/labstack/echo"
 )
 
-func (server *AdminServer) getServers() echo.HandlerFunc {
+func (s *Server) initAPIOfServers() {
+	s.api.POST("/api/servers", s.createServer())
+	s.api.DELETE("/api/servers/:id", s.deleteServer())
+	s.api.PUT("/api/servers/:id", s.updateServer())
+	s.api.GET("/api/servers", s.listServers())
+	s.api.GET("/api/servers/:id", s.getServer())
+}
+
+func (s *Server) listServers() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
 
-		servers, err := server.store.GetServers()
+		servers, err := s.store.GetServers()
 		if err != nil {
 			errstr = err.Error()
 			code = CodeError
@@ -26,13 +34,13 @@ func (server *AdminServer) getServers() echo.HandlerFunc {
 	}
 }
 
-func (server *AdminServer) getServer() echo.HandlerFunc {
+func (s *Server) getServer() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
 
 		id := c.Param("id")
-		server, err := server.store.GetServer(id)
+		server, err := s.store.GetServer(id)
 
 		if nil != err {
 			errstr = err.Error()
@@ -47,7 +55,7 @@ func (server *AdminServer) getServer() echo.HandlerFunc {
 	}
 }
 
-func (server *AdminServer) updateServer() echo.HandlerFunc {
+func (s *Server) updateServer() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
@@ -58,7 +66,7 @@ func (server *AdminServer) updateServer() echo.HandlerFunc {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := server.store.UpdateServer(svr)
+			err := s.store.UpdateServer(svr)
 			if nil != err {
 				errstr = err.Error()
 				code = CodeError
@@ -72,7 +80,7 @@ func (server *AdminServer) updateServer() echo.HandlerFunc {
 	}
 }
 
-func (server *AdminServer) newServer() echo.HandlerFunc {
+func (s *Server) createServer() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
@@ -83,7 +91,7 @@ func (server *AdminServer) newServer() echo.HandlerFunc {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := server.store.SaveServer(svr)
+			err := s.store.SaveServer(svr)
 			if nil != err {
 				errstr = err.Error()
 				code = CodeError
@@ -97,13 +105,13 @@ func (server *AdminServer) newServer() echo.HandlerFunc {
 	}
 }
 
-func (server *AdminServer) deleteServer() echo.HandlerFunc {
+func (s *Server) deleteServer() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var errstr string
 		code := CodeSuccess
 
 		id := c.Param("id")
-		err := server.store.DeleteServer(id)
+		err := s.store.DeleteServer(id)
 
 		if nil != err {
 			errstr = err.Error()
