@@ -19,6 +19,7 @@ func (s *consulStore) Registry(proxyInfo *ProxyInfo) error {
 			select {
 			case <-ctx.Done():
 				timer.Stop()
+				return
 			case <-timer.C:
 				s.doRegistry(proxyInfo)
 			}

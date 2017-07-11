@@ -19,6 +19,7 @@ func (e *EtcdStore) Registry(proxyInfo *ProxyInfo) error {
 			select {
 			case <-ctx.Done():
 				timer.Stop()
+				return
 			case <-timer.C:
 				e.doRegistry(proxyInfo)
 			}
