@@ -91,7 +91,8 @@ func (a *API) Validate() error {
 		validation.Field(&a.Name, validation.Required),
 		validation.Field(&a.URL, validation.Required),
 		validation.Field(&a.Method, validation.Required),
-		validation.Field(&a.Status, validation.In(APIStatusDown, APIStatusUp)))
+		validation.Field(&a.Status, validation.In(APIStatusDown, APIStatusUp)),
+		validation.Field(&a.Nodes, validation.Length(1, 0)))
 }
 
 // UnMarshalAPI unmarshal

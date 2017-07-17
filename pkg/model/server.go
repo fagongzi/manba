@@ -47,7 +47,17 @@ func (s *Server) Validate() error {
 	return validation.ValidateStruct(s,
 		validation.Field(&s.Addr, validation.Required),
 		validation.Field(&s.CheckPath, validation.Required),
-		validation.Field(&s.CheckDuration, validation.Required))
+		validation.Field(&s.CheckDuration, validation.Required),
+		validation.Field(&s.CheckTimeout, validation.Required),
+		validation.Field(&s.Status, validation.Required),
+		validation.Field(&s.MaxQPS, validation.Required),
+		validation.Field(&s.HalfToOpenSeconds, validation.Required),
+		validation.Field(&s.HalfTrafficRate, validation.Required, validation.Max(100)),
+		validation.Field(&s.HalfToOpenSucceedRate, validation.Required, validation.Max(100)),
+		validation.Field(&s.OpenToCloseFailureRate, validation.Required, validation.Max(100)),
+		validation.Field(&s.HalfToOpenCollectSeconds, validation.Required),
+		validation.Field(&s.OpenToCloseCollectSeconds, validation.Required))
+
 }
 
 // Server server

@@ -5,12 +5,21 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	validation "github.com/go-ozzo/ozzo-validation"
 )
 
 // Bind a bind server and cluster
 type Bind struct {
 	ClusterName string `json:"clusterName,omitempty"`
 	ServerAddr  string `json:"serverAddr,omitempty"`
+}
+
+// Validate validate the model
+func (b *Bind) Validate() error {
+	return validation.ValidateStruct(b,
+		validation.Field(&b.ClusterName, validation.Required),
+		validation.Field(&b.ServerAddr, validation.Required))
 }
 
 // UnMarshalBindFromReader unmarshal
