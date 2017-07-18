@@ -160,17 +160,19 @@ func (a *Analysis) AddRecentCount(key string, secs int) {
 	timer := time.NewTicker(time.Duration(secs) * time.Second)
 
 	a.taskRunner.RunCancelableTask(func(ctx context.Context) {
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			log.Infof("stop: analysis stopped, key=<%s> secs=<%d>",
-				key,
-				secs)
-		case <-timer.C:
-			p, ok := a.points[key]
+		for {
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				log.Infof("stop: analysis stopped, key=<%s> secs=<%d>",
+					key,
+					secs)
+			case <-timer.C:
+				p, ok := a.points[key]
 
-			if ok {
-				recently.record(p)
+				if ok {
+					recently.record(p)
+				}
 			}
 		}
 	})
