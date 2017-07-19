@@ -66,10 +66,16 @@ func (s *Server) createCluster() echo.HandlerFunc {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := s.store.SaveCluster(cluster)
-			if nil != err {
+			err := cluster.Validate()
+			if err != nil {
 				errstr = err.Error()
 				code = CodeError
+			} else {
+				err := s.store.SaveCluster(cluster)
+				if nil != err {
+					errstr = err.Error()
+					code = CodeError
+				}
 			}
 		}
 
@@ -91,10 +97,16 @@ func (s *Server) updateCluster() echo.HandlerFunc {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := s.store.UpdateCluster(cluster)
-			if nil != err {
+			err := cluster.Validate()
+			if err != nil {
 				errstr = err.Error()
 				code = CodeError
+			} else {
+				err := s.store.UpdateCluster(cluster)
+				if nil != err {
+					errstr = err.Error()
+					code = CodeError
+				}
 			}
 		}
 

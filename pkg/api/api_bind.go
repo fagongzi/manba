@@ -23,10 +23,16 @@ func (s *Server) createBind() echo.HandlerFunc {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := s.store.SaveBind(bind)
-			if nil != err {
+			err := bind.Validate()
+			if err != nil {
 				errstr = err.Error()
 				code = CodeError
+			} else {
+				err := s.store.SaveBind(bind)
+				if nil != err {
+					errstr = err.Error()
+					code = CodeError
+				}
 			}
 		}
 

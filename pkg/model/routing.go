@@ -12,6 +12,7 @@ import (
 
 	"github.com/brettlangdon/forge"
 	"github.com/fagongzi/goetty"
+	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/valyala/fasthttp"
 )
 
@@ -72,6 +73,15 @@ type RoutingItem struct {
 	sourceValueFun func(req *fasthttp.Request) string
 	opFun          func(srvValue string) bool
 	targetValue    string
+}
+
+// Validate validate the model
+func (r *Routing) Validate() error {
+	return validation.ValidateStruct(r,
+		validation.Field(&r.ClusterName, validation.Required),
+		validation.Field(&r.ID, validation.Required),
+		validation.Field(&r.Cfg, validation.Required),
+		validation.Field(&r.URL, validation.Required))
 }
 
 // Routing routing

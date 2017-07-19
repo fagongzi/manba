@@ -46,10 +46,16 @@ func (s *Server) createRouting() echo.HandlerFunc {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := s.store.SaveRouting(routing)
-			if nil != err {
+			err := routing.Validate()
+			if err != nil {
 				errstr = err.Error()
 				code = CodeError
+			} else {
+				err := s.store.SaveRouting(routing)
+				if nil != err {
+					errstr = err.Error()
+					code = CodeError
+				}
 			}
 		}
 

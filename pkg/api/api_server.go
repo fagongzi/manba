@@ -66,10 +66,16 @@ func (s *Server) updateServer() echo.HandlerFunc {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := s.store.UpdateServer(svr)
-			if nil != err {
+			err := svr.Validate()
+			if err != nil {
 				errstr = err.Error()
 				code = CodeError
+			} else {
+				err := s.store.UpdateServer(svr)
+				if nil != err {
+					errstr = err.Error()
+					code = CodeError
+				}
 			}
 		}
 
@@ -91,10 +97,16 @@ func (s *Server) createServer() echo.HandlerFunc {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := s.store.SaveServer(svr)
-			if nil != err {
+			err := svr.Validate()
+			if err != nil {
 				errstr = err.Error()
 				code = CodeError
+			} else {
+				err := s.store.SaveServer(svr)
+				if nil != err {
+					errstr = err.Error()
+					code = CodeError
+				}
 			}
 		}
 

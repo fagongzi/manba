@@ -68,11 +68,18 @@ func (s *Server) createAPI() echo.HandlerFunc {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := s.store.SaveAPI(api)
-			if nil != err {
+			err := api.Validate()
+			if err != nil {
 				errstr = err.Error()
 				code = CodeError
+			} else {
+				err = s.store.SaveAPI(api)
+				if nil != err {
+					errstr = err.Error()
+					code = CodeError
+				}
 			}
+
 		}
 
 		return c.JSON(http.StatusOK, &Result{
@@ -93,10 +100,16 @@ func (s *Server) updateAPI() echo.HandlerFunc {
 			errstr = err.Error()
 			code = CodeError
 		} else {
-			err := s.store.UpdateAPI(api)
-			if nil != err {
+			err := api.Validate()
+			if err != nil {
 				errstr = err.Error()
 				code = CodeError
+			} else {
+				err := s.store.UpdateAPI(api)
+				if nil != err {
+					errstr = err.Error()
+					code = CodeError
+				}
 			}
 		}
 
