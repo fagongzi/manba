@@ -419,7 +419,7 @@ func (s *consulStore) doPutRouting(routing *Routing, et EvtType) error {
 }
 
 func (s *consulStore) GetRoutings() ([]*Routing, error) {
-	pairs, _, err := s.client.KV().List(s.apisDir, nil)
+	pairs, _, err := s.client.KV().List(s.routingsDir, nil)
 
 	if nil != err {
 		return nil, err
