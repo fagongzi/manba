@@ -27,8 +27,8 @@ func unmarshalAnalysisPointFromReader(r io.Reader) (*AnalysisPoint, error) {
 }
 
 func (s *Server) initAPIOfAnalysis() {
-	s.api.GET("/api/analysis/:proxy/:server/:secs", s.listAnalysis())
-	s.api.POST("/api/analysis", s.createAnalysis())
+	s.api.GET("/api/v1/analysis/:proxy/:server/:secs", s.listAnalysis())
+	s.api.POST("/api/v1/analysis", s.createAnalysis())
 }
 
 func (s *Server) listAnalysis() echo.HandlerFunc {

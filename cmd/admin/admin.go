@@ -11,17 +11,6 @@ import (
 	"github.com/fagongzi/log"
 )
 
-var (
-	addr         = flag.String("addr", ":8080", "listen addr.(e.g. ip:port)")
-	registryAddr = flag.String("registry-addr", "etcd://127.0.0.1:2379", "registry address")
-	prefix       = flag.String("prefix", "/gateway", "node prefix.")
-)
-
-var (
-	userName = flag.String("user", "admin", "admin user name")
-	pwd      = flag.String("pwd", "admin", "admin user pwd")
-)
-
 func main() {
 	flag.Parse()
 

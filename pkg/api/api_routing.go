@@ -8,8 +8,8 @@ import (
 )
 
 func (s *Server) initAPIOfRoutings() {
-	s.api.POST("/api/routings", s.createRouting())
-	s.api.GET("/api/routings", s.listRoutings())
+	s.api.POST("/api/v1/routings", s.createRouting())
+	s.api.GET("/api/v1/routings", s.listRoutings())
 }
 
 func (s *Server) listRoutings() echo.HandlerFunc {

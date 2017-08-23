@@ -76,7 +76,7 @@ func TestEtcdWatchNewServer(t *testing.T) {
 		CheckDuration:             checkDuration,
 		CheckTimeout:              checkTimeout,
 		MaxQPS:                    1500,
-		HalfToOpenSeconds:         10,
+		CloseToHalfSeconds:        10,
 		HalfTrafficRate:           10,
 		OpenToCloseCollectSeconds: 1,
 		OpenToCloseFailureRate:    100,
@@ -188,7 +188,7 @@ func TestEtcdWatchUpdateServer(t *testing.T) {
 		CheckDuration:             checkDuration,
 		CheckTimeout:              checkTimeout * 2,
 		MaxQPS:                    3000,
-		HalfToOpenSeconds:         100,
+		CloseToHalfSeconds:        100,
 		HalfTrafficRate:           30,
 		OpenToCloseCollectSeconds: 1,
 		OpenToCloseFailureRate:    100,
@@ -210,8 +210,8 @@ func TestEtcdWatchUpdateServer(t *testing.T) {
 		return
 	}
 
-	if svr.HalfToOpenSeconds != server.HalfToOpenSeconds {
-		t.Errorf("HalfToOpen expect:<%d>, acture:<%d>. ", server.HalfToOpenSeconds, svr.HalfToOpenSeconds)
+	if svr.CloseToHalfSeconds != server.CloseToHalfSeconds {
+		t.Errorf("HalfToOpen expect:<%d>, acture:<%d>. ", server.CloseToHalfSeconds, svr.CloseToHalfSeconds)
 		return
 	}
 

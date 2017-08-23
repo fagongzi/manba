@@ -159,7 +159,7 @@ func (c *proxyContext) ChangeCircuitStatusToClose() {
 
 	log.Warnf("filter: circuit server <%s> change to close", server.Addr)
 
-	c.rt.GetTimeWheel().AddWithID(time.Second*time.Duration(server.HalfToOpenSeconds), getKey(server.Addr), c.changeCircuitStatusToHalf)
+	c.rt.GetTimeWheel().AddWithID(time.Second*time.Duration(server.CloseToHalfSeconds), getKey(server.Addr), c.changeCircuitStatusToHalf)
 
 	server.UnLock()
 }

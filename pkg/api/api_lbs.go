@@ -8,7 +8,7 @@ import (
 )
 
 func (s *Server) initAPIOfLBS() {
-	s.api.GET("/api/lbs", s.listLBS())
+	s.api.GET("/api/v1/lbs", s.listLBS())
 }
 
 func (s *Server) listLBS() echo.HandlerFunc {

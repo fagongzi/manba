@@ -79,12 +79,13 @@ func (s *Server) doStop() {
 func (s *Server) initHTTPServer() {
 	s.api.Use(mw.Logger())
 	s.api.Use(mw.Recover())
-	s.api.Use(mw.BasicAuth(func(inputUser string, inputPwd string) bool {
-		if inputUser == s.cfg.User && s.cfg.Pwd == inputPwd {
-			return true
-		}
-		return false
-	}))
+	s.api.Use(mw.CORS())
+	// s.api.Use(mw.BasicAuth(func(inputUser string, inputPwd string) bool {
+	// 	if inputUser == s.cfg.User && s.cfg.Pwd == inputPwd {
+	// 		return true
+	// 	}
+	// 	return false
+	// }))
 
 	s.initAPI()
 }

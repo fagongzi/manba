@@ -4,7 +4,7 @@ import "flag"
 
 var (
 	addr         = flag.String("addr", ":8080", "listen addr of api server")
-	registryAddr = flag.String("registry-addr", "ectd://127.0.0.1:2379", "registry address")
+	registryAddr = flag.String("registry-addr", "etcd://127.0.0.1:2379", "registry address")
 	prefix       = flag.String("prefix", "/gateway", "node prefix.")
 	user         = flag.String("user", "admin", "admin user name")
 	pwd          = flag.String("pwd", "admin", "admin user pwd")

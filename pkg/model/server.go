@@ -49,9 +49,8 @@ func (s *Server) Validate() error {
 		validation.Field(&s.CheckPath, validation.Required),
 		validation.Field(&s.CheckDuration, validation.Required),
 		validation.Field(&s.CheckTimeout, validation.Required),
-		validation.Field(&s.Status, validation.Required),
 		validation.Field(&s.MaxQPS, validation.Required),
-		validation.Field(&s.HalfToOpenSeconds, validation.Required),
+		validation.Field(&s.CloseToHalfSeconds, validation.Required),
 		validation.Field(&s.HalfTrafficRate, validation.Required, validation.Max(100)),
 		validation.Field(&s.HalfToOpenSucceedRate, validation.Required, validation.Max(100)),
 		validation.Field(&s.OpenToCloseFailureRate, validation.Required, validation.Max(100)),
@@ -80,7 +79,7 @@ type Server struct {
 
 	// MaxQPS the backend server max qps support
 	MaxQPS                    int `json:"maxQPS,omitempty"`
-	HalfToOpenSeconds         int `json:"halfToOpenSeconds,omitempty"`
+	CloseToHalfSeconds        int `json:"closeToHalfSeconds,omitempty"`
 	HalfTrafficRate           int `json:"halfTrafficRate,omitempty"`
 	HalfToOpenSucceedRate     int `json:"halfToOpenSucceedRate,omitempty"`
 	HalfToOpenCollectSeconds  int `json:"halfToOpenCollectSeconds,omitempty"`
@@ -172,7 +171,7 @@ func (s *Server) updateFrom(svr *Server) {
 	}
 
 	s.MaxQPS = svr.MaxQPS
-	s.HalfToOpenSeconds = svr.HalfToOpenSeconds
+	s.CloseToHalfSeconds = svr.CloseToHalfSeconds
 	s.HalfTrafficRate = svr.HalfTrafficRate
 	s.HalfToOpenCollectSeconds = svr.HalfToOpenCollectSeconds
 	s.HalfToOpenSucceedRate = svr.HalfToOpenSucceedRate

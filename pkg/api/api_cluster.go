@@ -8,11 +8,11 @@ import (
 )
 
 func (s *Server) initAPIOfClusters() {
-	s.api.POST("/api/clusters", s.createCluster())
-	s.api.DELETE("/api/clusters/:id", s.deleteCluster())
-	s.api.PUT("/api/clusters/:id", s.updateCluster())
-	s.api.GET("/api/clusters/:id", s.getCluster())
-	s.api.GET("/api/clusters", s.listClusters())
+	s.api.POST("/api/v1/clusters", s.createCluster())
+	s.api.DELETE("/api/v1/clusters/:id", s.deleteCluster())
+	s.api.PUT("/api/v1/clusters/:id", s.updateCluster())
+	s.api.GET("/api/v1/clusters/:id", s.getCluster())
+	s.api.GET("/api/v1/clusters", s.listClusters())
 }
 
 func (s *Server) listClusters() echo.HandlerFunc {

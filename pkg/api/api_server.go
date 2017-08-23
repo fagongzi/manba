@@ -8,11 +8,11 @@ import (
 )
 
 func (s *Server) initAPIOfServers() {
-	s.api.POST("/api/servers", s.createServer())
-	s.api.DELETE("/api/servers/:id", s.deleteServer())
-	s.api.PUT("/api/servers/:id", s.updateServer())
-	s.api.GET("/api/servers", s.listServers())
-	s.api.GET("/api/servers/:id", s.getServer())
+	s.api.POST("/api/v1/servers", s.createServer())
+	s.api.DELETE("/api/v1/servers/:id", s.deleteServer())
+	s.api.PUT("/api/v1/servers/:id", s.updateServer())
+	s.api.GET("/api/v1/servers", s.listServers())
+	s.api.GET("/api/v1/servers/:id", s.getServer())
 }
 
 func (s *Server) listServers() echo.HandlerFunc {

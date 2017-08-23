@@ -29,8 +29,8 @@ func unmarshal(r io.Reader) (*LogLevel, error) {
 }
 
 func (s *Server) initAPIOfProxies() {
-	s.api.GET("/api/proxies", s.listProxies())
-	s.api.PUT("/api/proxies", s.updateLogLevel())
+	s.api.GET("/api/v1/proxies", s.listProxies())
+	s.api.PUT("/api/v1/proxies", s.updateLogLevel())
 }
 
 func (s *Server) listProxies() echo.HandlerFunc {

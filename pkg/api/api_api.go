@@ -9,11 +9,11 @@ import (
 )
 
 func (s *Server) initAPIOfAPIs() {
-	s.api.POST("/api/apis", s.createAPI())
-	s.api.DELETE("/api/apis/:url", s.deleteAPI())
-	s.api.PUT("/api/apis/:url", s.updateAPI())
-	s.api.GET("/api/apis", s.listAPIs())
-	s.api.GET("/api/apis/:url", s.getAPI())
+	s.api.POST("/api/v1/apis", s.createAPI())
+	s.api.DELETE("/api/v1/apis/:url", s.deleteAPI())
+	s.api.PUT("/api/v1/apis/:url", s.updateAPI())
+	s.api.GET("/api/v1/apis", s.listAPIs())
+	s.api.GET("/api/v1/apis/:url", s.getAPI())
 }
 
 func (s *Server) listAPIs() echo.HandlerFunc {
