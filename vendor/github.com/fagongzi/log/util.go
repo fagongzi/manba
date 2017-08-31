@@ -22,12 +22,12 @@ func InitLog() {
 		flag.Parse()
 	}
 
-	CrashLog(*crashLog)
 	SetHighlighting(false)
 	SetLevelByString(*logLevel)
 	if "" != *logFile {
 		SetRotateByHour()
 		SetOutputByName(*logFile)
+		CrashLog(*crashLog)
 	}
 
 	if !DebugEnabled() {

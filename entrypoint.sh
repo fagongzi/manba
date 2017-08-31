@@ -9,7 +9,7 @@ start_admin() {
 }
 
 start_proxy() {
-    ./proxy --config ./config_etcd.json
+    ./proxy --cfg ./config_etcd.json --log-level=$GATEWAY_LOG_LEVEL
 }
 
 start_etcd

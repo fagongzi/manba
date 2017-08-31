@@ -128,15 +128,15 @@ func (p *Proxy) startRPC() error {
 			}
 
 			conn, err := p.rpcListener.Accept()
-			if p.isStopped() {
-				conn.Close()
-				return
-			}
-
 			if err != nil {
 				log.Errorf("rpc: accept new conn failed, errors:\n%+v",
 					err)
 				continue
+			}
+
+			if p.isStopped() {
+				conn.Close()
+				return
 			}
 
 			go server.ServeConn(conn)
@@ -154,6 +154,7 @@ func (p *Proxy) listenToStop() {
 func (p *Proxy) doStop() {
 	p.stopOnce.Do(func() {
 		defer p.stopWG.Done()
+		p.setStopped()
 		p.stopRPC()
 		p.taskRunner.Stop()
 	})

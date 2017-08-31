@@ -52,7 +52,7 @@
 		},
 		{
 			"ImportPath": "github.com/fagongzi/log",
-			"Rev": "6797921ff7b7b7ca44e0cd5a95a44fb609cb69f1"
+			"Rev": "9a647df25e0e4ba3d967bd8a16b871e8c7e7eb6c"
 		},
 		{
 			"ImportPath": "github.com/fagongzi/util/atomic",
