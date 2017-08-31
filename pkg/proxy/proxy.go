@@ -134,11 +134,10 @@ func (p *Proxy) startRPC() error {
 				continue
 			}
 
-                        if p.isStopped() {
-                                conn.Close()
-                                return
-                        }
-
+			if p.isStopped() {
+				conn.Close()
+				return
+			}
 
 			go server.ServeConn(conn)
 		}
@@ -156,7 +155,7 @@ func (p *Proxy) doStop() {
 	p.stopOnce.Do(func() {
 		defer p.stopWG.Done()
 		p.setStopped()
-                p.stopRPC()
+		p.stopRPC()
 		p.taskRunner.Stop()
 	})
 }

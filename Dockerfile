@@ -24,6 +24,8 @@ RUN cd /go/src/github.com/fagongzi/gateway/cmd/proxy \
 COPY ./entrypoint.sh /app/gateway
 RUN chmod +x /app/gateway/entrypoint.sh
 
+ENV GATEWAY_LOG_LEVEL=info
+
 EXPOSE 80
 EXPOSE 8080
 EXPOSE 8081
