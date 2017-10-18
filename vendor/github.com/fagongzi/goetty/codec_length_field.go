@@ -33,26 +33,22 @@ func (decoder IntLengthFieldBasedDecoder) Decode(in *ByteBuf) (bool, interface{}
 	readable := in.Readable()
 
 	minFrameLength := decoder.initialBytesToStrip + decoder.lengthFieldOffset + FieldLength
-
 	if readable < minFrameLength {
 		return false, nil, nil
 	}
 
 	length, err := in.PeekInt(decoder.initialBytesToStrip + decoder.lengthFieldOffset)
-
 	if err != nil {
 		return true, nil, err
 	}
 
 	skip := minFrameLength + decoder.lengthAdjustment
 	minFrameLength += length
-
 	if readable < minFrameLength {
 		return false, nil, nil
 	}
 
 	in.Skip(skip)
 	in.MarkN(length)
-
 	return decoder.base.Decode(in)
 }

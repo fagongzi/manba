@@ -81,7 +81,7 @@ type RouteTable struct {
 
 	store Store
 
-	tw *goetty.HashedTimeWheel
+	tw *goetty.TimeoutWheel
 
 	evtChan        chan *Server
 	watchStopCh    chan bool
@@ -92,7 +92,7 @@ type RouteTable struct {
 
 // NewRouteTable create a new RouteTable
 func NewRouteTable(cnf *conf.Conf, store Store, taskRunner *task.Runner) *RouteTable {
-	tw := goetty.NewHashedTimeWheel(time.Second, 60, 3)
+	tw := goetty.NewTimeoutWheel(goetty.WithTickInterval(time.Second))
 	tw.Start()
 
 	rt := &RouteTable{
@@ -258,7 +258,6 @@ func (r *RouteTable) DeleteServer(serverAddr string) error {
 	// TODO: delete apis
 
 	svr.stopCheck()
-	r.removeFromCheck(svr)
 
 	binded, _ := r.mapping[svr.Addr]
 	delete(r.mapping, svr.Addr)
@@ -510,7 +509,7 @@ func (r *RouteTable) GetAnalysis() *Analysis {
 }
 
 // GetTimeWheel return time wheel
-func (r *RouteTable) GetTimeWheel() *goetty.HashedTimeWheel {
+func (r *RouteTable) GetTimeWheel() *goetty.TimeoutWheel {
 	return r.tw
 }
 
@@ -707,10 +706,6 @@ func (r *RouteTable) loadAPIs() {
 	}
 }
 
-func (r *RouteTable) removeFromCheck(svr *Server) {
-	r.tw.Cancel(svr.Addr)
-}
-
 func (r *RouteTable) addToCheck(svr *Server) {
 	if svr.check() {
 		svr.changeTo(Up)
@@ -729,11 +724,15 @@ func (r *RouteTable) addToCheck(svr *Server) {
 		}
 	}
 
-	r.tw.AddWithID(time.Duration(svr.useCheckDuration)*time.Second, svr.Addr, r.check)
+	r.tw.Schedule(time.Duration(svr.useCheckDuration)*time.Second, r.check, svr.Addr)
 }
 
-func (r *RouteTable) check(addr string) {
-	svr, _ := r.svrs[addr]
+func (r *RouteTable) check(arg interface{}) {
+	addr := arg.(string)
+	svr, ok := r.svrs[addr]
+	if !ok {
+		return
+	}
 
 	if !svr.checkStopped {
 		r.addToCheck(svr)

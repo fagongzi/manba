@@ -159,7 +159,7 @@ func (c *proxyContext) ChangeCircuitStatusToClose() {
 
 	log.Warnf("filter: circuit server <%s> change to close", server.Addr)
 
-	c.rt.GetTimeWheel().AddWithID(time.Second*time.Duration(server.CloseToHalfSeconds), getKey(server.Addr), c.changeCircuitStatusToHalf)
+	c.rt.GetTimeWheel().Schedule(time.Second*time.Duration(server.CloseToHalfSeconds), c.changeCircuitStatusToHalf, getKey(server.Addr))
 
 	server.UnLock()
 }
@@ -181,8 +181,8 @@ func (c *proxyContext) ChangeCircuitStatusToOpen() {
 	server.UnLock()
 }
 
-func (c *proxyContext) changeCircuitStatusToHalf(key string) {
-	addr := getAddr(key)
+func (c *proxyContext) changeCircuitStatusToHalf(key interface{}) {
+	addr := getAddr(key.(string))
 	server := c.rt.GetServer(addr)
 
 	if nil != server {

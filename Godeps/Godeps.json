@@ -48,7 +48,7 @@
 		},
 		{
 			"ImportPath": "github.com/fagongzi/goetty",
-			"Rev": "8f7c55a2515da7377de4dc5ca88aba9b5a5b6c7f"
+			"Rev": "602f15cc4dffb29af69e75cacab9eb0ce86570e6"
 		},
 		{
 			"ImportPath": "github.com/fagongzi/log",

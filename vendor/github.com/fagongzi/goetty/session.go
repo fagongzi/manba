@@ -1,9 +1,18 @@
 package goetty
 
 import (
+	"errors"
+	"hash/crc32"
 	"net"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
+)
+
+var (
+	// ErrConnectServerSide error for can't connect to client at server side
+	ErrConnectServerSide = errors.New("can't connect to client at server side")
 )
 
 // IOSession session
@@ -11,29 +20,39 @@ type IOSession interface {
 	ID() interface{}
 	Hash() int
 	Close() error
+	IsConnected() bool
+	Connect() (bool, error)
 	Read() (interface{}, error)
 	ReadTimeout(timeout time.Duration) (interface{}, error)
 	Write(msg interface{}) error
+	InBuf() *ByteBuf
 	OutBuf() *ByteBuf
 	WriteOutBuf() error
 	SetAttr(key string, value interface{})
 	GetAttr(key string) interface{}
 	RemoteAddr() string
+	RemoteIP() string
 }
 
 type clientIOSession struct {
-	id   interface{}
-	conn net.Conn
-	svr  *Server
-
 	sync.RWMutex
-	attrs map[string]interface{}
+
+	id  interface{}
+	svr *Server
+
+	conn   net.Conn
+	closed int32
 
 	in  *ByteBuf
 	out *ByteBuf
+
+	attrs map[string]interface{}
 }
 
 func newClientIOSession(id interface{}, conn net.Conn, svr *Server) IOSession {
+	conn.(*net.TCPConn).SetNoDelay(true)
+	conn.(*net.TCPConn).SetLinger(0)
+
 	return &clientIOSession{
 		id:    id,
 		conn:  conn,
@@ -42,6 +61,14 @@ func newClientIOSession(id interface{}, conn net.Conn, svr *Server) IOSession {
 		in:    NewByteBuf(svr.readBufSize),
 		out:   NewByteBuf(svr.writeBufSize),
 	}
+}
+
+func (s *clientIOSession) Connect() (bool, error) {
+	return false, ErrConnectServerSide
+}
+
+func (s *clientIOSession) IsConnected() bool {
+	return nil != s.conn && atomic.LoadInt32(&s.closed) == 0
 }
 
 // Read read a msg, block until read msg or get a error
@@ -56,18 +83,15 @@ func (s *clientIOSession) ReadTimeout(timeout time.Duration) (interface{}, error
 	var complete bool
 
 	for {
-		if 0 != timeout {
-			s.conn.SetReadDeadline(time.Now().Add(timeout))
+		if s.in.Readable() > 0 {
+			complete, msg, err = s.svr.decoder.Decode(s.in)
+
+			if !complete && err == nil {
+				complete, msg, err = s.readFromConn(timeout)
+			}
+		} else {
+			complete, msg, err = s.readFromConn(timeout)
 		}
-
-		_, err = s.in.ReadFrom(s.conn)
-
-		if err != nil {
-			s.in.Clear()
-			return nil, err
-		}
-
-		complete, msg, err = s.svr.decoder.Decode(s.in)
 
 		if nil != err {
 			s.in.Clear()
@@ -97,6 +121,11 @@ func (s *clientIOSession) Write(msg interface{}) error {
 	return s.WriteOutBuf()
 }
 
+// InBuf returns internal bytebuf that used for read from server
+func (s *clientIOSession) InBuf() *ByteBuf {
+	return s.in
+}
+
 // OutBuf returns internal bytebuf that used for write to client
 func (s *clientIOSession) OutBuf() *ByteBuf {
 	return s.out
@@ -104,16 +133,24 @@ func (s *clientIOSession) OutBuf() *ByteBuf {
 
 // WriteOutBuf writes bytes that in the internal bytebuf
 func (s *clientIOSession) WriteOutBuf() error {
-	_, bytes, _ := s.out.ReadAll()
+	buf := s.out
 
-	n, err := s.conn.Write(bytes)
+	var n int
+	var err error
+	s.RLock()
+	if s.IsConnected() {
+		n, err = s.conn.Write(buf.buf[buf.readerIndex:buf.writerIndex])
+	} else {
+		err = ErrIllegalState
+	}
+	s.RUnlock()
 
 	if err != nil {
 		s.out.Clear()
 		return err
 	}
 
-	if n != len(bytes) {
+	if n != buf.Readable() {
 		s.out.Clear()
 		return ErrWrite
 	}
@@ -124,7 +161,20 @@ func (s *clientIOSession) WriteOutBuf() error {
 
 // Close close
 func (s *clientIOSession) Close() error {
-	return s.conn.Close()
+	s.Lock()
+	s.closed = 1
+
+	if s.conn == nil {
+		return nil
+	}
+
+	err := s.conn.Close()
+	s.conn = nil
+	s.in.Release()
+	s.out.Release()
+	s.Unlock()
+
+	return err
 }
 
 // ID get id
@@ -161,13 +211,37 @@ func (s *clientIOSession) RemoteAddr() string {
 	return ""
 }
 
+// RemoteIP return remote ip address
+func (s *clientIOSession) RemoteIP() string {
+	addr := s.RemoteAddr()
+	if addr == "" {
+		return ""
+	}
+
+	return strings.Split(addr, ":")[0]
+}
+
+func (s *clientIOSession) readFromConn(timeout time.Duration) (bool, interface{}, error) {
+	if 0 != timeout {
+		s.conn.SetReadDeadline(time.Now().Add(timeout))
+	}
+
+	_, err := s.in.ReadFrom(s.conn)
+
+	if err != nil {
+		return false, nil, err
+	}
+
+	return s.svr.decoder.Decode(s.in)
+}
+
 func getHash(id interface{}) int {
 	if v, ok := id.(int64); ok {
 		return int(v)
 	} else if v, ok := id.(int); ok {
 		return v
 	} else if v, ok := id.(string); ok {
-		return hashCode(v)
+		return int(crc32.ChecksumIEEE([]byte(v)))
 	}
 
 	return 0
