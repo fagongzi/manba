@@ -729,6 +729,10 @@ func (r *RouteTable) addToCheck(svr *Server) {
 		}
 	}
 
+	if svr.useCheckDuration > r.cnf.MaxServerCheckSec {
+		svr.useCheckDuration = r.cnf.MaxServerCheckSec
+	}
+
 	r.tw.AddWithID(time.Duration(svr.useCheckDuration)*time.Second, svr.Addr, r.check)
 }
 

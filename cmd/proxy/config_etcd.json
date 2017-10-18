@@ -32,6 +32,7 @@
             "name": "validation"
         }
     ],
+    "maxServerCheckSec": 60,
     "maxConns": 512,
     "maxConnDuration": 10,
     "maxIdleConnDuration": 10,
