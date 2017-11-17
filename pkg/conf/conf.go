@@ -17,6 +17,8 @@ type Conf struct {
 
 	Filers []*FilterSpec `json:"filers"`
 
+	// MaxServerCheckSec max check server interval seconds
+	MaxServerCheckSec int `json:"maxServerCheckSec"`
 	// Maximum number of connections which may be established to server
 	MaxConns int `json:"maxConns"`
 	// MaxConnDuration Keep-alive connections are closed after this duration.
