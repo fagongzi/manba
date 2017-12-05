@@ -4,12 +4,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fagongzi/gateway/pkg/conf"
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/goetty"
-	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/task"
 	"github.com/valyala/fasthttp"
 )
@@ -41,7 +39,7 @@ func (dn *dispathNode) rewiteURL(req *fasthttp.Request) string {
 type dispatcher struct {
 	sync.RWMutex
 
-	cnf         *conf.Conf
+	cnf         *Cfg
 	binds       map[string]*model.Bind
 	clusters    map[string]*clusterRuntime
 	servers     map[string]*serverRuntime
@@ -58,7 +56,7 @@ type dispatcher struct {
 	taskRunner  *task.Runner
 }
 
-func newRouteTable(cnf *conf.Conf, db store.Store, taskRunner *task.Runner) *dispatcher {
+func newRouteTable(cnf *Cfg, db store.Store, taskRunner *task.Runner) *dispatcher {
 	tw := goetty.NewTimeoutWheel(goetty.WithTickInterval(time.Second))
 	tw.Start()
 
@@ -108,31 +106,6 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) []*dispathNode {
 	return dispathes
 }
 
-func (r *dispatcher) addAnalysis(svr *serverRuntime) {
-	r.analysiser.AddRecentCount(svr.meta.ID, time.Second)
-	cb := svr.meta.CircuitBreaker
-	if cb != nil {
-		r.analysiser.AddRecentCount(svr.meta.ID, cb.OpenToClose)
-		r.analysiser.AddRecentCount(svr.meta.ID, cb.HalfToOpen)
-	} else {
-		// TODO: remove analysiser recent
-	}
-}
-
-func (r *dispatcher) doUnBind(svr *serverRuntime, cluster *clusterRuntime, withLock bool) {
-	if binded, ok := r.mapping[svr.meta.ID]; ok {
-		delete(binded, cluster.meta.ID)
-		log.Infof("meta: bind <%s,%s> stored removed",
-			cluster.meta.ID,
-			svr.meta.ID)
-		if withLock {
-			cluster.remove(svr.meta.ID)
-		} else {
-			cluster.doRemove(svr.meta.ID)
-		}
-	}
-}
-
 func (r *dispatcher) selectClusterByRouting(req *fasthttp.Request, src *clusterRuntime) *clusterRuntime {
 	targetCluster := src
 
@@ -147,11 +120,7 @@ func (r *dispatcher) selectClusterByRouting(req *fasthttp.Request, src *clusterR
 }
 
 func (r *dispatcher) selectServer(req *fasthttp.Request, cluster *clusterRuntime) *serverRuntime {
-	return r.doSelectServer(req, cluster)
-}
-
-func (r *dispatcher) doSelectServer(req *fasthttp.Request, cluster *clusterRuntime) *serverRuntime {
-	addr := cluster.selectServer(req)
-	svr, _ := r.servers[addr]
+	id := cluster.selectServer(req)
+	svr, _ := r.servers[id]
 	return svr
 }

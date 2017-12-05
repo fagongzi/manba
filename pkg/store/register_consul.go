@@ -32,10 +32,10 @@ func (s *consulStore) Registry(proxyInfo *model.ProxyInfo) error {
 }
 
 func (s *consulStore) doRegistry(proxyInfo *model.ProxyInfo) {
-	proxyInfo.Conf.Addr = convertIP(proxyInfo.Conf.Addr)
-	proxyInfo.Conf.MgrAddr = convertIP(proxyInfo.Conf.MgrAddr)
+	proxyInfo.Addr = convertIP(proxyInfo.Addr)
+	proxyInfo.AddrRPC = convertIP(proxyInfo.AddrRPC)
 
-	key := fmt.Sprintf("%s/%s", s.proxiesDir, proxyInfo.Conf.Addr)
+	key := fmt.Sprintf("%s/%s", s.proxiesDir, proxyInfo.Addr)
 	_, err := s.client.KV().Put(&api.KVPair{
 		Key:   key,
 		Value: []byte(fjson.MustMarshal(proxyInfo)),

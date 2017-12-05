@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"errors"
+	"time"
 
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/fagongzi/gateway/pkg/store"
@@ -321,10 +322,10 @@ func (r *dispatcher) updateServer(meta *model.Server) error {
 		return errServerNotFound
 	}
 
-	rt.updateMeta(meta, func() {
-		r.addAnalysis(rt)
-		r.addToCheck(rt)
-	})
+	rt.updateMeta(meta)
+
+	r.addAnalysis(rt)
+	r.addToCheck(rt)
 
 	log.Infof("server <%s> updated, data <%s>",
 		meta.ID,
@@ -356,6 +357,17 @@ func (r *dispatcher) removeServer(id string) error {
 		svr.meta.ID)
 
 	return nil
+}
+
+func (r *dispatcher) addAnalysis(svr *serverRuntime) {
+	r.analysiser.AddRecentCount(svr.meta.ID, time.Second)
+	cb := svr.meta.CircuitBreaker
+	if cb != nil {
+		r.analysiser.AddRecentCount(svr.meta.ID, cb.OpenToClose)
+		r.analysiser.AddRecentCount(svr.meta.ID, cb.HalfToOpen)
+	} else {
+		// TODO: remove analysiser recent
+	}
 }
 
 func (r *dispatcher) addCluster(cluster *model.Cluster) error {
@@ -403,7 +415,7 @@ func (r *dispatcher) removeCluster(id string) error {
 	// TODO: check API node loose cluster
 	cluster.foreach(func(id string) {
 		if svr, ok := r.servers[id]; ok {
-			r.doUnBind(svr, cluster, false)
+			r.doRemoveBind(svr, cluster)
 		}
 	})
 
@@ -474,11 +486,18 @@ func (r *dispatcher) removeBind(id string) error {
 	}
 
 	delete(r.binds, id)
-	r.doUnBind(svr, cluster, true)
+	r.doRemoveBind(svr, cluster)
 
 	log.Infof("bind <%s,%s> removed",
 		bind.ClusterID,
 		bind.ServerID)
 
 	return nil
+}
+
+func (r *dispatcher) doRemoveBind(svr *serverRuntime, cluster *clusterRuntime) {
+	if binded, ok := r.mapping[svr.meta.ID]; ok {
+		delete(binded, cluster.meta.ID)
+		cluster.remove(svr.meta.ID)
+	}
 }

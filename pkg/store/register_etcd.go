@@ -32,10 +32,10 @@ func (e *EtcdStore) Registry(proxyInfo *model.ProxyInfo) error {
 }
 
 func (e *EtcdStore) doRegistry(proxyInfo *model.ProxyInfo) {
-	proxyInfo.Conf.Addr = convertIP(proxyInfo.Conf.Addr)
-	proxyInfo.Conf.MgrAddr = convertIP(proxyInfo.Conf.MgrAddr)
+	proxyInfo.Addr = convertIP(proxyInfo.Addr)
+	proxyInfo.AddrRPC = convertIP(proxyInfo.AddrRPC)
 
-	key := fmt.Sprintf("%s/%s", e.proxiesDir, proxyInfo.Conf.Addr)
+	key := fmt.Sprintf("%s/%s", e.proxiesDir, proxyInfo.Addr)
 	err := e.putTTL(key, string(fjson.MustMarshal(proxyInfo)), TTL)
 
 	if err != nil {

@@ -5,7 +5,6 @@ import (
 	"plugin"
 	"strings"
 
-	"github.com/fagongzi/gateway/pkg/conf"
 	"github.com/fagongzi/gateway/pkg/filter"
 )
 
@@ -35,7 +34,7 @@ const (
 	FilterValidation = "VALIDATION"
 )
 
-func newFilter(filterSpec *conf.FilterSpec) (filter.Filter, error) {
+func newFilter(filterSpec *FilterSpec) (filter.Filter, error) {
 	if filterSpec.External {
 		return newExternalFilter(filterSpec)
 	}
@@ -66,7 +65,7 @@ func newFilter(filterSpec *conf.FilterSpec) (filter.Filter, error) {
 	}
 }
 
-func newExternalFilter(filterSpec *conf.FilterSpec) (filter.Filter, error) {
+func newExternalFilter(filterSpec *FilterSpec) (filter.Filter, error) {
 	p, err := plugin.Open(filterSpec.ExternalPluginFile)
 	if err != nil {
 		return nil, err

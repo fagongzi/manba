@@ -3,7 +3,6 @@ package proxy
 import (
 	"container/list"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/fagongzi/gateway/pkg/lb"
@@ -15,16 +14,14 @@ import (
 )
 
 type clusterRuntime struct {
-	sync.RWMutex
-
-	meta model.Cluster
+	meta *model.Cluster
 	svrs *list.List
 	lb   lb.LoadBalance
 }
 
 func newClusterRuntime(meta *model.Cluster) *clusterRuntime {
 	rt := &clusterRuntime{
-		meta: *meta,
+		meta: meta,
 		svrs: list.New(),
 		lb:   lb.NewLoadBalance(meta.LbName),
 	}
@@ -33,16 +30,11 @@ func newClusterRuntime(meta *model.Cluster) *clusterRuntime {
 }
 
 func (c *clusterRuntime) updateMeta(meta *model.Cluster) {
-	c.Lock()
-	c.meta = *meta
+	c.meta = meta
 	c.lb = lb.NewLoadBalance(meta.LbName)
-	c.Unlock()
 }
 
 func (c *clusterRuntime) foreach(do func(string)) {
-	c.Lock()
-	defer c.Unlock()
-
 	for iter := c.svrs.Back(); iter != nil; iter = iter.Prev() {
 		addr, _ := iter.Value.(string)
 		do(addr)
@@ -50,21 +42,11 @@ func (c *clusterRuntime) foreach(do func(string)) {
 }
 
 func (c *clusterRuntime) remove(id string) {
-	c.Lock()
-	defer c.Unlock()
-
-	c.doRemove(id)
-}
-
-func (c *clusterRuntime) doRemove(id string) {
 	collection.Remove(c.svrs, id)
-	log.Infof("runtime: remove <%s, %s> succ.", c.meta.ID, id)
+	log.Infof("cluster <%s> remove server <%s> succ.", c.meta.ID, id)
 }
 
 func (c *clusterRuntime) add(id string) {
-	c.Lock()
-	defer c.Unlock()
-
 	if collection.IndexOf(c.svrs, id) >= 0 {
 		log.Warnf("bind <%s,%s> already created.", c.meta.ID, id)
 		return
@@ -75,28 +57,21 @@ func (c *clusterRuntime) add(id string) {
 }
 
 func (c *clusterRuntime) selectServer(req *fasthttp.Request) string {
-	c.RLock()
-
 	index := c.lb.Select(req, c.svrs)
 	if 0 > index {
-		c.RUnlock()
 		return ""
 	}
 
 	e := collection.Get(c.svrs, index)
 	if nil == e {
-		c.RUnlock()
 		return ""
 	}
 
-	s, _ := e.Value.(string)
-	c.RUnlock()
-	return s
+	id, _ := e.Value.(string)
+	return id
 }
 
 type serverRuntime struct {
-	sync.RWMutex
-
 	meta             *model.Server
 	tw               *goetty.TimeoutWheel
 	status           model.Status
@@ -117,19 +92,12 @@ func newServerRuntime(meta *model.Server, tw *goetty.TimeoutWheel) *serverRuntim
 	return rt
 }
 
-func (s *serverRuntime) updateMeta(meta *model.Server, cb func()) {
-	s.Lock()
+func (s *serverRuntime) updateMeta(meta *model.Server) {
 	s.meta = meta
-	cb()
-	s.Unlock()
 }
 
 func (s *serverRuntime) getCheckURL() string {
-	s.RLock()
-	v := fmt.Sprintf("%s://%s%s", s.meta.Schema, s.meta.Addr, s.meta.HeathCheck.Path)
-	s.RUnlock()
-
-	return v
+	return fmt.Sprintf("%s://%s%s", s.meta.Schema, s.meta.Addr, s.meta.HeathCheck.Path)
 }
 
 func (s *serverRuntime) fail() {
@@ -152,46 +120,34 @@ func (s *serverRuntime) statusChanged() bool {
 }
 
 func (s *serverRuntime) isCircuitStatus(target model.Circuit) bool {
-	s.RLock()
-	v := s.circuit == target
-	s.RUnlock()
-	return v
+	return s.circuit == target
 }
 
 func (s *serverRuntime) circuitToClose() {
-	s.Lock()
 	if s.meta.CircuitBreaker == nil ||
 		s.circuit == model.CircuitClose {
-		s.Unlock()
 		return
 	}
 
 	s.circuit = model.CircuitClose
 	log.Warnf("server <%s> change to close", s.meta.ID)
-
 	s.tw.Schedule(s.meta.CircuitBreaker.CloseToHalf, s.circuitToHalf, nil)
-	s.Unlock()
 }
 
 func (s *serverRuntime) circuitToOpen() {
-	s.Lock()
 	if s.meta.CircuitBreaker == nil ||
 		s.circuit == model.CircuitOpen ||
 		s.circuit != model.CircuitHalf {
-		s.Unlock()
 		return
 	}
 
 	s.circuit = model.CircuitOpen
 	log.Infof("server <%s> change to open", s.meta.ID)
-	s.Unlock()
 }
 
 func (s *serverRuntime) circuitToHalf(arg interface{}) {
-	s.Lock()
 	if s.meta.CircuitBreaker != nil {
 		s.circuit = model.CircuitOpen
 		log.Warnf("server <%s> change to half", s.meta.ID)
 	}
-	s.Unlock()
 }

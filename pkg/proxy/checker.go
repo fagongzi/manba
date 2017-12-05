@@ -10,7 +10,7 @@ import (
 )
 
 func (r *dispatcher) readyToHeathChecker() {
-	for i := 0; i < r.cnf.HeathCheckWorkerCount; i++ {
+	for i := 0; i < r.cnf.Option.LimitCountHeathCheckWorker; i++ {
 		r.taskRunner.RunCancelableTask(func(ctx context.Context) {
 			for {
 				select {
@@ -38,8 +38,8 @@ func (r *dispatcher) heathCheckTimeout(arg interface{}) {
 }
 
 func (r *dispatcher) check(id string) {
-	r.RLock()
-	defer r.RUnlock()
+	r.Lock()
+	defer r.Unlock()
 
 	svr, ok := r.servers[id]
 	if !ok {
@@ -47,8 +47,8 @@ func (r *dispatcher) check(id string) {
 	}
 
 	defer func() {
-		if svr.useCheckDuration > r.cnf.MaxServerCheckDuration {
-			svr.useCheckDuration = r.cnf.MaxServerCheckDuration
+		if svr.useCheckDuration > r.cnf.Option.LimitIntervalHeathCheck {
+			svr.useCheckDuration = r.cnf.Option.LimitIntervalHeathCheck
 		}
 		r.tw.Schedule(svr.useCheckDuration, r.heathCheckTimeout, id)
 	}()

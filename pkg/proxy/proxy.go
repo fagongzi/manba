@@ -11,7 +11,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/fagongzi/gateway/pkg/conf"
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
@@ -44,7 +43,7 @@ var (
 type Proxy struct {
 	sync.RWMutex
 
-	cnf        *conf.Conf
+	cnf        *Cfg
 	filters    *list.List
 	client     *util.FastHTTPClient
 	dispatcher *dispatcher
@@ -59,17 +58,17 @@ type Proxy struct {
 }
 
 // NewProxy create a new proxy
-func NewProxy(cnf *conf.Conf) *Proxy {
+func NewProxy(cnf *Cfg) *Proxy {
 	p := &Proxy{
 		client: util.NewFastHTTPClientOption(&util.HTTPOption{
-			MaxConnDuration:     time.Duration(cnf.MaxConnDuration) * time.Second,
-			MaxIdleConnDuration: time.Duration(cnf.MaxIdleConnDuration) * time.Second,
-			ReadTimeout:         time.Duration(cnf.ReadTimeout) * time.Second,
-			WriteTimeout:        time.Duration(cnf.WriteTimeout) * time.Second,
-			MaxResponseBodySize: cnf.MaxResponseBodySize,
-			WriteBufferSize:     cnf.WriteBufferSize,
-			ReadBufferSize:      cnf.ReadBufferSize,
-			MaxConns:            cnf.MaxConns,
+			MaxConnDuration:     cnf.Option.LimitDurationConnKeepalive,
+			MaxIdleConnDuration: cnf.Option.LimitDurationConnIdle,
+			ReadTimeout:         cnf.Option.LimitTimeoutRead,
+			WriteTimeout:        cnf.Option.LimitTimeoutWrite,
+			MaxResponseBodySize: cnf.Option.LimitBytesBody,
+			WriteBufferSize:     cnf.Option.LimitBufferWrite,
+			ReadBufferSize:      cnf.Option.LimitBufferRead,
+			MaxConns:            cnf.Option.LimitCountConn,
 		}),
 		cnf:     cnf,
 		filters: list.New(),
@@ -89,7 +88,7 @@ func (p *Proxy) Start() {
 	err := p.startRPC()
 	if nil != err {
 		log.Fatalf("bootstrap: rpc start failed, addr=<%s> errors:\n%+v",
-			p.cnf.MgrAddr,
+			p.cnf.AddrRPC,
 			err)
 	}
 
@@ -114,7 +113,7 @@ func (p *Proxy) Stop() {
 }
 
 func (p *Proxy) startRPC() error {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", p.cnf.MgrAddr)
+	tcpAddr, err := net.ResolveTCPAddr("tcp", p.cnf.AddrRPC)
 
 	if err != nil {
 		return err
@@ -126,7 +125,7 @@ func (p *Proxy) startRPC() error {
 	}
 
 	log.Infof("rpc: listen at %s",
-		p.cnf.MgrAddr)
+		p.cnf.AddrRPC)
 	server := rpc.NewServer()
 	mgrService := newManager(p)
 	server.Register(mgrService)
@@ -193,7 +192,7 @@ func (p *Proxy) init() {
 }
 
 func (p *Proxy) initRouteTable() error {
-	store, err := store.GetStoreFrom(p.cnf.RegistryAddr, p.cnf.Prefix, p.runner)
+	store, err := store.GetStoreFrom(p.cnf.AddrStore, p.cnf.Namespace, p.runner)
 
 	if err != nil {
 		return err
@@ -202,7 +201,8 @@ func (p *Proxy) initRouteTable() error {
 	register, _ := store.(model.Register)
 
 	register.Registry(&model.ProxyInfo{
-		Conf: p.cnf,
+		Addr:    p.cnf.Addr,
+		AddrRPC: p.cnf.AddrRPC,
 	})
 
 	p.dispatcher = newRouteTable(p.cnf, store, p.runner)
