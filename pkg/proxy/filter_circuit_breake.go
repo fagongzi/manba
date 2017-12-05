@@ -44,15 +44,20 @@ func (f CircuitBreakeFilter) Name() string {
 
 // Pre execute before proxy
 func (f CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) {
+	cb := c.GetCircuitBreaker()
+	if cb == nil {
+		return f.BaseFilter.Pre(c)
+	}
+
 	if c.IsCircuitOpen() {
-		if f.getFailureRate(c) >= c.GetOpenToCloseFailureRate() {
+		if f.getFailureRate(c) >= cb.OpenToCloseRate {
 			c.ChangeCircuitStatusToClose()
 			return http.StatusServiceUnavailable, ErrCircuitClose
 		}
 
 		return http.StatusOK, nil
 	} else if c.IsCircuitHalf() {
-		if limitAllow(c.GetHalfTrafficRate()) {
+		if limitAllow(cb.HalfTrafficRate) {
 			return f.BaseFilter.Pre(c)
 		}
 
@@ -64,7 +69,12 @@ func (f CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) {
 
 // Post execute after proxy
 func (f CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error) {
-	if c.IsCircuitHalf() && f.getSucceedRate(c) >= c.GetHalfToOpenSucceedRate() {
+	cb := c.GetCircuitBreaker()
+	if cb == nil {
+		return f.BaseFilter.Pre(c)
+	}
+
+	if c.IsCircuitHalf() && f.getSucceedRate(c) >= cb.HalfToOpenRate {
 		c.ChangeCircuitStatusToOpen()
 	}
 
@@ -79,8 +89,8 @@ func (f CircuitBreakeFilter) PostErr(c filter.Context) {
 }
 
 func (f CircuitBreakeFilter) getFailureRate(c filter.Context) int {
-	failureCount := c.GetRecentlyRequestFailureCount(c.GetOpenToCloseCollectSeconds())
-	totalCount := c.GetRecentlyRequestCount(c.GetOpenToCloseCollectSeconds())
+	failureCount := c.GetAnalysis().GetRecentlyRequestFailureCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().OpenToClose)
+	totalCount := c.GetAnalysis().GetRecentlyRequestCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().OpenToClose)
 
 	if totalCount == 0 {
 		return -1
@@ -90,8 +100,8 @@ func (f CircuitBreakeFilter) getFailureRate(c filter.Context) int {
 }
 
 func (f CircuitBreakeFilter) getSucceedRate(c filter.Context) int {
-	succeedCount := c.GetRecentlyRequestSuccessedCount(c.GetOpenToCloseCollectSeconds())
-	totalCount := c.GetRecentlyRequestCount(c.GetOpenToCloseCollectSeconds())
+	succeedCount := c.GetAnalysis().GetRecentlyRequestSuccessedCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().OpenToClose)
+	totalCount := c.GetAnalysis().GetRecentlyRequestCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().OpenToClose)
 
 	if totalCount == 0 {
 		return 100

@@ -60,7 +60,8 @@ func (s *Server) createCluster() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		cluster, err := model.UnMarshalClusterFromReader(c.Request().Body())
+		cluster := &model.Cluster{}
+		err := readJSONFromReader(cluster, c.Request().Body)
 
 		if nil != err {
 			errstr = err.Error()
@@ -82,6 +83,7 @@ func (s *Server) createCluster() echo.HandlerFunc {
 		return c.JSON(http.StatusOK, &Result{
 			Code:  code,
 			Error: errstr,
+			Value: cluster.ID,
 		})
 	}
 }
@@ -91,7 +93,8 @@ func (s *Server) updateCluster() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		cluster, err := model.UnMarshalClusterFromReader(c.Request().Body())
+		cluster := &model.Cluster{}
+		err := readJSONFromReader(cluster, c.Request().Body)
 
 		if nil != err {
 			errstr = err.Error()

@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/fagongzi/gateway/pkg/model"
@@ -13,19 +11,6 @@ import (
 type LogLevel struct {
 	Addr  string `json:"addr"`
 	Level string `json:"level"`
-}
-
-func unmarshal(r io.Reader) (*LogLevel, error) {
-	v := &LogLevel{}
-
-	decoder := json.NewDecoder(r)
-	err := decoder.Decode(v)
-
-	if nil != err {
-		return nil, err
-	}
-
-	return v, nil
 }
 
 func (s *Server) initAPIOfProxies() {
@@ -59,7 +44,8 @@ func (s *Server) updateLogLevel() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		level, err := unmarshal(c.Request().Body())
+		level := &LogLevel{}
+		err := readJSONFromReader(level, c.Request().Body)
 
 		if nil != err {
 			errstr = err.Error()

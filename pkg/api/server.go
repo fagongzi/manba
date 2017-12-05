@@ -1,20 +1,22 @@
 package api
 
 import (
+	"io"
+	"io/ioutil"
 	"sync"
 
-	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/gateway/pkg/store"
+	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/task"
 	"github.com/labstack/echo"
-	sd "github.com/labstack/echo/engine/standard"
 	mw "github.com/labstack/echo/middleware"
 )
 
 // Server is the api server of gateway
 type Server struct {
 	cfg        *Cfg
-	store      model.Store
+	store      store.Store
 	taskRunner *task.Runner
 	api        *echo.Echo
 
@@ -27,7 +29,7 @@ type Server struct {
 // NewServer returns the api server
 func NewServer(cfg *Cfg) (*Server, error) {
 	taskRunner := task.NewRunner()
-	store, err := model.GetStoreFrom(cfg.RegistryAddr, cfg.Prefix, taskRunner)
+	store, err := store.GetStoreFrom(cfg.RegistryAddr, cfg.Prefix, taskRunner)
 	if err != nil {
 		return nil, err
 	}
@@ -49,8 +51,7 @@ func (s *Server) Start() {
 	go s.listenToStop()
 
 	log.Infof("bootstrap: api server start at <%s>", s.cfg.Addr)
-	httpSvr := sd.New(s.cfg.Addr)
-	s.api.Run(httpSvr)
+	s.api.Start(s.cfg.Addr)
 }
 
 // Stop stop the admin
@@ -80,12 +81,6 @@ func (s *Server) initHTTPServer() {
 	s.api.Use(mw.Logger())
 	s.api.Use(mw.Recover())
 	s.api.Use(mw.CORS())
-	// s.api.Use(mw.BasicAuth(func(inputUser string, inputPwd string) bool {
-	// 	if inputUser == s.cfg.User && s.cfg.Pwd == inputPwd {
-	// 		return true
-	// 	}
-	// 	return false
-	// }))
 
 	s.initAPI()
 }
@@ -99,4 +94,13 @@ func (s *Server) initAPI() {
 	s.initAPIOfBinds()
 	s.initAPIOfAPIs()
 	s.initAPIOfRoutings()
+}
+
+func readJSONFromReader(value interface{}, r io.ReadCloser) error {
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
+	}
+
+	return util.Unmarshal(value, data)
 }

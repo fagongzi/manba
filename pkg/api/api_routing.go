@@ -36,12 +36,8 @@ func (s *Server) createRouting() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		routing, err := model.UnMarshalRoutingFromReader(c.Request().Body())
-
-		if err == nil {
-			err = routing.Check()
-		}
-
+		routing := &model.Routing{}
+		err := readJSONFromReader(routing, c.Request().Body)
 		if nil != err {
 			errstr = err.Error()
 			code = CodeError

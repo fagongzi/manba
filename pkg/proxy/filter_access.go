@@ -1,8 +1,6 @@
 package proxy
 
 import (
-	"time"
-
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/log"
 )
@@ -24,7 +22,7 @@ func (f AccessFilter) Name() string {
 
 // Post execute after proxy
 func (f AccessFilter) Post(c filter.Context) (statusCode int, err error) {
-	cost := (c.GetStartAt() - c.GetEndAt())
+	cost := c.GetEndAt().Sub(c.GetStartAt())
 
 	log.Infof("filter: %s %s \"%s\" %d \"%s\" %s %s",
 		GetRealClientIP(c.GetOriginRequestCtx()),
@@ -33,7 +31,7 @@ func (f AccessFilter) Post(c filter.Context) (statusCode int, err error) {
 		c.GetProxyResponse().StatusCode(),
 		c.GetOriginRequestCtx().UserAgent(),
 		c.GetProxyServerAddr(),
-		time.Duration(cost))
+		cost)
 
 	return f.BaseFilter.Post(c)
 }

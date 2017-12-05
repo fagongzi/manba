@@ -1,69 +1,29 @@
 package model
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"strings"
-
+	"github.com/fagongzi/gateway/pkg/util"
 	validation "github.com/go-ozzo/ozzo-validation"
 )
 
 // Bind a bind server and cluster
 type Bind struct {
-	ClusterName string `json:"clusterName,omitempty"`
-	ServerAddr  string `json:"serverAddr,omitempty"`
+	ID        string `json:"id, omitempty"`
+	ClusterID string `json:"clusterID, omitempty"`
+	ServerID  string `json:"serverID, omitempty"`
 }
 
 // Validate validate the model
 func (b *Bind) Validate() error {
 	return validation.ValidateStruct(b,
-		validation.Field(&b.ClusterName, validation.Required),
-		validation.Field(&b.ServerAddr, validation.Required))
+		validation.Field(&b.ClusterID, validation.Required),
+		validation.Field(&b.ServerID, validation.Required))
 }
 
-// UnMarshalBindFromReader unmarshal
-func UnMarshalBindFromReader(r io.Reader) (*Bind, error) {
-	v := &Bind{}
-
-	decoder := json.NewDecoder(r)
-	err := decoder.Decode(v)
-
-	if nil != err {
-		return nil, err
+// Init init model
+func (b *Bind) Init() error {
+	if b.ID == "" {
+		b.ID = util.NewID()
 	}
 
-	return v, nil
-}
-
-// ToString return a desc string
-func (b *Bind) ToString() string {
-	return fmt.Sprintf("%s-%s", b.ServerAddr, b.ClusterName)
-}
-
-// UnMarshalBindFromString unmarshal
-func UnMarshalBindFromString(key string) *Bind {
-	info := strings.Split(key, "-")
-	return &Bind{
-		ServerAddr:  info[0],
-		ClusterName: info[1],
-	}
-}
-
-// Marshal marshal
-func (b *Bind) Marshal() []byte {
-	v, _ := json.Marshal(b)
-	return v
-}
-
-// UnMarshalBind unmarshal
-func UnMarshalBind(data []byte) *Bind {
-	v := &Bind{}
-	err := json.Unmarshal(data, v)
-
-	if err != nil {
-		return v
-	}
-
-	return v
+	return nil
 }

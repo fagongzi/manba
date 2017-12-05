@@ -2,11 +2,9 @@ package main
 
 import (
 	"flag"
-
 	"net/http"
 
 	"github.com/labstack/echo"
-	sd "github.com/labstack/echo/engine/standard"
 	mw "github.com/labstack/echo/middleware"
 )
 
@@ -47,7 +45,7 @@ func main() {
 	e.GET("/api/users/:userId/base", userBase())
 	e.GET("/api/users/:userId/account", userAccount())
 
-	e.Run(sd.New(*addr))
+	e.Start(*addr)
 }
 
 func check() echo.HandlerFunc {

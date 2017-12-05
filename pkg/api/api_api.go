@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/base64"
 	"net/http"
 
 	"github.com/fagongzi/gateway/pkg/model"
@@ -10,10 +9,10 @@ import (
 
 func (s *Server) initAPIOfAPIs() {
 	s.api.POST("/api/v1/apis", s.createAPI())
-	s.api.DELETE("/api/v1/apis/:url", s.deleteAPI())
-	s.api.PUT("/api/v1/apis/:url", s.updateAPI())
+	s.api.DELETE("/api/v1/apis/:id", s.deleteAPI())
+	s.api.PUT("/api/v1/apis/:id", s.updateAPI())
 	s.api.GET("/api/v1/apis", s.listAPIs())
-	s.api.GET("/api/v1/apis/:url", s.getAPI())
+	s.api.GET("/api/v1/apis/:id", s.getAPI())
 }
 
 func (s *Server) listAPIs() echo.HandlerFunc {
@@ -40,10 +39,7 @@ func (s *Server) getAPI() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		u, _ := base64.RawURLEncoding.DecodeString(c.Param("url"))
-		method := c.QueryParam("method")
-
-		api, err := s.store.GetAPI(string(u), method)
+		api, err := s.store.GetAPI(c.Param("id"))
 		if err != nil {
 			errstr = err.Error()
 			code = CodeError
@@ -62,7 +58,8 @@ func (s *Server) createAPI() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		api, err := model.UnMarshalAPIFromReader(c.Request().Body())
+		api := &model.API{}
+		err := readJSONFromReader(api, c.Request().Body)
 
 		if nil != err {
 			errstr = err.Error()
@@ -94,7 +91,8 @@ func (s *Server) updateAPI() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		api, err := model.UnMarshalAPIFromReader(c.Request().Body())
+		api := &model.API{}
+		err := readJSONFromReader(api, c.Request().Body)
 
 		if nil != err {
 			errstr = err.Error()
@@ -125,9 +123,7 @@ func (s *Server) deleteAPI() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		url, _ := base64.RawURLEncoding.DecodeString(c.Param("url"))
-		method := c.QueryParam("method")
-		err := s.store.DeleteAPI(string(url), method)
+		err := s.store.DeleteAPI(c.Param("id"))
 
 		if nil != err {
 			errstr = err.Error()

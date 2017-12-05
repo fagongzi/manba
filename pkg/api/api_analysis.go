@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 	"strconv"
 
@@ -15,15 +13,6 @@ type AnalysisPoint struct {
 	ProxyAddr  string `json:"proxyAddr,omitempty"`
 	ServerAddr string `json:"serverAddr,omitempty"`
 	Secs       int    `json:"secs,omitempty"`
-}
-
-func unmarshalAnalysisPointFromReader(r io.Reader) (*AnalysisPoint, error) {
-	v := &AnalysisPoint{}
-
-	decoder := json.NewDecoder(r)
-	err := decoder.Decode(v)
-
-	return v, err
 }
 
 func (s *Server) initAPIOfAnalysis() {
@@ -68,7 +57,8 @@ func (s *Server) createAnalysis() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		point, err := unmarshalAnalysisPointFromReader(c.Request().Body())
+		point := &AnalysisPoint{}
+		err := readJSONFromReader(point, c.Request().Body)
 
 		if nil != err {
 			errstr = err.Error()

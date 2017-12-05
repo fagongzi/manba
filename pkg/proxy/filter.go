@@ -1,14 +1,11 @@
 package proxy
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/gateway/pkg/model"
-	"github.com/fagongzi/log"
 	"github.com/valyala/fasthttp"
 )
 
@@ -47,59 +44,50 @@ func (f *Proxy) doPostErrFilters(c filter.Context) {
 	}
 }
 
-const (
-	// TimerPrefix timer prefix
-	TimerPrefix = "Circuit-"
-)
-
 type proxyContext struct {
-	startAt   int64
-	endAt     int64
-	result    *model.RouteResult
-	outerReq  *fasthttp.Request
-	originCtx *fasthttp.RequestCtx
-	rt        *model.RouteTable
+	startAt    time.Time
+	endAt      time.Time
+	result     *dispathNode
+	forwardReq *fasthttp.Request
+	originCtx  *fasthttp.RequestCtx
+	rt         *dispatcher
 }
 
-func newContext(rt *model.RouteTable, originCtx *fasthttp.RequestCtx, outerReq *fasthttp.Request, result *model.RouteResult) filter.Context {
+func newContext(rt *dispatcher, originCtx *fasthttp.RequestCtx, forwardReq *fasthttp.Request, result *dispathNode) filter.Context {
 	return &proxyContext{
-		result:    result,
-		originCtx: originCtx,
-		outerReq:  outerReq,
-		rt:        rt,
+		result:     result,
+		originCtx:  originCtx,
+		forwardReq: forwardReq,
+		rt:         rt,
+		startAt:    time.Now(),
 	}
 }
 
-func (c *proxyContext) GetStartAt() int64 {
+func (c *proxyContext) GetStartAt() time.Time {
 	return c.startAt
 }
 
-func (c *proxyContext) SetStartAt(startAt int64) {
-	c.startAt = startAt
-}
-
-func (c *proxyContext) GetEndAt() int64 {
+func (c *proxyContext) GetEndAt() time.Time {
 	return c.endAt
 }
-
-func (c *proxyContext) SetEndAt(endAt int64) {
+func (c *proxyContext) SetEndAt(endAt time.Time) {
 	c.endAt = endAt
 }
 
 func (c *proxyContext) GetProxyServerAddr() string {
-	return c.result.Svr.Addr
+	return c.result.dest.meta.Addr
 }
 
 func (c *proxyContext) GetProxyOuterRequest() *fasthttp.Request {
-	return c.outerReq
+	return c.forwardReq
 }
 
 func (c *proxyContext) GetProxyResponse() *fasthttp.Response {
-	return c.result.Res
+	return c.result.res
 }
 
 func (c *proxyContext) NeedMerge() bool {
-	return c.result.Merge
+	return c.result.merge
 }
 
 func (c *proxyContext) GetOriginRequestCtx() *fasthttp.RequestCtx {
@@ -107,126 +95,41 @@ func (c *proxyContext) GetOriginRequestCtx() *fasthttp.RequestCtx {
 }
 
 func (c *proxyContext) GetMaxQPS() int {
-	return c.result.Svr.MaxQPS
+	return c.result.dest.meta.MaxQPS
 }
 
 func (c *proxyContext) ValidateProxyOuterRequest() bool {
-	return c.result.Node.Validate(c.GetProxyOuterRequest())
+	return c.result.node.Validate(c.GetProxyOuterRequest())
 }
 
 func (c *proxyContext) InBlacklist(ip string) bool {
-	return c.result.API.AccessCheckBlacklist(ip)
+	return c.result.api.AccessCheckBlacklist(ip)
 }
 
 func (c *proxyContext) InWhitelist(ip string) bool {
-	return c.result.API.AccessCheckWhitelist(ip)
+	return c.result.api.AccessCheckWhitelist(ip)
+}
+
+func (c *proxyContext) GetCircuitBreaker() *model.CircuitBreaker {
+	return c.result.dest.meta.CircuitBreaker
 }
 
 func (c *proxyContext) IsCircuitOpen() bool {
-	return c.result.Svr.GetCircuit() == model.CircuitOpen
+	return c.result.dest.isCircuitStatus(model.CircuitOpen)
 }
 
 func (c *proxyContext) IsCircuitHalf() bool {
-	return c.result.Svr.GetCircuit() == model.CircuitHalf
-}
-
-func (c *proxyContext) GetOpenToCloseFailureRate() int {
-	return c.result.Svr.OpenToCloseFailureRate
-}
-func (c *proxyContext) GetOpenToCloseCollectSeconds() int {
-	return c.result.Svr.OpenToCloseCollectSeconds
-}
-
-func (c *proxyContext) GetHalfTrafficRate() int {
-	return c.result.Svr.HalfTrafficRate
-}
-
-func (c *proxyContext) GetHalfToOpenSucceedRate() int {
-	return c.result.Svr.HalfToOpenSucceedRate
+	return c.result.dest.isCircuitStatus(model.CircuitHalf)
 }
 
 func (c *proxyContext) ChangeCircuitStatusToClose() {
-	server := c.result.Svr
-
-	server.Lock()
-
-	if server.GetCircuit() == model.CircuitClose {
-		server.UnLock()
-		return
-	}
-
-	server.CloseCircuit()
-
-	log.Warnf("filter: circuit server <%s> change to close", server.Addr)
-
-	c.rt.GetTimeWheel().Schedule(time.Second*time.Duration(server.CloseToHalfSeconds), c.changeCircuitStatusToHalf, getKey(server.Addr))
-
-	server.UnLock()
+	c.result.dest.circuitToClose()
 }
 
 func (c *proxyContext) ChangeCircuitStatusToOpen() {
-	server := c.result.Svr
-
-	server.Lock()
-
-	if server.GetCircuit() == model.CircuitOpen || server.GetCircuit() != model.CircuitHalf {
-		server.UnLock()
-		return
-	}
-
-	server.OpenCircuit()
-
-	log.Warnf("filter: circuit server <%s> change to open", server.Addr)
-
-	server.UnLock()
+	c.result.dest.circuitToOpen()
 }
 
-func (c *proxyContext) changeCircuitStatusToHalf(key interface{}) {
-	addr := getAddr(key.(string))
-	server := c.rt.GetServer(addr)
-
-	if nil != server {
-		server.Lock()
-		server.HalfCircuit()
-		server.UnLock()
-
-		log.Warnf("filter: circuit server <%s> change to half", server.Addr)
-	}
-}
-
-func (c *proxyContext) RecordMetricsForRequest() {
-	c.rt.GetAnalysis().Request(c.GetProxyServerAddr())
-}
-
-func (c *proxyContext) RecordMetricsForResponse() {
-	c.rt.GetAnalysis().Response(c.GetProxyServerAddr(), c.endAt-c.startAt)
-}
-
-func (c *proxyContext) RecordMetricsForFailure() {
-	c.rt.GetAnalysis().Failure(c.GetProxyServerAddr())
-}
-
-func (c *proxyContext) RecordMetricsForReject() {
-	c.rt.GetAnalysis().Reject(c.GetProxyServerAddr())
-}
-
-func (c *proxyContext) GetRecentlyRequestCount(sec int) int {
-	return c.rt.GetAnalysis().GetRecentlyRequestCount(c.GetProxyServerAddr(), sec)
-}
-
-func (c *proxyContext) GetRecentlyRequestSuccessedCount(sec int) int {
-	return c.rt.GetAnalysis().GetRecentlyRequestSuccessedCount(c.GetProxyServerAddr(), sec)
-}
-
-func (c *proxyContext) GetRecentlyRequestFailureCount(sec int) int {
-	return c.rt.GetAnalysis().GetRecentlyRequestFailureCount(c.GetProxyServerAddr(), sec)
-}
-
-func getKey(addr string) string {
-	return fmt.Sprintf("%s%s", TimerPrefix, addr)
-}
-
-func getAddr(key string) string {
-	info := strings.Split(key, "-")
-	return info[1]
+func (c *proxyContext) GetAnalysis() *model.Analysis {
+	return c.rt.analysiser
 }

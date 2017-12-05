@@ -60,7 +60,8 @@ func (s *Server) updateServer() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		svr, err := model.UnMarshalServerFromReader(c.Request().Body())
+		svr := &model.Server{}
+		err := readJSONFromReader(svr, c.Request().Body)
 
 		if nil != err {
 			errstr = err.Error()
@@ -91,7 +92,8 @@ func (s *Server) createServer() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		svr, err := model.UnMarshalServerFromReader(c.Request().Body())
+		svr := &model.Server{}
+		err := readJSONFromReader(svr, c.Request().Body)
 
 		if nil != err {
 			errstr = err.Error()

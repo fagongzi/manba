@@ -7,28 +7,20 @@ import (
 )
 
 const (
-	// FromQueryString query string
-	FromQueryString = iota
-	// FromForm form data
-	FromForm
-)
-
-const (
 	// Regexp reg type
 	Regexp = iota
 )
 
 // ValidationRule validation rule
 type ValidationRule struct {
-	Type       int    `json:"type, omitempty"`
-	Expression string `json:"expression, omitempty"`
+	Type       int    `json:"type"`
+	Expression string `json:"expression"`
 	pattern    *regexp.Regexp
 }
 
 // Validation validate rule
 type Validation struct {
-	Attr     string            `json:"attr, omitempty"`
-	GetFrom  int               `json:"getFrom, omitempty"`
+	Attr     *Attr             `json:"attr"`
 	Required bool              `json:"required, omitempty"`
 	Rules    []*ValidationRule `json:"rules, omitempty"`
 }
@@ -46,14 +38,8 @@ func (v Validation) ParseValidation() {
 	}
 }
 
-func (v Validation) getValue(req *fasthttp.Request) []byte {
-	if v.GetFrom == FromQueryString {
-		return req.URI().QueryArgs().Peek(v.Attr)
-	} else if v.GetFrom == FromForm {
-		return req.PostArgs().Peek(v.Attr)
-	}
-
-	return nil
+func (v Validation) getValue(req *fasthttp.Request) string {
+	return v.Attr.Value(req)
 }
 
 func (v Validation) validate(req *fasthttp.Request) bool {
@@ -63,14 +49,14 @@ func (v Validation) validate(req *fasthttp.Request) bool {
 
 	value := v.getValue(req)
 
-	if nil == value && v.Required {
+	if "" == value && v.Required {
 		return false
-	} else if nil == value && !v.Required {
+	} else if "" == value && !v.Required {
 		return true
 	}
 
 	for _, rule := range v.Rules {
-		if !rule.validate(value) {
+		if !rule.validate([]byte(value)) {
 			return false
 		}
 	}

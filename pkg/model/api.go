@@ -1,20 +1,12 @@
 package model
 
 import (
-	"encoding/json"
-	"io"
 	"regexp"
 	"strings"
 
+	"github.com/fagongzi/gateway/pkg/util"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/valyala/fasthttp"
-)
-
-const (
-	// APIStatusDown down status
-	APIStatusDown = iota
-	//APIStatusUp up status
-	APIStatusUp
 )
 
 // Node api dispatch node
@@ -73,11 +65,12 @@ type MockHeader struct {
 
 // API a api define
 type API struct {
+	ID            string         `json:"id, omitempty"`
 	Name          string         `json:"name, omitempty"`
 	URL           string         `json:"url"`
 	Method        string         `json:"method"`
 	Domain        string         `json:"domain, omitempty"`
-	Status        int            `json:"status, omitempty"`
+	Status        Status         `json:"status, omitempty"`
 	AccessControl *AccessControl `json:"accessControl, omitempty"`
 	Mock          *Mock          `json:"mock, omitempty"`
 	Nodes         []*Node        `json:"nodes"`
@@ -90,35 +83,9 @@ func (a *API) Validate() error {
 	return validation.ValidateStruct(a,
 		validation.Field(&a.Name, validation.Required),
 		validation.Field(&a.URL, validation.Required),
-		validation.Field(&a.Method, validation.Required),
-		validation.Field(&a.Status, validation.In(APIStatusDown, APIStatusUp)),
+		validation.Field(&a.Method, validation.Required, validation.In("*", "GET", "PUT", "POST", "DELETE")),
+		validation.Field(&a.Status, validation.In(Down, Up)),
 		validation.Field(&a.Nodes, validation.Length(1, 0)))
-}
-
-// UnMarshalAPI unmarshal
-func UnMarshalAPI(data []byte) *API {
-	v := &API{}
-	json.Unmarshal(data, v)
-
-	if v.Mock != nil && v.Mock.Value == "" {
-		v.Mock = nil
-	}
-
-	return v
-}
-
-// UnMarshalAPIFromReader unmarshal from reader
-func UnMarshalAPIFromReader(r io.Reader) (*API, error) {
-	v := &API{}
-
-	decoder := json.NewDecoder(r)
-	err := decoder.Decode(v)
-
-	if v.Mock != nil && v.Mock.Value == "" {
-		v.Mock = nil
-	}
-
-	return v, err
 }
 
 // NewAPI create a API
@@ -129,8 +96,16 @@ func NewAPI(url string, nodes []*Node) *API {
 	}
 }
 
-// Parse parse
-func (a *API) Parse() {
+// Init init
+func (a *API) Init() error {
+	if a.Mock != nil && a.Mock.Value == "" {
+		a.Mock = nil
+	}
+
+	if a.ID == "" {
+		a.ID = util.NewID()
+	}
+
 	a.Pattern = regexp.MustCompile(a.URL)
 	for _, n := range a.Nodes {
 		if nil != n.Validations {
@@ -164,6 +139,8 @@ func (a *API) Parse() {
 			}
 		}
 	}
+
+	return nil
 }
 
 // AccessCheckBlacklist check blacklist
@@ -219,13 +196,8 @@ func (a *API) RenderMock(ctx *fasthttp.RequestCtx) {
 	ctx.WriteString(a.Mock.Value)
 }
 
-// Marshal marshal
-func (a *API) Marshal() []byte {
-	v, _ := json.Marshal(a)
-	return v
-}
-
-func (a *API) getNodeURL(req *fasthttp.Request, node *Node) string {
+// RewriteURL returns URL of dispath node
+func (a *API) RewriteURL(req *fasthttp.Request, node *Node) string {
 	if node.Rewrite == "" {
 		return ""
 	}
@@ -233,12 +205,13 @@ func (a *API) getNodeURL(req *fasthttp.Request, node *Node) string {
 	return a.Pattern.ReplaceAllString(string(req.URI().RequestURI()), node.Rewrite)
 }
 
-func (a *API) matches(req *fasthttp.Request) bool {
+// Matches returns if the api matches this request
+func (a *API) Matches(req *fasthttp.Request) bool {
 	return a.isUp() && (a.isDomainMatches(req) || (a.isMethodMatches(req) && a.isURIMatches(req)))
 }
 
 func (a *API) isUp() bool {
-	return a.Status == APIStatusUp
+	return a.Status == Up
 }
 
 func (a *API) isMethodMatches(req *fasthttp.Request) bool {

@@ -1,8 +1,6 @@
 package api
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/fagongzi/gateway/pkg/model"
@@ -15,22 +13,9 @@ type Binds struct {
 	Servers []string `json:"servers"`
 }
 
-func unMarshalBindsFromReader(r io.Reader) (*Binds, error) {
-	v := &Binds{}
-
-	decoder := json.NewDecoder(r)
-	err := decoder.Decode(v)
-
-	if nil != err {
-		return nil, err
-	}
-
-	return v, nil
-}
-
 func (s *Server) initAPIOfBinds() {
 	s.api.POST("/api/v1/binds", s.createBind())
-	s.api.DELETE("/api/v1/binds", s.deleteBind())
+	s.api.DELETE("/api/v1/binds/:id", s.deleteBind())
 }
 
 func (s *Server) createBind() echo.HandlerFunc {
@@ -38,7 +23,8 @@ func (s *Server) createBind() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		binds, err := unMarshalBindsFromReader(c.Request().Body())
+		binds := &Binds{}
+		err := readJSONFromReader(binds, c.Request().Body)
 
 		if nil != err {
 			errstr = err.Error()
@@ -46,8 +32,8 @@ func (s *Server) createBind() echo.HandlerFunc {
 		} else {
 			for _, addr := range binds.Servers {
 				bind := &model.Bind{
-					ClusterName: binds.Target,
-					ServerAddr:  addr,
+					ClusterID: binds.Target,
+					ServerID:  addr,
 				}
 
 				err := bind.Validate()
@@ -78,17 +64,10 @@ func (s *Server) deleteBind() echo.HandlerFunc {
 		var errstr string
 		code := CodeSuccess
 
-		bind, err := model.UnMarshalBindFromReader(c.Request().Body())
-
+		err := s.store.UnBind(c.Param("id"))
 		if nil != err {
 			errstr = err.Error()
 			code = CodeError
-		} else {
-			err := s.store.UnBind(bind)
-			if nil != err {
-				errstr = err.Error()
-				code = CodeError
-			}
 		}
 
 		return c.JSON(http.StatusOK, &Result{

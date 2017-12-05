@@ -3,6 +3,7 @@ package proxy
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/log"
@@ -29,11 +30,11 @@ func (f RateLimitingFilter) Name() string {
 
 // Pre execute before proxy
 func (f RateLimitingFilter) Pre(c filter.Context) (statusCode int, err error) {
-	requestCounts := c.GetRecentlyRequestCount(1)
+	requestCounts := c.GetAnalysis().GetRecentlyRequestCount(c.GetProxyServerAddr(), time.Second)
 
 	if requestCounts >= c.GetMaxQPS() {
-		log.Warnf("filter: qps: %d, last 1 secs: %d", c.GetMaxQPS(), requestCounts)
-		c.RecordMetricsForReject()
+		log.Warnf("filter: server <%s> qps: %d, last 1 secs: %d", c.GetProxyServerAddr(), c.GetMaxQPS(), requestCounts)
+		c.GetAnalysis().Reject(c.GetProxyServerAddr())
 		return http.StatusServiceUnavailable, ErrTraffixLimited
 	}
 

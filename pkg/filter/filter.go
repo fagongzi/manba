@@ -1,49 +1,37 @@
 package filter
 
 import (
+	"time"
+
+	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/valyala/fasthttp"
 )
 
 // Context filter context
 type Context interface {
-	SetStartAt(startAt int64)
-	SetEndAt(endAt int64)
-	GetStartAt() int64
-	GetEndAt() int64
+	GetStartAt() time.Time
+	GetEndAt() time.Time
+	SetEndAt(time.Time)
 
 	GetProxyServerAddr() string
+	GetOriginRequestCtx() *fasthttp.RequestCtx
 	GetProxyOuterRequest() *fasthttp.Request
+	ValidateProxyOuterRequest() bool
 	GetProxyResponse() *fasthttp.Response
 	NeedMerge() bool
 
-	GetOriginRequestCtx() *fasthttp.RequestCtx
-
 	GetMaxQPS() int
 
-	ValidateProxyOuterRequest() bool
+	IsCircuitOpen() bool
+	IsCircuitHalf() bool
+	ChangeCircuitStatusToClose()
+	ChangeCircuitStatusToOpen()
+	GetCircuitBreaker() *model.CircuitBreaker
 
 	InBlacklist(ip string) bool
 	InWhitelist(ip string) bool
 
-	IsCircuitOpen() bool
-	IsCircuitHalf() bool
-
-	GetOpenToCloseFailureRate() int
-	GetHalfTrafficRate() int
-	GetHalfToOpenSucceedRate() int
-	GetOpenToCloseCollectSeconds() int
-
-	ChangeCircuitStatusToClose()
-	ChangeCircuitStatusToOpen()
-
-	RecordMetricsForRequest()
-	RecordMetricsForResponse()
-	RecordMetricsForFailure()
-	RecordMetricsForReject()
-
-	GetRecentlyRequestSuccessedCount(sec int) int
-	GetRecentlyRequestCount(sec int) int
-	GetRecentlyRequestFailureCount(sec int) int
+	GetAnalysis() *model.Analysis
 }
 
 // Filter filter interface

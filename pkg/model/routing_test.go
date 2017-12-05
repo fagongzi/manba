@@ -1,283 +1,264 @@
 package model
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/valyala/fasthttp"
 )
 
-func TestParse(t *testing.T) {
-	r, err := newRoutingItem("$header_abc_!= == abc== asd ")
+func TestMatch(t *testing.T) {
+	testRegCase(QueryString, t)
+	testRegCase(FormData, t)
+	testRegCase(JSONBody, t)
+	testRegCase(RequestHeader, t)
+	testRegCase(Cookie, t)
 
-	if err != nil {
-		t.Error("parse error.")
-	}
+	testNumberCase(QueryString, t)
+	testNumberCase(FormData, t)
+	testNumberCase(JSONBody, t)
+	testNumberCase(RequestHeader, t)
+	testNumberCase(Cookie, t)
 
-	if r.targetValue != "abc== asd" {
-		t.Error("value parse error.")
-	}
-
-	if r.attrName != "abc_!=" {
-		t.Error("attr parse error.")
-	}
+	testStringCase(QueryString, t)
+	testStringCase(FormData, t)
+	testStringCase(JSONBody, t)
+	testStringCase(RequestHeader, t)
+	testStringCase(Cookie, t)
 }
 
-func TestParseError(t *testing.T) {
-	_, err := newRoutingItem("$header_abc != abc")
+func testRegCase(src Source, t *testing.T) {
+	attr := "name"
+	value := "^[0-1]+$"
 
-	if err == nil {
-		t.Error("parse error.")
+	c := &Condition{
+		Attr: &Attr{
+			Name:   attr,
+			Source: src,
+		},
+		Op:    OpMatch,
+		Value: value,
 	}
+
+	assertTrue(c.Match(getTestReq(attr, "0", src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertTrue(c.Match(getTestReq(attr, "00", src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertFalse(c.Match(getTestReq(attr, "00a", src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertFalse(c.Match(getTestReq(attr, "aaa", src)), fmt.Sprintf("Match %v failed", c.Op), t)
 }
 
-func TestParseHeader(t *testing.T) {
-	r, err := newRoutingItem("$header_abc == abc")
+func testStringCase(src Source, t *testing.T) {
+	attr := "name"
+	value := "hello"
 
-	if err != nil {
-		t.Error("parse error.")
+	c := &Condition{
+		Attr: &Attr{
+			Name:   attr,
+			Source: src,
+		},
+		Op:    OpEQ,
+		Value: value,
 	}
 
+	assertTrue(c.Match(getTestReq(attr, value, src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertFalse(c.Match(getTestReq(attr, fmt.Sprintf("%s0", value), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+
+	c.Op = OpIn
+	assertTrue(c.Match(getTestReq(attr, value, src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertTrue(c.Match(getTestReq(attr, value[1:], src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertFalse(c.Match(getTestReq(attr, fmt.Sprintf("%s0", value), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+}
+
+func testNumberCase(src Source, t *testing.T) {
+	attr := "age"
+	value := 10
+
+	c := &Condition{
+		Attr: &Attr{
+			Name:   attr,
+			Source: src,
+		},
+		Op:    OpLT,
+		Value: fmt.Sprintf("%d", value),
+	}
+
+	assertTrue(c.Match(getTestReq(attr, fmt.Sprintf("%d", value-1), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertFalse(c.Match(getTestReq(attr, fmt.Sprintf("%d", value), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertFalse(c.Match(getTestReq(attr, fmt.Sprintf("%d", value+1), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+
+	c.Op = OpLE
+	assertTrue(c.Match(getTestReq(attr, fmt.Sprintf("%d", value-1), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertTrue(c.Match(getTestReq(attr, fmt.Sprintf("%d", value), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertFalse(c.Match(getTestReq(attr, fmt.Sprintf("%d", value+1), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+
+	c.Op = OpGT
+	assertFalse(c.Match(getTestReq(attr, fmt.Sprintf("%d", value-1), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertFalse(c.Match(getTestReq(attr, fmt.Sprintf("%d", value), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertTrue(c.Match(getTestReq(attr, fmt.Sprintf("%d", value+1), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+
+	c.Op = OpGE
+	assertFalse(c.Match(getTestReq(attr, fmt.Sprintf("%d", value-1), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertTrue(c.Match(getTestReq(attr, fmt.Sprintf("%d", value), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+	assertTrue(c.Match(getTestReq(attr, fmt.Sprintf("%d", value+1), src)), fmt.Sprintf("Match %v failed", c.Op), t)
+
+}
+
+func getTestReq(name string, value string, src Source) *fasthttp.Request {
 	req := &fasthttp.Request{}
-	req.SetRequestURI("/abc")
-	req.Header.Add("abc", "abc")
+	switch src {
+	case QueryString:
+		req.SetRequestURI(fmt.Sprintf("http://127.0.0.1:8080/path?%s=%s", name, value))
+	case FormData:
+		req.PostArgs().Add(name, value)
+	case JSONBody:
+		data := make(map[string]interface{})
+		data[name] = value
+		req.SetBody(util.MustMarshal(data))
+	case RequestHeader:
+		req.Header.Add(name, value)
+	case Cookie:
+		req.Header.SetCookie(name, value)
+	}
 
-	if r.sourceValueFun(req) != "abc" {
-		t.Error("parse header error")
+	return req
+}
+
+func assertTrue(value bool, msg string, t *testing.T) {
+	if !value {
+		t.Error(msg)
 	}
 }
 
-func TestParseCookie(t *testing.T) {
-	r, err := newRoutingItem("$cookie_abc == abc")
-
-	if err != nil {
-		t.Error("parse error.")
-	}
-
-	req := &fasthttp.Request{}
-	req.SetRequestURI("/abc")
-	req.Header.Add("cookie", "abc=abc")
-
-	if r.sourceValueFun(req) != "abc" {
-		t.Error("parse cookie error")
-	}
+func assertFalse(value bool, msg string, t *testing.T) {
+	assertTrue(!value, msg, t)
 }
 
-func TestParseQuery(t *testing.T) {
-	r, err := newRoutingItem("$query_abc == abc")
+// func TestMatchesLt(t *testing.T) {
+// 	r, err := newRoutingItem("$query_abc < 100")
 
-	if err != nil {
-		t.Error("parse error.")
-	}
+// 	if err != nil {
+// 		t.Error("parse error.")
+// 	}
 
-	req := &fasthttp.Request{}
-	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=abc")
+// 	req := &fasthttp.Request{}
+// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=1")
 
-	if r.sourceValueFun(req) != "abc" {
-		t.Error("parse cookie error")
-	}
-}
+// 	if !r.matches(req) {
+// 		t.Error("matches op lt error")
+// 	}
+// }
 
-func TestMatchesEq(t *testing.T) {
-	r, err := newRoutingItem("$query_abc == abc")
+// func TestMatchesLe(t *testing.T) {
+// 	r, err := newRoutingItem("$query_abc <= 100")
 
-	if err != nil {
-		t.Error("parse error.")
-	}
+// 	if err != nil {
+// 		t.Error("parse error.")
+// 	}
 
-	req := &fasthttp.Request{}
-	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=abc")
+// 	req := &fasthttp.Request{}
+// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=100")
 
-	if !r.matches(req) {
-		t.Error("matches op eq error")
-	}
-}
+// 	if !r.matches(req) {
+// 		t.Error("matches op le error")
+// 	}
+// }
 
-func TestMatchesLt(t *testing.T) {
-	r, err := newRoutingItem("$query_abc < 100")
+// func TestMatchesGt(t *testing.T) {
+// 	r, err := newRoutingItem("$query_abc > 100")
 
-	if err != nil {
-		t.Error("parse error.")
-	}
+// 	if err != nil {
+// 		t.Error("parse error.")
+// 	}
 
-	req := &fasthttp.Request{}
-	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=1")
+// 	req := &fasthttp.Request{}
+// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=101")
 
-	if !r.matches(req) {
-		t.Error("matches op lt error")
-	}
-}
+// 	if !r.matches(req) {
+// 		t.Error("matches op gt error")
+// 	}
+// }
 
-func TestMatchesLe(t *testing.T) {
-	r, err := newRoutingItem("$query_abc <= 100")
+// func TestMatchesGe(t *testing.T) {
+// 	r, err := newRoutingItem("$query_abc >= 100")
 
-	if err != nil {
-		t.Error("parse error.")
-	}
+// 	if err != nil {
+// 		t.Error("parse error.")
+// 	}
 
-	req := &fasthttp.Request{}
-	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=100")
+// 	req := &fasthttp.Request{}
+// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=100")
 
-	if !r.matches(req) {
-		t.Error("matches op le error")
-	}
-}
+// 	if !r.matches(req) {
+// 		t.Error("matches op ge error")
+// 	}
+// }
 
-func TestMatchesGt(t *testing.T) {
-	r, err := newRoutingItem("$query_abc > 100")
+// func TestMatchesIn(t *testing.T) {
+// 	r, err := newRoutingItem("$query_abc in 100")
 
-	if err != nil {
-		t.Error("parse error.")
-	}
+// 	if err != nil {
+// 		t.Error("parse error.")
+// 	}
 
-	req := &fasthttp.Request{}
-	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=101")
+// 	req := &fasthttp.Request{}
+// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=11001")
 
-	if !r.matches(req) {
-		t.Error("matches op gt error")
-	}
-}
+// 	if !r.matches(req) {
+// 		t.Error("matches op in error")
+// 	}
+// }
 
-func TestMatchesGe(t *testing.T) {
-	r, err := newRoutingItem("$query_abc >= 100")
+// func TestMatchesReg(t *testing.T) {
+// 	r, err := newRoutingItem("$query_abc ~ ^1100")
 
-	if err != nil {
-		t.Error("parse error.")
-	}
+// 	if err != nil {
+// 		t.Error("parse error.")
+// 	}
 
-	req := &fasthttp.Request{}
-	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=100")
+// 	req := &fasthttp.Request{}
+// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=11001a")
 
-	if !r.matches(req) {
-		t.Error("matches op ge error")
-	}
-}
+// 	if !r.matches(req) {
+// 		t.Error("matches op reg error")
+// 	}
+// }
 
-func TestMatchesIn(t *testing.T) {
-	r, err := newRoutingItem("$query_abc in 100")
+// func TestMatchesRouting(t *testing.T) {
+// 	data := `desc = "test";
+// 	deadline = 100;
+// 	rule = ["$query_abc == abc"];
+// 	`
 
-	if err != nil {
-		t.Error("parse error.")
-	}
+// 	r, err := NewRouting(data, "cluster", "/abc*")
 
-	req := &fasthttp.Request{}
-	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=11001")
+// 	if err != nil {
+// 		t.Error("parse error.")
+// 	}
 
-	if !r.matches(req) {
-		t.Error("matches op in error")
-	}
-}
+// 	req := &fasthttp.Request{}
+// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=abc")
 
-func TestMatchesReg(t *testing.T) {
-	r, err := newRoutingItem("$query_abc ~ ^1100")
+// 	if !r.Matches(req) {
+// 		t.Error("matches routing error")
+// 	}
+// }
 
-	if err != nil {
-		t.Error("parse error.")
-	}
+// func TestNotMatchesRouting(t *testing.T) {
+// 	data := `desc = "test";
+// 	deadline = 100;
+// 	rule = ["$query_abc == 10"];
+// 	`
 
-	req := &fasthttp.Request{}
-	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=11001a")
+// 	r, err := NewRouting(data, "cluster", "/abc*")
 
-	if !r.matches(req) {
-		t.Error("matches op reg error")
-	}
-}
+// 	if err != nil {
+// 		t.Error("parse error.")
+// 	}
 
-func TestMatchesRouting(t *testing.T) {
-	data := `desc = "test";
-	deadline = 100;
-	rule = ["$query_abc == abc"];
-	`
+// 	req := &fasthttp.Request{}
+// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=20")
 
-	r, err := NewRouting(data, "cluster", "/abc*")
-
-	if err != nil {
-		t.Error("parse error.")
-	}
-
-	req := &fasthttp.Request{}
-	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=abc")
-
-	if !r.Matches(req) {
-		t.Error("matches routing error")
-	}
-}
-
-func TestNotMatchesRouting(t *testing.T) {
-	data := `desc = "test";
-	deadline = 100;
-	rule = ["$query_abc == 10"];
-	`
-
-	r, err := NewRouting(data, "cluster", "/abc*")
-
-	if err != nil {
-		t.Error("parse error.")
-	}
-
-	req := &fasthttp.Request{}
-	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=20")
-
-	if r.Matches(req) {
-		t.Error("not matches routing error")
-	}
-}
-
-func TestMatchesRoutingAndLogic(t *testing.T) {
-	data := `desc = "test";
-	deadline = 100;
-	rule = ["$query_abc == 10", "$query_123 == 20"];
-	`
-	r, err := NewRouting(data, "cluster", "/abc*")
-
-	if err != nil {
-		t.Error("parse error.")
-	}
-
-	req := &fasthttp.Request{}
-	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=10&123=20")
-
-	if !r.Matches(req) {
-		t.Error("matches and error")
-	}
-}
-
-func TestNotMatchesRoutingAndLogic(t *testing.T) {
-	data := `desc = "test";
-	deadline = 100;
-	rule = ["$query_abc == 10","$query_123 == 20"];
-	`
-
-	r, err := NewRouting(data, "cluster", "/abc*")
-
-	if err != nil {
-		t.Error("parse error.")
-	}
-
-	req := &fasthttp.Request{}
-	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=10&123=30")
-
-	if r.Matches(req) {
-		t.Error("matches and error")
-	}
-}
-
-func TestMatchesRoutingAllLogic(t *testing.T) {
-	data := `desc = "test";
-	deadline = 100;
-	rule = ["$query_abc == 10","$query_123 == 20"];
-	or = ["$query_or1 == 30", "$query_or2 == 40"];
-	`
-
-	r, err := NewRouting(data, "cluster", "/abc*")
-
-	if err != nil {
-		t.Error("parse error.")
-	}
-
-	req := &fasthttp.Request{}
-	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=10&123=10&or2=40")
-
-	if !r.Matches(req) {
-		t.Error("matches and error")
-	}
-}
+// 	if r.Matches(req) {
+// 		t.Error("not matches routing error")
+// 	}
+// }
