@@ -7,9 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fagongzi/gateway/pkg/util"
+	"github.com/fagongzi/util/uuid"
 	validation "github.com/go-ozzo/ozzo-validation"
-
 	"github.com/valyala/fasthttp"
 )
 
@@ -168,7 +167,7 @@ func (r *Routing) Matches(req *fasthttp.Request) bool {
 // Init init
 func (r *Routing) Init() error {
 	if r.ID == "" {
-		r.ID = util.NewID()
+		r.ID = uuid.NewID()
 	}
 
 	r.rand = rand.New(rand.NewSource(time.Now().UnixNano()))

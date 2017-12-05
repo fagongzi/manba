@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/fagongzi/gateway/pkg/model"
-	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
+	fjson "github.com/fagongzi/util/json"
 	"github.com/hashicorp/consul/api"
 	"github.com/toolkits/net"
 )
@@ -38,7 +38,7 @@ func (s *consulStore) doRegistry(proxyInfo *model.ProxyInfo) {
 	key := fmt.Sprintf("%s/%s", s.proxiesDir, proxyInfo.Conf.Addr)
 	_, err := s.client.KV().Put(&api.KVPair{
 		Key:   key,
-		Value: []byte(util.MustMarshal(proxyInfo)),
+		Value: []byte(fjson.MustMarshal(proxyInfo)),
 	}, nil)
 
 	if err != nil {
@@ -60,7 +60,7 @@ func (s *consulStore) GetProxies() ([]*model.ProxyInfo, error) {
 
 	for _, pair := range pairs {
 		p := &model.ProxyInfo{}
-		util.MustUnmarshal(p, pair.Value)
+		fjson.MustUnmarshal(p, pair.Value)
 		values[i] = p
 		i++
 	}

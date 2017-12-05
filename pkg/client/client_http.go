@@ -7,6 +7,7 @@ import (
 	"github.com/fagongzi/gateway/pkg/api"
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/fagongzi/gateway/pkg/util"
+	fjson "github.com/fagongzi/util/json"
 	"github.com/valyala/fasthttp"
 )
 
@@ -57,7 +58,7 @@ func (c *httpAPIClient) GetCluster(id string) (*model.Cluster, error) {
 		return nil, err
 	}
 
-	err = json.Unmarshal(util.MustMarshal(data), result)
+	err = json.Unmarshal(fjson.MustMarshal(data), result)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +77,7 @@ func (c *httpAPIClient) GetClusters() ([]*model.Cluster, error) {
 		return nil, err
 	}
 
-	return result, json.Unmarshal(util.MustMarshal(data), &result)
+	return result, fjson.Unmarshal(&result, fjson.MustMarshal(data))
 }
 
 func (c *httpAPIClient) AddServer(server *model.Server) (string, error) {
@@ -120,7 +121,7 @@ func (c *httpAPIClient) do(path string, method string, data interface{}) (interf
 	}
 
 	result := &api.Result{}
-	err = util.Unmarshal(result, resp.Body())
+	err = fjson.Unmarshal(result, resp.Body())
 	if err != nil {
 		return nil, err
 	}

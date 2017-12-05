@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/fagongzi/gateway/pkg/util"
+	"github.com/fagongzi/util/uuid"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/valyala/fasthttp"
 )
@@ -103,7 +103,7 @@ func (a *API) Init() error {
 	}
 
 	if a.ID == "" {
-		a.ID = util.NewID()
+		a.ID = uuid.NewID()
 	}
 
 	a.Pattern = regexp.MustCompile(a.URL)

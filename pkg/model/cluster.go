@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/fagongzi/gateway/pkg/util"
+	"github.com/fagongzi/util/uuid"
 	"github.com/go-ozzo/ozzo-validation"
 )
 
@@ -54,7 +54,7 @@ func (c *Cluster) indexOf(id string) int {
 // Init init
 func (c *Cluster) Init() error {
 	if c.ID == "" {
-		c.ID = util.NewID()
+		c.ID = uuid.NewID()
 	}
 
 	return nil

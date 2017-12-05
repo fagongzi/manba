@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	"github.com/fagongzi/gateway/pkg/store"
-	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
+	fjson "github.com/fagongzi/util/json"
 	"github.com/fagongzi/util/task"
 	"github.com/labstack/echo"
 	mw "github.com/labstack/echo/middleware"
@@ -102,5 +102,5 @@ func readJSONFromReader(value interface{}, r io.ReadCloser) error {
 		return err
 	}
 
-	return util.Unmarshal(value, data)
+	return fjson.Unmarshal(value, data)
 }

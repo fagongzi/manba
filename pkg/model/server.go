@@ -3,12 +3,10 @@ package model
 import (
 	"time"
 
-	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/uuid"
 	validation "github.com/go-ozzo/ozzo-validation"
 )
-
-
 
 // Validate validate the model
 func (s *Server) Validate() error {
@@ -50,7 +48,7 @@ type Server struct {
 // Init init model
 func (s *Server) Init() error {
 	if s.ID == "" {
-		s.ID = util.NewID()
+		s.ID = uuid.NewID()
 	}
 
 	return nil

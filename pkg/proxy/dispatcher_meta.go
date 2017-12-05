@@ -5,8 +5,8 @@ import (
 
 	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/fagongzi/gateway/pkg/store"
-	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/json"
 )
 
 var (
@@ -44,7 +44,7 @@ func (r *dispatcher) loadClusters() {
 	for _, cluster := range clusters {
 		if err := r.addCluster(cluster); nil != err {
 			log.Fatalf("cluster <%s> add failed, errors:\n%+v",
-				util.MustMarshal(cluster),
+				json.MustMarshal(cluster),
 				err)
 		}
 	}
@@ -62,7 +62,7 @@ func (r *dispatcher) loadServers() {
 	for _, server := range servers {
 		if err := r.addServer(server); nil != err {
 			log.Fatalf("server <%s> add failed, errors:\n%+v",
-				util.MustMarshal(server),
+				json.MustMarshal(server),
 				err)
 		}
 	}
@@ -80,7 +80,7 @@ func (r *dispatcher) loadRoutings() {
 	for _, route := range routings {
 		if err := r.addRouting(route); nil != err {
 			log.Fatalf("routing <%s> add failed, errors:\n%+v",
-				util.MustMarshal(route),
+				json.MustMarshal(route),
 				err)
 		}
 	}
@@ -99,7 +99,7 @@ func (r *dispatcher) loadBinds() {
 		err := r.addBind(b)
 		if nil != err {
 			log.Fatalf("bind <%s> add failed, errors:\n%+v",
-				util.MustMarshal(b),
+				json.MustMarshal(b),
 				err)
 		}
 	}
@@ -117,7 +117,7 @@ func (r *dispatcher) loadAPIs() {
 	for _, api := range apis {
 		if err := r.addAPI(api); nil != err {
 			log.Fatalf("api <%s> add failed, errors:\n%+v",
-				util.MustMarshal(api),
+				json.MustMarshal(api),
 				err)
 		}
 	}
@@ -221,7 +221,7 @@ func (r *dispatcher) addRouting(routing *model.Routing) error {
 	r.routings[routing.ID] = routing
 	log.Infof("routing <%s> added, data <%s>",
 		routing.ID,
-		util.MustMarshal(routing))
+		json.MustMarshal(routing))
 
 	return nil
 }
@@ -252,7 +252,7 @@ func (r *dispatcher) addAPI(api *model.API) error {
 	r.apis[api.ID] = api
 	log.Infof("api <%s> added, data <%s>",
 		api.ID,
-		util.MustMarshal(api))
+		json.MustMarshal(api))
 
 	return nil
 }
@@ -268,7 +268,7 @@ func (r *dispatcher) updateAPI(api *model.API) error {
 	r.apis[api.ID] = api
 	log.Infof("api <%s> updated, data <%s>",
 		api.ID,
-		util.MustMarshal(api))
+		json.MustMarshal(api))
 
 	return nil
 }
@@ -307,7 +307,7 @@ func (r *dispatcher) addServer(svr *model.Server) error {
 
 	log.Infof("server <%s> added, data <%s>",
 		svr.ID,
-		util.MustMarshal(svr))
+		json.MustMarshal(svr))
 
 	return nil
 }
@@ -328,7 +328,7 @@ func (r *dispatcher) updateServer(meta *model.Server) error {
 
 	log.Infof("server <%s> updated, data <%s>",
 		meta.ID,
-		util.MustMarshal(meta))
+		json.MustMarshal(meta))
 
 	return nil
 }
@@ -369,7 +369,7 @@ func (r *dispatcher) addCluster(cluster *model.Cluster) error {
 	r.clusters[cluster.ID] = newClusterRuntime(cluster)
 	log.Infof("cluster <%s> added, data <%s>",
 		cluster.ID,
-		util.MustMarshal(cluster))
+		json.MustMarshal(cluster))
 
 	return nil
 }
@@ -386,7 +386,7 @@ func (r *dispatcher) updateCluster(meta *model.Cluster) error {
 	rt.updateMeta(meta)
 	log.Infof("cluster <%s> updated, data <%s>",
 		meta.ID,
-		util.MustMarshal(meta))
+		json.MustMarshal(meta))
 
 	return nil
 }

@@ -7,8 +7,8 @@ import (
 
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/fagongzi/gateway/pkg/model"
-	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
+	fjson "github.com/fagongzi/util/json"
 	"github.com/toolkits/net"
 )
 
@@ -36,7 +36,7 @@ func (e *EtcdStore) doRegistry(proxyInfo *model.ProxyInfo) {
 	proxyInfo.Conf.MgrAddr = convertIP(proxyInfo.Conf.MgrAddr)
 
 	key := fmt.Sprintf("%s/%s", e.proxiesDir, proxyInfo.Conf.Addr)
-	err := e.putTTL(key, string(util.MustMarshal(proxyInfo)), TTL)
+	err := e.putTTL(key, string(fjson.MustMarshal(proxyInfo)), TTL)
 
 	if err != nil {
 		log.Errorf("store: registry failed, errors:\n%+v",
@@ -49,7 +49,7 @@ func (e *EtcdStore) GetProxies() ([]*model.ProxyInfo, error) {
 	var values []*model.ProxyInfo
 	err := e.getList(e.proxiesDir, func(item *mvccpb.KeyValue) {
 		p := &model.ProxyInfo{}
-		util.MustUnmarshal(p, item.Value)
+		fjson.MustUnmarshal(p, item.Value)
 		values = append(values, p)
 	})
 

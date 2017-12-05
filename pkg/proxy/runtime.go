@@ -6,12 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fagongzi/goetty"
-
 	"github.com/fagongzi/gateway/pkg/lb"
 	"github.com/fagongzi/gateway/pkg/model"
-	"github.com/fagongzi/gateway/pkg/util"
+	"github.com/fagongzi/goetty"
 	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/collection"
 	"github.com/valyala/fasthttp"
 )
 
@@ -58,7 +57,7 @@ func (c *clusterRuntime) remove(id string) {
 }
 
 func (c *clusterRuntime) doRemove(id string) {
-	util.Remove(c.svrs, id)
+	collection.Remove(c.svrs, id)
 	log.Infof("runtime: remove <%s, %s> succ.", c.meta.ID, id)
 }
 
@@ -66,7 +65,7 @@ func (c *clusterRuntime) add(id string) {
 	c.Lock()
 	defer c.Unlock()
 
-	if util.IndexOf(c.svrs, id) >= 0 {
+	if collection.IndexOf(c.svrs, id) >= 0 {
 		log.Warnf("bind <%s,%s> already created.", c.meta.ID, id)
 		return
 	}
@@ -84,7 +83,7 @@ func (c *clusterRuntime) selectServer(req *fasthttp.Request) string {
 		return ""
 	}
 
-	e := util.Get(c.svrs, index)
+	e := collection.Get(c.svrs, index)
 	if nil == e {
 		c.RUnlock()
 		return ""

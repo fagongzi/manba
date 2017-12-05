@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/fagongzi/gateway/pkg/util"
+	"github.com/fagongzi/util/uuid"
 	validation "github.com/go-ozzo/ozzo-validation"
 )
 
@@ -22,7 +22,7 @@ func (b *Bind) Validate() error {
 // Init init model
 func (b *Bind) Init() error {
 	if b.ID == "" {
-		b.ID = util.NewID()
+		b.ID = uuid.NewID()
 	}
 
 	return nil

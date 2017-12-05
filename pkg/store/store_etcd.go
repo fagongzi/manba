@@ -9,8 +9,8 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/fagongzi/gateway/pkg/model"
-	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
+	fjson "github.com/fagongzi/util/json"
 	"github.com/fagongzi/util/task"
 	"golang.org/x/net/context"
 )
@@ -142,9 +142,9 @@ func (e *EtcdStore) SaveBind(bind *model.Bind) error {
 	svrKey := fmt.Sprintf("%s/%s", e.serversDir, svr.Addr)
 	clusterKey := fmt.Sprintf("%s/%s", e.clustersDir, cluster.Name)
 
-	opBind := clientv3.OpPut(bindKey, string(util.MustMarshal(bind)))
-	opSvr := clientv3.OpPut(svrKey, string(util.MustMarshal(svr)))
-	opCluster := clientv3.OpPut(clusterKey, string(util.MustMarshal(cluster)))
+	opBind := clientv3.OpPut(bindKey, string(fjson.MustMarshal(bind)))
+	opSvr := clientv3.OpPut(svrKey, string(fjson.MustMarshal(svr)))
+	opCluster := clientv3.OpPut(clusterKey, string(fjson.MustMarshal(cluster)))
 
 	_, err = e.txn().Then(opBind, opSvr, opCluster).Commit()
 	return err
@@ -174,8 +174,8 @@ func (e *EtcdStore) UnBind(id string) error {
 	clusterKey := fmt.Sprintf("%s/%s", e.clustersDir, c.Name)
 
 	opBind := clientv3.OpDelete(bindKey)
-	opSvr := clientv3.OpPut(svrKey, string(util.MustMarshal(svr)))
-	opCluster := clientv3.OpPut(clusterKey, string(util.MustMarshal(c)))
+	opSvr := clientv3.OpPut(svrKey, string(fjson.MustMarshal(svr)))
+	opCluster := clientv3.OpPut(clusterKey, string(fjson.MustMarshal(c)))
 	_, err = e.txn().Then(opBind, opSvr, opCluster).Commit()
 	return err
 }
@@ -187,7 +187,7 @@ func (e *EtcdStore) GetBind(id string) (*model.Bind, error) {
 	var value *model.Bind
 	err := e.getList(key, func(item *mvccpb.KeyValue) {
 		value = &model.Bind{}
-		util.MustUnmarshal(value, item.Value)
+		fjson.MustUnmarshal(value, item.Value)
 	})
 	if err != nil {
 		return nil, err
@@ -205,7 +205,7 @@ func (e *EtcdStore) GetBinds() ([]*model.Bind, error) {
 	var values []*model.Bind
 	err := e.getList(e.bindsDir, func(item *mvccpb.KeyValue) {
 		value := &model.Bind{}
-		util.MustUnmarshal(value, item.Value)
+		fjson.MustUnmarshal(value, item.Value)
 		values = append(values, value)
 	})
 
@@ -228,7 +228,7 @@ func (e EtcdStore) UpdateCluster(cluster *model.Cluster) error {
 
 func (e *EtcdStore) doUpdateCluster(cluster *model.Cluster) error {
 	key := fmt.Sprintf("%s/%s", e.clustersDir, cluster.ID)
-	return e.put(key, string(util.MustMarshal(cluster)))
+	return e.put(key, string(fjson.MustMarshal(cluster)))
 }
 
 // DeleteCluster delete a cluster from store
@@ -251,7 +251,7 @@ func (e *EtcdStore) GetClusters() ([]*model.Cluster, error) {
 	var values []*model.Cluster
 	err := e.getList(e.clustersDir, func(item *mvccpb.KeyValue) {
 		c := &model.Cluster{}
-		util.MustUnmarshal(c, item.Value)
+		fjson.MustUnmarshal(c, item.Value)
 		values = append(values, c)
 	})
 
@@ -265,7 +265,7 @@ func (e *EtcdStore) GetCluster(id string) (*model.Cluster, error) {
 	var value *model.Cluster
 	err := e.getList(key, func(item *mvccpb.KeyValue) {
 		value = &model.Cluster{}
-		util.MustUnmarshal(value, item.Value)
+		fjson.MustUnmarshal(value, item.Value)
 	})
 	if err != nil {
 		return nil, err
@@ -294,7 +294,7 @@ func (e *EtcdStore) UpdateServer(svr *model.Server) error {
 
 func (e *EtcdStore) doUpdateServer(svr *model.Server) error {
 	key := fmt.Sprintf("%s/%s", e.serversDir, svr.ID)
-	return e.put(key, string(util.MustMarshal(svr)))
+	return e.put(key, string(fjson.MustMarshal(svr)))
 }
 
 // DeleteServer delete a server from store
@@ -317,7 +317,7 @@ func (e *EtcdStore) GetServers() ([]*model.Server, error) {
 	var values []*model.Server
 	err := e.getList(e.serversDir, func(item *mvccpb.KeyValue) {
 		svr := &model.Server{}
-		util.MustUnmarshal(svr, item.Value)
+		fjson.MustUnmarshal(svr, item.Value)
 		values = append(values, svr)
 	})
 
@@ -331,7 +331,7 @@ func (e *EtcdStore) GetServer(id string) (*model.Server, error) {
 	var value *model.Server
 	err := e.getList(key, func(item *mvccpb.KeyValue) {
 		value = &model.Server{}
-		util.MustUnmarshal(value, item.Value)
+		fjson.MustUnmarshal(value, item.Value)
 	})
 	if err != nil {
 		return nil, err
@@ -356,7 +356,7 @@ func (e *EtcdStore) UpdateAPI(api *model.API) error {
 	}
 
 	key := fmt.Sprintf("%s/%s", e.apisDir, api.ID)
-	return e.put(key, string(util.MustMarshal(api)))
+	return e.put(key, string(fjson.MustMarshal(api)))
 }
 
 // DeleteAPI delete a api from store
@@ -370,7 +370,7 @@ func (e *EtcdStore) GetAPIs() ([]*model.API, error) {
 	var values []*model.API
 	err := e.getList(e.apisDir, func(item *mvccpb.KeyValue) {
 		value := &model.API{}
-		util.MustUnmarshal(value, item.Value)
+		fjson.MustUnmarshal(value, item.Value)
 		values = append(values, value)
 	})
 
@@ -384,7 +384,7 @@ func (e *EtcdStore) GetAPI(id string) (*model.API, error) {
 	var value *model.API
 	err := e.getList(key, func(item *mvccpb.KeyValue) {
 		value = &model.API{}
-		util.MustUnmarshal(value, item.Value)
+		fjson.MustUnmarshal(value, item.Value)
 	})
 	if err != nil {
 		return nil, err
@@ -400,7 +400,7 @@ func (e *EtcdStore) GetAPI(id string) (*model.API, error) {
 // SaveRouting save route to store
 func (e *EtcdStore) SaveRouting(routing *model.Routing) error {
 	key := fmt.Sprintf("%s/%s", e.routingsDir, routing.ID)
-	return e.put(key, string(util.MustMarshal(routing)))
+	return e.put(key, string(fjson.MustMarshal(routing)))
 }
 
 // GetRoutings return routes in store
@@ -408,7 +408,7 @@ func (e *EtcdStore) GetRoutings() ([]*model.Routing, error) {
 	var values []*model.Routing
 	err := e.getList(e.routingsDir, func(item *mvccpb.KeyValue) {
 		value := &model.Routing{}
-		util.MustUnmarshal(value, item.Value)
+		fjson.MustUnmarshal(value, item.Value)
 		values = append(values, value)
 	})
 
@@ -493,7 +493,7 @@ func (e EtcdStore) doWatch() {
 
 func (e *EtcdStore) doWatchWithCluster(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
 	cluster := &model.Cluster{}
-	util.MustUnmarshal(cluster, []byte(kv.Value))
+	fjson.MustUnmarshal(cluster, []byte(kv.Value))
 
 	return &Evt{
 		Src:   EventSrcCluster,
@@ -505,7 +505,7 @@ func (e *EtcdStore) doWatchWithCluster(evtType EvtType, kv *mvccpb.KeyValue) *Ev
 
 func (e *EtcdStore) doWatchWithServer(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
 	svr := &model.Server{}
-	util.MustUnmarshal(svr, kv.Value)
+	fjson.MustUnmarshal(svr, kv.Value)
 
 	return &Evt{
 		Src:   EventSrcServer,
@@ -532,7 +532,7 @@ func (e *EtcdStore) doWatchWithBind(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
 
 func (e *EtcdStore) doWatchWithAPI(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
 	api := &model.API{}
-	util.MustUnmarshal(api, []byte(kv.Value))
+	fjson.MustUnmarshal(api, []byte(kv.Value))
 	value := strings.Replace(string(kv.Key), fmt.Sprintf("%s/", e.apisDir), "", 1)
 
 	return &Evt{
@@ -545,7 +545,7 @@ func (e *EtcdStore) doWatchWithAPI(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
 
 func (e *EtcdStore) doWatchWithRouting(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
 	routing := &model.Routing{}
-	util.MustUnmarshal(routing, []byte(kv.Value))
+	fjson.MustUnmarshal(routing, []byte(kv.Value))
 
 	return &Evt{
 		Src:   EventSrcRouting,

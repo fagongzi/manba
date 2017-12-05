@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/fagongzi/gateway/pkg/model"
-	"github.com/fagongzi/gateway/pkg/util"
+	fjson "github.com/fagongzi/util/json"
 	"github.com/fagongzi/util/task"
 	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/consul/watch"
@@ -86,17 +86,17 @@ func (s *consulStore) SaveBind(bind *model.Bind) error {
 		&api.KVTxnOp{
 			Verb:  api.KVSet,
 			Key:   bindKey,
-			Value: util.MustMarshal(bind),
+			Value: fjson.MustMarshal(bind),
 		},
 		&api.KVTxnOp{
 			Verb:  api.KVSet,
 			Key:   svrKey,
-			Value: util.MustMarshal(svr),
+			Value: fjson.MustMarshal(svr),
 		},
 		&api.KVTxnOp{
 			Verb:  api.KVSet,
 			Key:   clusterKey,
-			Value: util.MustMarshal(cluster),
+			Value: fjson.MustMarshal(cluster),
 		},
 	}
 
@@ -140,12 +140,12 @@ func (s *consulStore) UnBind(id string) error {
 		&api.KVTxnOp{
 			Verb:  api.KVSet,
 			Key:   svrKey,
-			Value: util.MustMarshal(svr),
+			Value: fjson.MustMarshal(svr),
 		},
 		&api.KVTxnOp{
 			Verb:  api.KVSet,
 			Key:   clusterKey,
-			Value: util.MustMarshal(c),
+			Value: fjson.MustMarshal(c),
 		},
 	}
 
@@ -172,7 +172,7 @@ func (s *consulStore) GetServer(id string) (*model.Server, error) {
 	}
 
 	svr := &model.Server{}
-	util.MustUnmarshal(svr, pair.Value)
+	fjson.MustUnmarshal(svr, pair.Value)
 	return svr, nil
 }
 
@@ -188,7 +188,7 @@ func (s *consulStore) GetCluster(id string) (*model.Cluster, error) {
 	}
 
 	c := &model.Cluster{}
-	util.MustUnmarshal(c, pair.Value)
+	fjson.MustUnmarshal(c, pair.Value)
 	return c, nil
 }
 
@@ -204,7 +204,7 @@ func (s *consulStore) GetBind(id string) (*model.Bind, error) {
 	}
 
 	b := &model.Bind{}
-	util.MustUnmarshal(b, pair.Value)
+	fjson.MustUnmarshal(b, pair.Value)
 	return b, nil
 }
 
@@ -241,7 +241,7 @@ func (s *consulStore) doPutCluster(cluster *model.Cluster, et EvtType) error {
 	key := fmt.Sprintf("%s/%s", s.clustersDir, cluster.ID)
 	_, err := s.client.KV().Put(&api.KVPair{
 		Key:   key,
-		Value: util.MustMarshal(cluster),
+		Value: fjson.MustMarshal(cluster),
 	}, nil)
 
 	if err != nil {
@@ -290,7 +290,7 @@ func (s *consulStore) GetClusters() ([]*model.Cluster, error) {
 
 	for _, pair := range pairs {
 		c := &model.Cluster{}
-		util.MustUnmarshal(c, pair.Value)
+		fjson.MustUnmarshal(c, pair.Value)
 		values[i] = c
 
 		i++
@@ -307,7 +307,7 @@ func (s *consulStore) doPutServer(svr *model.Server) error {
 	key := fmt.Sprintf("%s/%s", s.serversDir, svr.ID)
 	_, err := s.client.KV().Put(&api.KVPair{
 		Key:   key,
-		Value: util.MustMarshal(svr),
+		Value: fjson.MustMarshal(svr),
 	}, nil)
 
 	if err != nil {
@@ -356,7 +356,7 @@ func (s *consulStore) GetServers() ([]*model.Server, error) {
 
 	for _, pair := range pairs {
 		svr := &model.Server{}
-		util.MustUnmarshal(svr, pair.Value)
+		fjson.MustUnmarshal(svr, pair.Value)
 		values[i] = svr
 		i++
 	}
@@ -372,7 +372,7 @@ func (s *consulStore) doPutAPI(ap *model.API, et EvtType) error {
 	key := fmt.Sprintf("%s/%s", s.apisDir, ap.ID)
 	_, err := s.client.KV().Put(&api.KVPair{
 		Key:   key,
-		Value: util.MustMarshal(ap),
+		Value: fjson.MustMarshal(ap),
 	}, nil)
 
 	if err != nil {
@@ -412,7 +412,7 @@ func (s *consulStore) GetAPIs() ([]*model.API, error) {
 
 	for _, pair := range pairs {
 		value := &model.API{}
-		util.MustUnmarshal(value, pair.Value)
+		fjson.MustUnmarshal(value, pair.Value)
 		values[i] = value
 		i++
 	}
@@ -433,7 +433,7 @@ func (s *consulStore) GetAPI(id string) (*model.API, error) {
 	}
 
 	value := &model.API{}
-	util.MustUnmarshal(value, pair.Value)
+	fjson.MustUnmarshal(value, pair.Value)
 	return value, nil
 }
 
@@ -446,7 +446,7 @@ func (s *consulStore) doPutRouting(routing *model.Routing, et EvtType) error {
 
 	_, err := s.client.KV().Put(&api.KVPair{
 		Key:   key,
-		Value: util.MustMarshal(routing),
+		Value: fjson.MustMarshal(routing),
 	}, nil)
 
 	if err != nil {
@@ -468,7 +468,7 @@ func (s *consulStore) GetRoutings() ([]*model.Routing, error) {
 
 	for _, pair := range pairs {
 		value := &model.Routing{}
-		util.MustUnmarshal(value, pair.Value)
+		fjson.MustUnmarshal(value, pair.Value)
 		values[i] = value
 		i++
 	}
@@ -557,7 +557,7 @@ func (s *consulStore) Watch(evtCh chan *Evt, stopCh chan bool) error {
 	p, err := s.watchPrefix(evtCh, EventSrcCluster, s.clustersDir, func(data []byte, e *Evt) {
 		if nil != data {
 			c := &model.Cluster{}
-			util.MustUnmarshal(c, data)
+			fjson.MustUnmarshal(c, data)
 			e.Value = c
 		}
 	})
@@ -568,7 +568,7 @@ func (s *consulStore) Watch(evtCh chan *Evt, stopCh chan bool) error {
 
 	p, err = s.watchPrefix(evtCh, EventSrcAPI, s.apisDir, func(data []byte, e *Evt) {
 		value := &model.API{}
-		util.MustUnmarshal(value, data)
+		fjson.MustUnmarshal(value, data)
 		e.Value = value
 	})
 	if err != nil {
@@ -578,7 +578,7 @@ func (s *consulStore) Watch(evtCh chan *Evt, stopCh chan bool) error {
 
 	p, err = s.watchPrefix(evtCh, EventSrcServer, s.serversDir, func(data []byte, e *Evt) {
 		svr := &model.Server{}
-		util.MustUnmarshal(svr, data)
+		fjson.MustUnmarshal(svr, data)
 		e.Value = svr
 	})
 	if err != nil {
@@ -588,7 +588,7 @@ func (s *consulStore) Watch(evtCh chan *Evt, stopCh chan bool) error {
 
 	p, err = s.watchPrefix(evtCh, EventSrcRouting, s.routingsDir, func(data []byte, e *Evt) {
 		value := &model.Routing{}
-		util.MustUnmarshal(value, data)
+		fjson.MustUnmarshal(value, data)
 		e.Value = value
 	})
 	if err != nil {
@@ -598,7 +598,7 @@ func (s *consulStore) Watch(evtCh chan *Evt, stopCh chan bool) error {
 
 	p, err = s.watchPrefix(evtCh, EventSrcBind, s.bindsDir, func(data []byte, e *Evt) {
 		value := &model.Bind{}
-		util.MustUnmarshal(value, data)
+		fjson.MustUnmarshal(value, data)
 		e.Value = value
 	})
 	if err != nil {
