@@ -1,30 +1,22 @@
 package proxy
 
-import "github.com/dgrijalva/jwt-go"
-import "strings"
-// import "encoding/json"
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"database/sql"
-	"fmt"
-	_ "github.com/go-sql-driver/mysql"
-)
-
-import (
+	"encoding/base64"
 	"errors"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/log"
+	_ "github.com/go-sql-driver/mysql"
+	"strings"
 )
 
-
-type MyCustomClaims struct {
+type GatewayClaims struct {
+	HttpBody string `json:"httpBody"`
 	jwt.StandardClaims
 }
-
-type GatewayResponse struct {
-	GatewayCode string `json:"gatewayCode"`
-    GatewayMsg  string `json:"gatewayMsg"`
-}
-
 
 // Hop-by-hop headers. These are removed when sent to the backend.
 // http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html
@@ -55,55 +47,20 @@ func (f HeadersFilter) Name() string {
 
 // Pre execute before proxy
 func (f HeadersFilter) Pre(c filter.Context) (statusCode int, err error) {
-	log.Infof("555555")
-	log.Infof(string(c.GetProxyOuterRequest().Header.Cookie("Auth")))
-	
-	//check==================================yinzf==================start
-	statusCode,err = validate(c)
-	if(statusCode !=200){
-		return statusCode,err
+
+	//check===================================================start
+	statusCode, err = validate(c)
+	if statusCode != 200 {
+		return statusCode, err
 	}
-	
-	// gatewayResponse := GatewayResponse{
-	// 	GatewayCode: string(statusCode), 
-	// 	GatewayMsg: "xxxxx",
-	// }
-	// 	jsons1, errs := json.Marshal(gatewayResponse)
-
-	// 	if errs != nil {
-	// 		fmt.Println(errs.Error())
-	// 	}
-	// 	fmt.Println(string(jsons1))
-
-	// 	// return jsons1,err
-	// 	// c.resp([]byte(jsons))
-	// 	//		res.Write([]byte(jsons))
-	// }
-	//check==================================yinzf==================end
+	//check====================================================end
 
 	for _, h := range hopHeaders {
 		c.GetProxyOuterRequest().Header.Del(h)
-	} 
+	}
 
 	return f.BaseFilter.Pre(c)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // Post execute after proxy
 func (f HeadersFilter) Post(c filter.Context) (statusCode int, err error) {
@@ -120,89 +77,74 @@ func (f HeadersFilter) Post(c filter.Context) (statusCode int, err error) {
 	return f.BaseFilter.Post(c)
 }
 
-
+// validity of the request data
 func validate(c filter.Context) (statusCode int, err error) {
 
-		log.Infof("aaaaaaaaaaa")
-		cookie := c.GetProxyOuterRequest().Header.Cookie("Auth")
-		log.Infof("bbbbbbbbbbb" )
-		// splitCookie := strings.Split(string(cookie), "Auth=")
-		
-		// log.Infof(splitCookie[1])
-		log.Infof("XXXXXXX")
-		log.Infof(string(cookie))
-		token, err := jwt.ParseWithClaims(string(cookie), &MyCustomClaims{}, 
+	cookie := c.GetProxyOuterRequest().Header.Cookie("Auth")
+
+	log.Info(string(cookie))
+
+	// gets the stream of request parameters；	request type is application/x-www-form-urlencoded
+	c.GetProxyOuterRequest().Body()
+
+	textBodyStream := c.GetProxyOuterRequest().Body()
+
+	log.Infof("The requested httpBody Stream is: %v", textBodyStream)
+
+	textBodyString := string(textBodyStream[:])
+
+	log.Infof("The requested httpBody String is: %v", textBodyString)
+
+	var password string
+
+	token, err := jwt.ParseWithClaims(string(cookie), &GatewayClaims{},
 		func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("Unexpected signing method %v", token.Header["alg"])
+				log.Infof("Unexpected signing method %v", token.Header["alg"])
+				return nil, nil
 			}
-			log.Infof("cccccccccccc")
-			var password string
-			password = finduserbyName(token.Claims.(*MyCustomClaims).Issuer)
-			fmt.Println(password)
+
+			log.Infof("Enter ParseWithClaims method")
+
+			password = finduserbyName(token.Claims.(*GatewayClaims).Issuer)
+
+			log.Infof("return password by finduserbyName is: %v", password)
+
 			return []byte(password), nil
 		})
-		log.Infof("ddddddddddddd")
-		log.Infof(token.Claims.(*MyCustomClaims).Id)
-		// nonce is exist
-		if checkNonce(token.Claims.(*MyCustomClaims).Id) != 1 {
-			log.Infof("eeeeeeeeee")
-			// gatewayResponse := GatewayResponse{
-			// 	GatewayCode: "0001",
-			// 	GatewayMsg: "此nonce值已经使用过了",
-			// }
-			// jsons, errs := json.Marshal(gatewayResponse) 
-            // if errs != nil {
-            //   fmt.Println(errs.Error())
-            // }
-            // fmt.Println(gatewayResponse)
-            // fmt.Println(string(b))
-			// res.Write([]byte(jsons))
-			// http.NotFound(res, req)
-			return 201,errors.New("此nonce值已经使用过了")
-		}
-		log.Infof("fffffffffff")
 
-		if _, ok := token.Claims.(*MyCustomClaims); ok && token.Valid {
-			log.Infof("ggggggggg")
-			// context.Set(req, "Claims", claims)
-			// http.NotFound(res, req)
-			// gatewayResponse := GatewayResponse{
-			// 	GatewayCode: "0000",
-			// 	GatewayMsg:  "跳转成功",
-            // }
-            // jsons, errs := json.Marshal(gatewayResponse) 
-            // if errs != nil {
-            //   fmt.Println(errs.Error())
-            // }
-			// fmt.Println(gatewayResponse)
-			// res.Write([]byte(jsons))
-			return 200,errors.New("跳转成功")
+	log.Infof("The requested JWT's nonce is: %v", token.Claims.(*GatewayClaims).Id)
 
-		} else {
-			log.Infof("hhhhhhhhhhhhhh")
-			// http.NotFound(res, req)
-			// gatewayResponse := GatewayResponse{
-			// 	GatewayCode: "0002",
-			// 	GatewayMsg:  "用户提供密码有误",
-			// }
-			// jsons, errs := json.Marshal(gatewayResponse) 
-            // if errs != nil {
-            //   fmt.Println(errs.Error())
-            // }
-			// fmt.Println(gatewayResponse)
-			// res.Write([]byte(jsons))
+	// nonce is exist
+	if checkNonce(token.Claims.(*GatewayClaims).Id) != 1 {
+		log.Infof("This nonce has been used")
+		return 201, errors.New("This nonce has been used")
+	}
 
-			return 202,errors.New("用户提供密码有误")
-		}
+	log.Infof("The requested JWT'httpBody is: %v", token.Claims.(*GatewayClaims).HttpBody)
+	log.Infof("The requested HttpBody Have ComputeHmac256 then String is: %v", ComputeHmac256(textBodyString, password))
+
+	if token.Claims.(*GatewayClaims).HttpBody != ComputeHmac256(textBodyString, password) {
+		log.Infof("User body has been modified")
+		return 203, errors.New("User body has been modified")
+	}
+
+	if _, ok := token.Claims.(*GatewayClaims); ok && token.Valid {
+		log.Infof("User Redirect Success")
+		return 200, errors.New("success")
+
+	} else {
+		log.Infof("User password is wrong")
+		return 202, errors.New("User password is wrong")
+	}
 }
 
-//check nonce does it exist ；default 1（not exist nonce,execute insert);  2:exist 3: error
+// Check whether nonce exists；default 1（not exist nonce,execute insert);  2:exist 3: error
 func checkNonce(gatewayNonce string) (nonceStatus int) {
 	db, err := sql.Open("mysql", "root:pass123word01@tcp(172.16.192.91:3308)/gateway?charset=utf8")
 	nonceStatus = 1 //default 1 is not exist
 	if err != nil {
-		fmt.Println(err)
+		log.Info(err)
 		nonceStatus = 3
 		return nonceStatus
 	}
@@ -212,7 +154,7 @@ func checkNonce(gatewayNonce string) (nonceStatus int) {
 	var rows *sql.Rows
 	rows, err = db.Query("select * from gateway_nonce")
 	if err != nil {
-		fmt.Println(err)
+		log.Info(err)
 		nonceStatus = 3
 		return nonceStatus
 	}
@@ -221,7 +163,8 @@ func checkNonce(gatewayNonce string) (nonceStatus int) {
 		var nonce string
 		var id int
 		rows.Scan(&id, &nonce)
-		fmt.Println(id, "\t", nonce)
+		log.Infof("The Method checkNonce id is: %v", id)
+		log.Infof("The Method checkNonce nonce is: %v", nonce)
 		//if nonce hava been black dont insert table
 		if strings.EqualFold(nonce, gatewayNonce) {
 			nonceStatus = 2 // status 2 is exist
@@ -233,36 +176,37 @@ func checkNonce(gatewayNonce string) (nonceStatus int) {
 		var result sql.Result
 		result, err = db.Exec("insert into gateway_nonce(nonce) values(?)", gatewayNonce)
 		if err != nil {
-			fmt.Println(err)
+			log.Info(err)
 			nonceStatus = 3
 			return nonceStatus
 		}
 		lastId, _ := result.LastInsertId()
-		fmt.Println("insert record's id:", lastId)
+		log.Info("The Method checkNonce insert record's : %v", lastId)
 
 	} else {
-		fmt.Println("this nonce is exist!!!")
+		log.Info("this nonce is exist!!!")
 	}
 	rows.Close()
 	return nonceStatus
 }
 
-//find user information
+//find password by name
 func finduserbyName(name string) (password string) {
 	db, err := sql.Open("mysql", "root:pass123word01@tcp(172.16.192.91:3308)/gateway?charset=utf8")
 	password = ""
 	if err != nil {
-		fmt.Println(err)
+		log.Info(err)
 		return password
 	}
 
 	defer db.Close()
 
 	var rows *sql.Rows
-	fmt.Println(name)
+	log.Info("The Method finduserbyName Request Name is", name)
+
 	rows, err = db.Query("select * from gateway_user where username = ?", name)
 	if err != nil {
-		fmt.Println(err)
+		log.Info(err)
 		return password
 	}
 	for rows.Next() {
@@ -273,7 +217,7 @@ func finduserbyName(name string) (password string) {
 		var updatetime string
 		var status int
 		rows.Scan(&id, &username, &userpassword, &createtime, &updatetime, &status)
-		fmt.Println(id, "\t", username, "\t", userpassword)
+		log.Info(id, "\t", username, "\t", userpassword)
 		if !strings.EqualFold(userpassword, "") {
 			password = userpassword
 		}
@@ -281,3 +225,14 @@ func finduserbyName(name string) (password string) {
 	return password
 }
 
+// HS256 Sign the string by key
+func ComputeHmac256(message string, secret string) string {
+	key := []byte(secret)
+	h := hmac.New(sha256.New, key)
+	h.Write([]byte(message))
+	stringsVal := base64.StdEncoding.EncodeToString(h.Sum(nil))
+	str := strings.Replace(stringsVal, "=", "", -1)
+	str1 := strings.Replace(str, "+", "-", -1)
+	str2 := strings.Replace(str1, "/", "_", -1)
+	return str2
+}
