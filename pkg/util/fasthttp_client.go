@@ -221,11 +221,16 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 		panic("BUG: resp cannot be nil")
 	}
 
+	opt := option
+	if opt == nil {
+		opt = c.defaultOption
+	}
+
 	var hc *hostClients
 	var ok bool
 	c.Lock()
 	if hc, ok = c.hostClients[addr]; !ok {
-		hc = &hostClients{option: c.defaultOption}
+		hc = &hostClients{option: opt}
 		c.hostClients[addr] = hc
 	}
 	c.Unlock()
@@ -241,11 +246,6 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 		return false, err
 	}
 	conn := cc.c
-
-	opt := option
-	if opt == nil {
-		opt = c.defaultOption
-	}
 
 	// set write deadline
 	if opt.WriteTimeout > 0 {

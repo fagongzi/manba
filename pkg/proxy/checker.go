@@ -11,7 +11,7 @@ import (
 
 func (r *dispatcher) readyToHeathChecker() {
 	for i := 0; i < r.cnf.Option.LimitCountHeathCheckWorker; i++ {
-		r.taskRunner.RunCancelableTask(func(ctx context.Context) {
+		r.runner.RunCancelableTask(func(ctx context.Context) {
 			for {
 				select {
 				case <-ctx.Done():
@@ -26,10 +26,11 @@ func (r *dispatcher) readyToHeathChecker() {
 
 func (r *dispatcher) addToCheck(svr *serverRuntime) {
 	svr.circuit = model.CircuitOpen
-	svr.prevStatus = model.Down
 	svr.status = model.Down
-	svr.useCheckDuration = svr.meta.HeathCheck.Interval
-
+	if svr.meta.HeathCheck != nil {
+		svr.useCheckDuration = svr.meta.HeathCheck.Interval
+	}
+	svr.heathTimeout.Stop()
 	r.checkerC <- svr.meta.ID
 }
 
@@ -47,11 +48,15 @@ func (r *dispatcher) check(id string) {
 	}
 
 	defer func() {
-		if svr.useCheckDuration > r.cnf.Option.LimitIntervalHeathCheck {
-			svr.useCheckDuration = r.cnf.Option.LimitIntervalHeathCheck
+		if svr.meta.HeathCheck != nil && !svr.meta.External {
+			if svr.useCheckDuration > r.cnf.Option.LimitIntervalHeathCheck {
+				svr.useCheckDuration = r.cnf.Option.LimitIntervalHeathCheck
+			}
+			svr.heathTimeout, _ = r.tw.Schedule(svr.useCheckDuration, r.heathCheckTimeout, id)
 		}
-		r.tw.Schedule(svr.useCheckDuration, r.heathCheckTimeout, id)
 	}()
+
+	prev := svr.status
 
 	if svr.meta.External {
 		log.Warnf("server <%s> heath check is using external", svr.meta.ID)
@@ -62,32 +67,23 @@ func (r *dispatcher) check(id string) {
 	} else {
 		if r.doCheck(svr) {
 			svr.changeTo(model.Up)
-			if svr.statusChanged() {
-				log.Infof("meta: server <%s> UP",
-					svr.meta.ID)
-			}
 		} else {
 			svr.changeTo(model.Down)
-			if svr.statusChanged() {
-				log.Warnf("meta: server <%s, %s> DOWN",
-					svr.meta.ID,
-					svr.meta.HeathCheck.Path)
-			}
 		}
 	}
 
-	if svr.statusChanged() {
+	if prev != svr.status {
 		binded := r.mapping[svr.meta.ID]
 
 		if svr.status == model.Up {
-			log.Infof("meta: server <%s> UP",
+			log.Infof("server <%s> UP",
 				svr.meta.ID)
 
 			for _, c := range binded {
 				c.add(svr.meta.ID)
 			}
 		} else {
-			log.Infof("meta: server <%s> DOWN",
+			log.Infof("server <%s> DOWN",
 				svr.meta.ID)
 
 			for _, c := range binded {

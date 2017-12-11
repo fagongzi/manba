@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/fagongzi/gateway/pkg/util"
+	"github.com/fagongzi/util/json"
 	"github.com/valyala/fasthttp"
 )
 
@@ -113,7 +113,7 @@ func getTestReq(name string, value string, src Source) *fasthttp.Request {
 	case JSONBody:
 		data := make(map[string]interface{})
 		data[name] = value
-		req.SetBody(util.MustMarshal(data))
+		req.SetBody(json.MustMarshal(data))
 	case RequestHeader:
 		req.Header.Add(name, value)
 	case Cookie:
@@ -132,133 +132,3 @@ func assertTrue(value bool, msg string, t *testing.T) {
 func assertFalse(value bool, msg string, t *testing.T) {
 	assertTrue(!value, msg, t)
 }
-
-// func TestMatchesLt(t *testing.T) {
-// 	r, err := newRoutingItem("$query_abc < 100")
-
-// 	if err != nil {
-// 		t.Error("parse error.")
-// 	}
-
-// 	req := &fasthttp.Request{}
-// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=1")
-
-// 	if !r.matches(req) {
-// 		t.Error("matches op lt error")
-// 	}
-// }
-
-// func TestMatchesLe(t *testing.T) {
-// 	r, err := newRoutingItem("$query_abc <= 100")
-
-// 	if err != nil {
-// 		t.Error("parse error.")
-// 	}
-
-// 	req := &fasthttp.Request{}
-// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=100")
-
-// 	if !r.matches(req) {
-// 		t.Error("matches op le error")
-// 	}
-// }
-
-// func TestMatchesGt(t *testing.T) {
-// 	r, err := newRoutingItem("$query_abc > 100")
-
-// 	if err != nil {
-// 		t.Error("parse error.")
-// 	}
-
-// 	req := &fasthttp.Request{}
-// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=101")
-
-// 	if !r.matches(req) {
-// 		t.Error("matches op gt error")
-// 	}
-// }
-
-// func TestMatchesGe(t *testing.T) {
-// 	r, err := newRoutingItem("$query_abc >= 100")
-
-// 	if err != nil {
-// 		t.Error("parse error.")
-// 	}
-
-// 	req := &fasthttp.Request{}
-// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=100")
-
-// 	if !r.matches(req) {
-// 		t.Error("matches op ge error")
-// 	}
-// }
-
-// func TestMatchesIn(t *testing.T) {
-// 	r, err := newRoutingItem("$query_abc in 100")
-
-// 	if err != nil {
-// 		t.Error("parse error.")
-// 	}
-
-// 	req := &fasthttp.Request{}
-// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=11001")
-
-// 	if !r.matches(req) {
-// 		t.Error("matches op in error")
-// 	}
-// }
-
-// func TestMatchesReg(t *testing.T) {
-// 	r, err := newRoutingItem("$query_abc ~ ^1100")
-
-// 	if err != nil {
-// 		t.Error("parse error.")
-// 	}
-
-// 	req := &fasthttp.Request{}
-// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=11001a")
-
-// 	if !r.matches(req) {
-// 		t.Error("matches op reg error")
-// 	}
-// }
-
-// func TestMatchesRouting(t *testing.T) {
-// 	data := `desc = "test";
-// 	deadline = 100;
-// 	rule = ["$query_abc == abc"];
-// 	`
-
-// 	r, err := NewRouting(data, "cluster", "/abc*")
-
-// 	if err != nil {
-// 		t.Error("parse error.")
-// 	}
-
-// 	req := &fasthttp.Request{}
-// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=abc")
-
-// 	if !r.Matches(req) {
-// 		t.Error("matches routing error")
-// 	}
-// }
-
-// func TestNotMatchesRouting(t *testing.T) {
-// 	data := `desc = "test";
-// 	deadline = 100;
-// 	rule = ["$query_abc == 10"];
-// 	`
-
-// 	r, err := NewRouting(data, "cluster", "/abc*")
-
-// 	if err != nil {
-// 		t.Error("parse error.")
-// 	}
-
-// 	req := &fasthttp.Request{}
-// 	req.SetRequestURI("http://127.0.0.1:8080/abc?abc=20")
-
-// 	if r.Matches(req) {
-// 		t.Error("not matches routing error")
-// 	}
-// }

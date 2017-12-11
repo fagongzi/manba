@@ -1,3 +1,4 @@
+
 # Gopkg.toml example
 #
 # Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
@@ -22,7 +23,7 @@
 
 [[constraint]]
   name = "github.com/coreos/etcd"
-  version = "3.2.10"
+  version = "3.2.11"
 
 [[constraint]]
   branch = "master"
@@ -41,12 +42,8 @@
   version = "3.3.0"
 
 [[constraint]]
-  name = "github.com/hashicorp/consul"
-  version = "1.0.1"
-
-[[constraint]]
-  name = "github.com/labstack/echo"
-  version = "3.2.5"
+  branch = "master"
+  name = "github.com/golang/protobuf"
 
 [[constraint]]
   branch = "master"
@@ -59,3 +56,7 @@
 [[constraint]]
   branch = "master"
   name = "golang.org/x/net"
+
+[[constraint]]
+  name = "google.golang.org/grpc"
+  version = "1.8.1"

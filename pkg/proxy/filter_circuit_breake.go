@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/gateway/pkg/model"
@@ -21,6 +22,8 @@ var (
 	ErrCircuitHalf = errors.New("server is in circuit half")
 	// ErrCircuitHalfLimited server is in circuit half, traffic limit
 	ErrCircuitHalfLimited = errors.New("server is in circuit half, traffic limit")
+
+	rd = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
 type evt struct {
@@ -50,7 +53,7 @@ func (f CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) {
 	}
 
 	if c.IsCircuitOpen() {
-		if f.getFailureRate(c) >= cb.OpenToCloseRate {
+		if f.getFailureRate(c) >= cb.FailureRateToClose {
 			c.ChangeCircuitStatusToClose()
 			return http.StatusServiceUnavailable, ErrCircuitClose
 		}
@@ -74,7 +77,7 @@ func (f CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error) 
 		return f.BaseFilter.Pre(c)
 	}
 
-	if c.IsCircuitHalf() && f.getSucceedRate(c) >= cb.HalfToOpenRate {
+	if c.IsCircuitHalf() && f.getSucceedRate(c) >= cb.SucceedRateToOpen {
 		c.ChangeCircuitStatusToOpen()
 	}
 
@@ -89,8 +92,8 @@ func (f CircuitBreakeFilter) PostErr(c filter.Context) {
 }
 
 func (f CircuitBreakeFilter) getFailureRate(c filter.Context) int {
-	failureCount := c.GetAnalysis().GetRecentlyRequestFailureCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().OpenToClose)
-	totalCount := c.GetAnalysis().GetRecentlyRequestCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().OpenToClose)
+	failureCount := c.GetAnalysis().GetRecentlyRequestFailureCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().RateCheckPeriod)
+	totalCount := c.GetAnalysis().GetRecentlyRequestCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().RateCheckPeriod)
 
 	if totalCount == 0 {
 		return -1
@@ -100,8 +103,8 @@ func (f CircuitBreakeFilter) getFailureRate(c filter.Context) int {
 }
 
 func (f CircuitBreakeFilter) getSucceedRate(c filter.Context) int {
-	succeedCount := c.GetAnalysis().GetRecentlyRequestSuccessedCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().OpenToClose)
-	totalCount := c.GetAnalysis().GetRecentlyRequestCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().OpenToClose)
+	succeedCount := c.GetAnalysis().GetRecentlyRequestSuccessedCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().RateCheckPeriod)
+	totalCount := c.GetAnalysis().GetRecentlyRequestCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().RateCheckPeriod)
 
 	if totalCount == 0 {
 		return 100
@@ -111,6 +114,6 @@ func (f CircuitBreakeFilter) getSucceedRate(c filter.Context) int {
 }
 
 func limitAllow(rate int) bool {
-	randValue := rand.Intn(RateBase)
+	randValue := rd.Intn(RateBase)
 	return randValue < rate
 }

@@ -53,22 +53,18 @@ type dispatcher struct {
 	store       store.Store
 	httpClient  *util.FastHTTPClient
 	tw          *goetty.TimeoutWheel
-	taskRunner  *task.Runner
+	runner      *task.Runner
 }
 
-func newRouteTable(cnf *Cfg, db store.Store, taskRunner *task.Runner) *dispatcher {
+func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner) *dispatcher {
 	tw := goetty.NewTimeoutWheel(goetty.WithTickInterval(time.Second))
-	tw.Start()
-
 	rt := &dispatcher{
-		cnf:        cnf,
-		tw:         tw,
-		store:      db,
-		taskRunner: taskRunner,
-
-		analysiser: model.NewAnalysis(taskRunner),
-		httpClient: util.NewFastHTTPClient(),
-
+		cnf:         cnf,
+		tw:          tw,
+		store:       db,
+		runner:      runner,
+		analysiser:  model.NewAnalysis(tw),
+		httpClient:  util.NewFastHTTPClient(),
 		binds:       make(map[string]*model.Bind),
 		clusters:    make(map[string]*clusterRuntime),
 		servers:     make(map[string]*serverRuntime),

@@ -1,0 +1,185 @@
+syntax = "proto2";
+package metapb;
+
+import "gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = false;
+
+// Status is the components status
+enum Status {
+    Down = 0;
+    Up   = 1;
+}
+
+// CircuitStatus is the circuit breaker status
+enum CircuitStatus {
+    Open  = 0;
+    Half  = 1;
+    Close = 2;
+}
+
+// LoadBalance the load balance enum
+enum LoadBalance {
+    RoundRobin = 0;
+    IPHash     = 1;
+}
+
+// Protocol is the protocol of the backend api
+enum Protocol {
+    HTTP        = 0;
+    Grpc        = 1;
+    Dubbo       = 2;
+    SpringCloud = 3;
+}
+
+enum Source {
+    QueryString = 0;
+    FormData    = 1;
+    JSONBody    = 2;
+    Header      = 3;
+    Cookie      = 4;
+}
+
+enum RuleType {
+    RuleRegexp = 0;
+}
+
+enum CMP {
+    CMPEQ    = 0;
+	CMPLT    = 1;
+	CMPLE    = 2;
+	CMPGT    = 3;
+	CMPGE    = 4;
+	CMPIn    = 5;
+	CMPMatch = 6;
+}
+
+enum RoutingStrategy {
+    Copy  = 0;
+    Split = 1;
+}
+
+// Proxy is a meta data of the gateway proxy
+message Proxy {
+    optional string addr     = 1 [(gogoproto.nullable) = false];
+	optional string addrRPC  = 2 [(gogoproto.nullable) = false];
+}
+
+// Cluster is a set of server has same interface 
+message Cluster {
+    optional uint64       id          = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+    optional string       name        = 2 [(gogoproto.nullable) = false];
+    optional LoadBalance  loadBalance = 3 [(gogoproto.nullable) = false];
+}
+
+// HeathCheck is the heath check
+message HeathCheck {
+    optional string path          = 1 [(gogoproto.nullable) = false];
+    optional string body          = 2 [(gogoproto.nullable) = false];
+    optional int64  checkInterval = 3 [(gogoproto.nullable) = false];
+    optional int64  timeout       = 4 [(gogoproto.nullable) = false];
+}
+
+// CircuitBreaker circuit breaker
+message CircuitBreaker {
+    optional int64 closeTimeout       = 1 [(gogoproto.nullable) = false];
+    optional int32 halfTrafficRate    = 2 [(gogoproto.nullable) = false];
+	optional int64 rateCheckPeriod    = 3 [(gogoproto.nullable) = false];
+	optional int32 failureRateToClose = 4 [(gogoproto.nullable) = false];
+	optional int32 succeedRateToOpen  = 5 [(gogoproto.nullable) = false];
+}
+
+// Server is a backend server that provide api
+message Server {
+    optional uint64         id             = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+    optional string         addr           = 2 [(gogoproto.nullable) = false];
+    optional Protocol       protocol       = 3 [(gogoproto.nullable) = false];
+    optional int64          maxQPS         = 4 [(gogoproto.nullable) = false];
+    optional HeathCheck     heathCheck     = 5;
+    optional CircuitBreaker circuitBreaker = 6;
+}
+
+// Bind is a bind pair with cluster and server
+message Bind {
+    optional uint64 clusterID = 1 [(gogoproto.nullable) = false];
+    optional uint64 serverID  = 2 [(gogoproto.nullable) = false];
+}
+
+// Pair is pair value
+message PairValue {
+    optional string name  = 1 [(gogoproto.nullable) = false];
+    optional string value = 2 [(gogoproto.nullable) = false];
+}
+
+// IPAccessControl is for ip access control
+message IPAccessControl {
+    repeated string whitelist = 1;
+    repeated string blacklist = 2;
+}
+
+// HTTPResult is a http result
+message HTTPResult {
+    optional bytes     body    = 1;
+    repeated PairValue headers = 2; 
+    repeated PairValue cookies = 3;
+}
+
+// Parameter is a parameter from a http request
+message Parameter {
+    optional string name   = 1 [(gogoproto.nullable) = false];
+    optional Source source = 2 [(gogoproto.nullable) = false];
+}
+
+// ValidationRule is a validation rule
+message ValidationRule {
+    optional RuleType ruleType   = 1 [(gogoproto.nullable) = false];
+    optional string   expression = 2 [(gogoproto.nullable) = false];
+}
+
+// Validation is a validation
+message Validation {
+    optional Parameter      parameter = 1 [(gogoproto.nullable) = false];
+    optional bool           required  = 2 [(gogoproto.nullable) = false];
+    repeated ValidationRule rules     = 3 [(gogoproto.nullable) = false];
+}
+
+// DispatchNode is the request forward to
+message DispatchNode {
+    optional uint64     clusterID   = 1 [(gogoproto.nullable) = false];
+    optional uint64     urlRewrite  = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "URLRewrite"];
+    optional uint64     attrName    = 3 [(gogoproto.nullable) = false];
+    repeated Validation validations = 4;
+}
+
+// API is the api for dispatcher
+message API {
+    optional uint64          id              = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+    optional string          name            = 2 [(gogoproto.nullable) = false];
+    optional string          urlPattern      = 3 [(gogoproto.nullable) = false, (gogoproto.customname) = "URLPattern"];
+    optional string          method          = 4 [(gogoproto.nullable) = false];
+    optional string          domain          = 5 [(gogoproto.nullable) = false];
+    optional Status          status          = 6 [(gogoproto.nullable) = false];
+    optional IPAccessControl ipAccessControl = 7 [(gogoproto.nullable) = true, (gogoproto.customname) = "IPAccessControl"];
+    optional HTTPResult      defaultValue    = 8 [(gogoproto.nullable) = true];
+    repeated DispatchNode    nodes           = 9;
+}
+
+// Condition is a condition for routing
+message Condition {
+    optional Parameter parameter = 1 [(gogoproto.nullable) = false];
+    optional CMP       cmp       = 2 [(gogoproto.nullable) = false];
+    optional string    expect    = 3 [(gogoproto.nullable) = false];
+}
+
+// Routing is a routing 
+message Routing {
+    optional uint64          id          = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+    optional int64           clusterID   = 2 [(gogoproto.nullable) = false];
+    repeated Condition       conditions  = 3 [(gogoproto.nullable) = false];
+    optional RoutingStrategy strategy    = 4 [(gogoproto.nullable) = false];
+    optional int32           trafficRate = 5 [(gogoproto.nullable) = false];
+    optional Status          status      = 6 [(gogoproto.nullable) = false];
+}

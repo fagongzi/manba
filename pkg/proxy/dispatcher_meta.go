@@ -360,13 +360,12 @@ func (r *dispatcher) removeServer(id string) error {
 }
 
 func (r *dispatcher) addAnalysis(svr *serverRuntime) {
-	r.analysiser.AddRecentCount(svr.meta.ID, time.Second)
+	r.analysiser.AddTarget(svr.meta.ID, time.Second)
 	cb := svr.meta.CircuitBreaker
 	if cb != nil {
-		r.analysiser.AddRecentCount(svr.meta.ID, cb.OpenToClose)
-		r.analysiser.AddRecentCount(svr.meta.ID, cb.HalfToOpen)
+		r.analysiser.AddTarget(svr.meta.ID, cb.RateCheckPeriod)
 	} else {
-		// TODO: remove analysiser recent
+		r.analysiser.RemoveTarget(svr.meta.ID)
 	}
 }
 

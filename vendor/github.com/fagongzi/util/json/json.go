@@ -2,7 +2,8 @@ package json
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
+	"runtime"
 )
 
 // InitModel init model
@@ -14,7 +15,12 @@ type InitModel interface {
 func MustMarshal(value interface{}) []byte {
 	v, err := json.Marshal(value)
 	if err != nil {
-		panic(fmt.Sprintf("marash failed: %+v", err))
+		buf := make([]byte, 4096)
+		runtime.Stack(buf, true)
+		log.Fatalf("json marshal failed, value=<%v> errors:\n %+v \n %s",
+			value,
+			err,
+			buf)
 	}
 	return v
 }
@@ -23,7 +29,12 @@ func MustMarshal(value interface{}) []byte {
 func MustUnmarshal(value interface{}, data []byte) {
 	err := Unmarshal(value, data)
 	if err != nil {
-		panic(fmt.Sprintf("unmarash failed: %+v", err))
+		buf := make([]byte, 4096)
+		runtime.Stack(buf, true)
+		log.Fatalf("json unmarshal failed, data=<%v> errors:\n %+v \n %s",
+			data,
+			err,
+			buf)
 	}
 
 	if init, ok := value.(InitModel); ok {

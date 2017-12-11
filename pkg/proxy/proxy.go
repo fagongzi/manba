@@ -87,15 +87,15 @@ func (p *Proxy) Start() {
 
 	err := p.startRPC()
 	if nil != err {
-		log.Fatalf("bootstrap: rpc start failed, addr=<%s> errors:\n%+v",
+		log.Fatalf("rpc start failed, addr=<%s> errors:\n%+v",
 			p.cnf.AddrRPC,
 			err)
 	}
 
-	log.Infof("bootstrap: gateway proxy started at <%s>", p.cnf.Addr)
+	log.Infof("gateway proxy started at <%s>", p.cnf.Addr)
 	err = fasthttp.ListenAndServe(p.cnf.Addr, p.ReverseProxyHandler)
 	if err != nil {
-		log.Errorf("bootstrap: gateway proxy start failed, errors:\n%+v",
+		log.Errorf("gateway proxy start failed, errors:\n%+v",
 			err)
 		return
 	}
@@ -124,7 +124,7 @@ func (p *Proxy) startRPC() error {
 		return err
 	}
 
-	log.Infof("rpc: listen at %s",
+	log.Infof("rpc listen at %s",
 		p.cnf.AddrRPC)
 	server := rpc.NewServer()
 	mgrService := newManager(p)
@@ -182,30 +182,29 @@ func (p *Proxy) isStopped() bool {
 }
 
 func (p *Proxy) init() {
-	err := p.initRouteTable()
+	p.initFilters()
+
+	err := p.initDispatcher()
 	if err != nil {
-		log.Fatalf("bootstrap: init route table failed, errors:\n%+v",
+		log.Fatalf("init route table failed, errors:\n%+v",
 			err)
 	}
-
-	p.initFilters()
 }
 
-func (p *Proxy) initRouteTable() error {
-	store, err := store.GetStoreFrom(p.cnf.AddrStore, p.cnf.Namespace, p.runner)
+func (p *Proxy) initDispatcher() error {
+	s, err := store.GetStoreFrom(p.cnf.AddrStore, p.cnf.Namespace, p.runner)
 
 	if err != nil {
 		return err
 	}
 
-	register, _ := store.(model.Register)
-
+	register, _ := s.(store.Register)
 	register.Registry(&model.ProxyInfo{
 		Addr:    p.cnf.Addr,
 		AddrRPC: p.cnf.AddrRPC,
 	})
 
-	p.dispatcher = newRouteTable(p.cnf, store, p.runner)
+	p.dispatcher = newDispatcher(p.cnf, s, p.runner)
 	p.dispatcher.load()
 
 	return nil
@@ -215,12 +214,12 @@ func (p *Proxy) initFilters() {
 	for _, filter := range p.cnf.Filers {
 		f, err := newFilter(filter)
 		if nil != err {
-			log.Fatalf("bootstrap: init filter failed, filter=<%+v> errors:\n%+v",
+			log.Fatalf("init filter failed, filter=<%+v> errors:\n%+v",
 				filter,
 				err)
 		}
 
-		log.Infof("bootstrap: filter added, filter=<%+v>", filter)
+		log.Infof("filter added, filter=<%+v>", filter)
 		p.filters.PushBack(f)
 	}
 }

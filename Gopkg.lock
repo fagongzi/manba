@@ -3,15 +3,9 @@
 
 [[projects]]
   name = "github.com/coreos/etcd"
-  packages = ["auth/authpb","clientv3","etcdserver/api/v3rpc/rpctypes","etcdserver/etcdserverpb","mvcc/mvccpb"]
-  revision = "694728c496e22dfa5719c78ff23cc982e15bcb2f"
-  version = "v3.2.10"
-
-[[projects]]
-  name = "github.com/dgrijalva/jwt-go"
-  packages = ["."]
-  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
-  version = "v3.1.0"
+  packages = ["auth/authpb","clientv3","clientv3/naming","etcdserver/api/v3rpc/rpctypes","etcdserver/etcdserverpb","mvcc/mvccpb"]
+  revision = "1e1dbb23924672c6cd72c62ee0db2b45f778da71"
+  version = "v3.2.11"
 
 [[projects]]
   branch = "master"
@@ -28,8 +22,8 @@
 [[projects]]
   branch = "master"
   name = "github.com/fagongzi/util"
-  packages = ["atomic","task"]
-  revision = "f3ccdb5cb9254415acb03b7ad7b95492444509aa"
+  packages = ["atomic","collection","format","json","protoc","task","uuid"]
+  revision = "c20791831670e4bc8e43bfda4141900875124451"
 
 [[projects]]
   name = "github.com/go-ozzo/ozzo-validation"
@@ -42,30 +36,6 @@
   name = "github.com/golang/protobuf"
   packages = ["proto","protoc-gen-go/descriptor","ptypes","ptypes/any","ptypes/duration","ptypes/timestamp"]
   revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
-
-[[projects]]
-  name = "github.com/hashicorp/consul"
-  packages = ["api","watch"]
-  revision = "9564c2978b59c060aed0657e662a4eb1c6f35356"
-  version = "v1.0.1"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/hashicorp/go-cleanhttp"
-  packages = ["."]
-  revision = "06c9ea3a335b7443026f8124b22619524420291b"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/hashicorp/go-rootcerts"
-  packages = ["."]
-  revision = "6bb64b370b90e7ef1fa532be9e591a81c3493e00"
-
-[[projects]]
-  name = "github.com/hashicorp/serf"
-  packages = ["coordinate"]
-  revision = "d6574a5bb1226678d7010325fb6c985db20ee458"
-  version = "v0.8.1"
 
 [[projects]]
   name = "github.com/klauspost/compress"
@@ -86,52 +56,10 @@
   version = "v1.1"
 
 [[projects]]
-  name = "github.com/labstack/echo"
-  packages = [".","middleware"]
-  revision = "0473c51f1dbd83487effce00702571d19033a6e5"
-  version = "3.2.5"
-
-[[projects]]
-  name = "github.com/labstack/gommon"
-  packages = ["bytes","color","log","random"]
-  revision = "57409ada9da0f2afad6664c49502f8c50fbd8476"
-  version = "0.2.3"
-
-[[projects]]
-  name = "github.com/mattn/go-colorable"
-  packages = ["."]
-  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
-  version = "v0.0.9"
-
-[[projects]]
-  name = "github.com/mattn/go-isatty"
-  packages = ["."]
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/mitchellh/go-homedir"
-  packages = ["."]
-  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/mitchellh/mapstructure"
-  packages = ["."]
-  revision = "06020f85339e21b2478f756a78e295255ffa4d6a"
-
-[[projects]]
   branch = "master"
   name = "github.com/toolkits/net"
   packages = ["."]
   revision = "3f39ab6fe3cec98207da42dab32703b498ed92e4"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/valyala/bytebufferpool"
-  packages = ["."]
-  revision = "e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7"
 
 [[projects]]
   name = "github.com/valyala/fasthttp"
@@ -141,39 +69,21 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/valyala/fasttemplate"
-  packages = ["."]
-  revision = "dcecefd839c4193db0d35b88ec65b4c12d360ab0"
-
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/crypto"
-  packages = ["acme","acme/autocert"]
-  revision = "94eea52f7b742c7cbe0b03b22f0c4c8631ece122"
-
-[[projects]]
-  branch = "master"
   name = "golang.org/x/net"
   packages = ["context","http2","http2/hpack","idna","internal/timeseries","lex/httplex","trace"]
-  revision = "a8b9294777976932365dabb6640cf1468d95c70f"
-
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/sys"
-  packages = ["unix"]
-  revision = "8b4580aae2a0dd0c231a45d3ccb8434ff533b840"
+  revision = "dc871a5d77e227f5bbf6545176ef3eeebf87e76e"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "57961680700a5336d15015c8c50686ca5ba362a4"
+  revision = "3b24cac7bc3a458991ab409aa2a339ac9e0d60d6"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/api/annotations","googleapis/rpc/status"]
-  revision = "7f0da29060c682909f650ad8ed4e515bd74fa12a"
+  revision = "73cb5d0be5af113b42057925bd6c93e3cd9f60fd"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -184,6 +94,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "876542a82625c24b6dc259e30a60ea4cdc7379f181f5a89b3e24411328c5ffa8"
+  inputs-digest = "d35981339c42c0e6a12886994fc21808ca26a001195cb495b7da132b06cec761"
   solver-name = "gps-cdcl"
   solver-version = 1

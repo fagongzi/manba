@@ -72,11 +72,11 @@ func (c *clusterRuntime) selectServer(req *fasthttp.Request) string {
 }
 
 type serverRuntime struct {
-	meta             *model.Server
 	tw               *goetty.TimeoutWheel
+	meta             *model.Server
 	status           model.Status
+	heathTimeout     goetty.Timeout
 	checkFailCount   int
-	prevStatus       model.Status
 	useCheckDuration time.Duration
 	circuit          model.Circuit
 }
@@ -111,12 +111,7 @@ func (s *serverRuntime) reset() {
 }
 
 func (s *serverRuntime) changeTo(status model.Status) {
-	s.prevStatus = s.status
 	s.status = status
-}
-
-func (s *serverRuntime) statusChanged() bool {
-	return s.prevStatus != s.status
 }
 
 func (s *serverRuntime) isCircuitStatus(target model.Circuit) bool {
@@ -131,7 +126,7 @@ func (s *serverRuntime) circuitToClose() {
 
 	s.circuit = model.CircuitClose
 	log.Warnf("server <%s> change to close", s.meta.ID)
-	s.tw.Schedule(s.meta.CircuitBreaker.CloseToHalf, s.circuitToHalf, nil)
+	s.tw.Schedule(s.meta.CircuitBreaker.CloseTimeout, s.circuitToHalf, nil)
 }
 
 func (s *serverRuntime) circuitToOpen() {

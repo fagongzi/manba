@@ -1,0 +1,94 @@
+syntax = "proto2";
+package rpcpb;
+
+import "metapb/metapb.proto";
+import "gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = false;
+
+// RpcHeader is the header for all rpc request and response
+message RpcHeader {
+    optional string uuid = 1 [(gogoproto.nullable) = false];
+}
+
+// MetaService is a interface for meta manager
+service MetaService {
+    rpc PutCluster     (PutClusterReq)     returns (PutClusterRsp)         {}
+    rpc RemoveCluster  (RemoveClusterReq)  returns (RemoveClusterRsp)      {}
+    rpc GetCluster     (GetClusterReq)     returns (GetClusterRsp)         {}
+    rpc GetClusterList (GetClusterListReq) returns (stream metapb.Cluster) {}
+
+    rpc PutServer      (PutServerReq)      returns (PutServerRsp)          {}
+    rpc RemoveServer   (RemoveServerReq)   returns (RemoveServerRsp)       {}
+    rpc GetServer      (GetServerReq)      returns (GetServerRsp)          {}
+    rpc GetServerList  (GetServerListReq)  returns (stream metapb.Server)  {}
+}
+
+message PutClusterReq {
+    optional RpcHeader      header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.Cluster cluster = 2 [(gogoproto.nullable) = false];
+}
+
+message PutClusterRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveClusterReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveClusterRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message GetClusterReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message GetClusterRsp {
+    optional RpcHeader      header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.Cluster cluster = 2 [(gogoproto.nullable) = true];
+}
+
+message GetClusterListReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message PutServerReq {
+    optional RpcHeader      header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.Server  server  = 2 [(gogoproto.nullable) = false];
+}
+
+message PutServerRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveServerReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveServerRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message GetServerReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message GetServerRsp {
+    optional RpcHeader      header = 1 [(gogoproto.nullable) = false];
+    optional metapb.Server  server = 2 [(gogoproto.nullable) = true];
+}
+
+message GetServerListReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}

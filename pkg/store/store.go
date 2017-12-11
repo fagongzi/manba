@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/util/task"
 	"github.com/toolkits/net"
 )
@@ -59,12 +59,11 @@ type Evt struct {
 }
 
 func init() {
-	supportSchema["consul"] = getConsulStoreFrom
 	supportSchema["etcd"] = getEtcdStoreFrom
 }
 
 // GetStoreFrom returns a store implemention, if not support returns error
-func GetStoreFrom(registryAddr, prefix string, taskRunner *task.Runner) (Store, error) {
+func GetStoreFrom(registryAddr, prefix string, runner *task.Runner) (Store, error) {
 	u, err := url.Parse(registryAddr)
 	if err != nil {
 		panic(fmt.Sprintf("parse registry addr failed, errors:%+v", err))
@@ -73,17 +72,13 @@ func GetStoreFrom(registryAddr, prefix string, taskRunner *task.Runner) (Store, 
 	schema := strings.ToLower(u.Scheme)
 	fn, ok := supportSchema[schema]
 	if ok {
-		return fn(u.Host, prefix, taskRunner)
+		return fn(u.Host, prefix, runner)
 	}
 
 	return nil, fmt.Errorf("not support: %s", registryAddr)
 }
 
-func getConsulStoreFrom(addr, prefix string, taskRunner *task.Runner) (Store, error) {
-	return NewConsulStore(addr, prefix, taskRunner)
-}
-
-func getEtcdStoreFrom(addr, prefix string, taskRunner *task.Runner) (Store, error) {
+func getEtcdStoreFrom(addr, prefix string, runner *task.Runner) (Store, error) {
 	var addrs []string
 	values := strings.Split(addr, ",")
 
@@ -91,7 +86,7 @@ func getEtcdStoreFrom(addr, prefix string, taskRunner *task.Runner) (Store, erro
 		addrs = append(addrs, fmt.Sprintf("http://%s", value))
 	}
 
-	return NewEtcdStore(addrs, prefix, taskRunner)
+	return NewEtcdStore(addrs, prefix, runner)
 }
 
 func convertIP(addr string) string {
@@ -108,33 +103,38 @@ func convertIP(addr string) string {
 
 // Store store interface
 type Store interface {
-	SaveBind(bind *model.Bind) error
-	UnBind(id string) error
-	GetBinds() ([]*model.Bind, error)
-	GetBind(id string) (*model.Bind, error)
+	Raw() interface{}
 
-	SaveCluster(cluster *model.Cluster) error
-	UpdateCluster(cluster *model.Cluster) error
-	DeleteCluster(id string) error
-	GetClusters() ([]*model.Cluster, error)
-	GetCluster(id string) (*model.Cluster, error)
+	AddBind(bind *metapb.Bind) error
+	RemoveBind(bind *metapb.Bind) error
+	RemoveClusterBind(id uint64) error
+	GetBindServers(id uint64) ([]uint64, error)
 
-	SaveServer(svr *model.Server) error
-	UpdateServer(svr *model.Server) error
-	DeleteServer(id string) error
-	GetServers() ([]*model.Server, error)
-	GetServer(id string) (*model.Server, error)
+	PutCluster(cluster *metapb.Cluster) (uint64, error)
+	RemoveCluster(id uint64) error
+	GetClusters(limit int64, fn func(interface{}) error) error
+	GetCluster(id uint64) (*metapb.Cluster, error)
 
-	SaveAPI(api *model.API) error
-	UpdateAPI(api *model.API) error
-	DeleteAPI(id string) error
-	GetAPIs() ([]*model.API, error)
-	GetAPI(id string) (*model.API, error)
+	PutServer(svr *metapb.Server) (uint64, error)
+	RemoveServer(id uint64) error
+	GetServers(limit int64, fn func(interface{}) error) error
+	GetServer(id uint64) (*metapb.Server, error)
 
-	SaveRouting(routing *model.Routing) error
-	GetRoutings() ([]*model.Routing, error)
+	PutAPI(api *metapb.API) (uint64, error)
+	RemoveAPI(id uint64) error
+	GetAPIs(limit int64, fn func(interface{}) error) error
+	GetAPI(id uint64) (*metapb.API, error)
+
+	PutRouting(routing *metapb.Routing) (uint64, error)
+	RemoveRouting(id uint64) error
+	GetRoutings(limit int64, fn func(interface{}) error) error
+	GetRouting(id uint64) (*metapb.Routing, error)
 
 	Watch(evtCh chan *Evt, stopCh chan bool) error
 
 	Clean() error
+}
+
+func getKey(prefix string, id uint64) string {
+	return fmt.Sprintf("%s/%020d", prefix, id)
 }

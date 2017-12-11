@@ -26,7 +26,7 @@ func (m *Manager) SetLogLevel(req model.SetLogReq, rsp *model.SetLogRsp) error {
 
 // AddAnalysisPoint add a point to analysis
 func (m *Manager) AddAnalysisPoint(req model.AddAnalysisPointReq, rsp *model.AddAnalysisPointRsp) error {
-	m.proxy.dispatcher.analysiser.AddRecentCount(req.Addr, time.Second*time.Duration(req.Secs))
+	m.proxy.dispatcher.analysiser.AddTarget(req.Addr, time.Second*time.Duration(req.Secs))
 
 	rsp.Code = 0
 	return nil

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
@@ -11,15 +12,27 @@ import (
 	"github.com/fagongzi/log"
 )
 
+var (
+	addr      = flag.String("addr", ":8080", "Addr: client entrypoint")
+	addrStore = flag.String("addr-store", "etcd://127.0.0.1:2379", "Addr: store address")
+	namespace = flag.String("namespace", "dev", "The namespace to isolation the environment.")
+)
+
 func main() {
 	flag.Parse()
 
 	log.InitLog()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	s, err := api.NewServer(api.ParseCfg())
+	cfg := &api.Cfg{
+		Addr:      *addr,
+		AddrStore: *addrStore,
+		Namespace: fmt.Sprintf("/%s", *namespace),
+	}
+
+	s, err := api.NewServer(cfg)
 	if err != nil {
-		log.Fatalf("bootstrap: start api server failed, errors:\n%+v", err)
+		log.Fatalf("start api server failed, errors:\n%+v", err)
 	}
 
 	go s.Start()

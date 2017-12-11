@@ -68,7 +68,7 @@ func main() {
 
 	if *addrPPROF != "" {
 		go func() {
-			log.Errorf("bootstrap: start pprof failed, errors:\n%+v",
+			log.Errorf("start pprof failed, errors:\n%+v",
 				http.ListenAndServe(*addrPPROF, nil))
 		}()
 	}

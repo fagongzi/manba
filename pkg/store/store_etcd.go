@@ -3,14 +3,14 @@ package store
 import (
 	"errors"
 	"fmt"
-	"strings"
+	"math"
+	"sync"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
-	"github.com/fagongzi/gateway/pkg/model"
-	"github.com/fagongzi/log"
-	fjson "github.com/fagongzi/util/json"
+	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/util/format"
 	"github.com/fagongzi/util/task"
 	"golang.org/x/net/context"
 )
@@ -18,6 +18,8 @@ import (
 var (
 	// ErrHasBind error has bind into, can not delete
 	ErrHasBind = errors.New("Has bind info, can not delete")
+	// ErrStaleOP is a stale error
+	ErrStaleOP = errors.New("stale option")
 )
 
 const (
@@ -27,52 +29,10 @@ const (
 	DefaultRequestTimeout = 10 * time.Second
 	// DefaultSlowRequestTime default slow request time
 	DefaultSlowRequestTime = time.Second * 1
+
+	batch = uint64(1000)
+	endID = uint64(math.MaxUint64)
 )
-
-// slowLogTxn wraps etcd transaction and log slow one.
-type slowLogTxn struct {
-	clientv3.Txn
-	cancel context.CancelFunc
-}
-
-func newSlowLogTxn(client *clientv3.Client) clientv3.Txn {
-	ctx, cancel := context.WithTimeout(client.Ctx(), DefaultRequestTimeout)
-	return &slowLogTxn{
-		Txn:    client.Txn(ctx),
-		cancel: cancel,
-	}
-}
-
-func (t *slowLogTxn) If(cs ...clientv3.Cmp) clientv3.Txn {
-	return &slowLogTxn{
-		Txn:    t.Txn.If(cs...),
-		cancel: t.cancel,
-	}
-}
-
-func (t *slowLogTxn) Then(ops ...clientv3.Op) clientv3.Txn {
-	return &slowLogTxn{
-		Txn:    t.Txn.Then(ops...),
-		cancel: t.cancel,
-	}
-}
-
-// Commit implements Txn Commit interface.
-func (t *slowLogTxn) Commit() (*clientv3.TxnResponse, error) {
-	start := time.Now()
-	resp, err := t.Txn.Commit()
-	t.cancel()
-
-	cost := time.Now().Sub(start)
-	if cost > DefaultSlowRequestTime {
-		log.Warn("slow: txn runs too slow, resp=<%v> cost=<%s> errors:\n %+v",
-			resp,
-			cost,
-			err)
-	}
-
-	return resp, err
-}
 
 // EtcdStore etcd store impl
 type EtcdStore struct {
@@ -83,12 +43,17 @@ type EtcdStore struct {
 	apisDir     string
 	proxiesDir  string
 	routingsDir string
+	idPath      string
 
-	cli                *clientv3.Client
+	idLock sync.Mutex
+	base   uint64
+	end    uint64
+
 	evtCh              chan *Evt
 	watchMethodMapping map[EvtSrc]func(EvtType, *mvccpb.KeyValue) *Evt
 
-	taskRunner *task.Runner
+	rawClient *clientv3.Client
+	runner    *task.Runner
 }
 
 // NewEtcdStore create a etcd store
@@ -101,8 +66,11 @@ func NewEtcdStore(etcdAddrs []string, prefix string, taskRunner *task.Runner) (S
 		apisDir:            fmt.Sprintf("%s/apis", prefix),
 		proxiesDir:         fmt.Sprintf("%s/proxy", prefix),
 		routingsDir:        fmt.Sprintf("%s/routings", prefix),
+		idPath:             fmt.Sprintf("%s/id", prefix),
 		watchMethodMapping: make(map[EvtSrc]func(EvtType, *mvccpb.KeyValue) *Evt),
-		taskRunner:         taskRunner,
+		runner:             taskRunner,
+		base:               100,
+		end:                100,
 	}
 
 	cli, err := clientv3.New(clientv3.Config{
@@ -114,465 +82,172 @@ func NewEtcdStore(etcdAddrs []string, prefix string, taskRunner *task.Runner) (S
 		return nil, err
 	}
 
-	store.cli = cli
+	store.rawClient = cli
 
 	store.init()
 	return store, nil
 }
 
-func (e *EtcdStore) txn() clientv3.Txn {
-	return newSlowLogTxn(e.cli)
+// Raw returns the raw client
+func (e *EtcdStore) Raw() interface{} {
+	return e.rawClient
 }
 
-// SaveBind save bind to store
-func (e *EtcdStore) SaveBind(bind *model.Bind) error {
-	svr, err := e.GetServer(bind.ServerID)
+// AddBind bind a server to a cluster
+func (e *EtcdStore) AddBind(bind *metapb.Bind) error {
+	data, err := bind.Marshal()
 	if err != nil {
 		return err
 	}
-	svr.AddBind(bind)
 
-	cluster, err := e.GetCluster(bind.ClusterID)
+	return e.put(e.getBindKey(bind), string(data))
+}
+
+// RemoveBind remove bind
+func (e *EtcdStore) RemoveBind(bind *metapb.Bind) error {
+	return e.delete(e.getBindKey(bind))
+}
+
+// RemoveClusterBind remove cluster all bind servers
+func (e *EtcdStore) RemoveClusterBind(id uint64) error {
+	return e.delete(e.getClusterBindPrefix(id), clientv3.WithPrefix())
+}
+
+// GetBindServers return cluster binds servers
+func (e *EtcdStore) GetBindServers(id uint64) ([]uint64, error) {
+	rsp, err := e.get(e.getClusterBindPrefix(id), clientv3.WithPrefix())
 	if err != nil {
-		return err
+		return nil, err
 	}
-	cluster.AddBind(bind)
 
-	bindKey := fmt.Sprintf("%s/%s", e.bindsDir, bind.ID)
-	svrKey := fmt.Sprintf("%s/%s", e.serversDir, svr.Addr)
-	clusterKey := fmt.Sprintf("%s/%s", e.clustersDir, cluster.Name)
+	if len(rsp.Kvs) == 0 {
+		return nil, nil
+	}
 
-	opBind := clientv3.OpPut(bindKey, string(fjson.MustMarshal(bind)))
-	opSvr := clientv3.OpPut(svrKey, string(fjson.MustMarshal(svr)))
-	opCluster := clientv3.OpPut(clusterKey, string(fjson.MustMarshal(cluster)))
+	var values []uint64
+	for _, item := range rsp.Kvs {
+		v := &metapb.Bind{}
+		err := v.Unmarshal(item.Value)
+		if err != nil {
+			return nil, err
+		}
 
-	_, err = e.txn().Then(opBind, opSvr, opCluster).Commit()
+		values = append(values, v.ServerID)
+	}
+
+	return values, nil
+}
+
+// PutCluster add or update the cluster
+func (e *EtcdStore) PutCluster(value *metapb.Cluster) (uint64, error) {
+	return e.putPB(e.clustersDir, value, func(id uint64) {
+		value.ID = id
+	})
+}
+
+// RemoveCluster remove the cluster and it's binds
+func (e *EtcdStore) RemoveCluster(id uint64) error {
+	opCluster := clientv3.OpDelete(getKey(e.clustersDir, id))
+	opBind := clientv3.OpDelete(e.getClusterBindPrefix(id), clientv3.WithPrefix())
+	_, err := e.txn().Then(opCluster, opBind).Commit()
 	return err
 }
 
-// UnBind delete bind from store
-func (e *EtcdStore) UnBind(id string) error {
-	bind, err := e.GetBind(id)
-	if err != nil {
-		return err
-	}
-
-	svr, err := e.GetServer(bind.ServerID)
-	if err != nil {
-		return err
-	}
-	svr.RemoveBind(bind.ClusterID)
-
-	c, err := e.GetCluster(bind.ClusterID)
-	if err != nil {
-		return err
-	}
-	c.RemoveBind(bind.ServerID)
-
-	bindKey := fmt.Sprintf("%s/%s", e.bindsDir, bind.ID)
-	svrKey := fmt.Sprintf("%s/%s", e.serversDir, svr.Addr)
-	clusterKey := fmt.Sprintf("%s/%s", e.clustersDir, c.Name)
-
-	opBind := clientv3.OpDelete(bindKey)
-	opSvr := clientv3.OpPut(svrKey, string(fjson.MustMarshal(svr)))
-	opCluster := clientv3.OpPut(clusterKey, string(fjson.MustMarshal(c)))
-	_, err = e.txn().Then(opBind, opSvr, opCluster).Commit()
-	return err
+// GetClusters returns all clusters
+func (e *EtcdStore) GetClusters(limit int64, fn func(interface{}) error) error {
+	return e.getValues(e.clustersDir, limit, &metapb.Cluster{}, fn)
 }
 
-// GetBind return bind info
-func (e *EtcdStore) GetBind(id string) (*model.Bind, error) {
-	key := fmt.Sprintf("%s/%s", e.bindsDir, id)
+// GetCluster returns the cluster
+func (e *EtcdStore) GetCluster(id uint64) (*metapb.Cluster, error) {
+	value := &metapb.Cluster{}
+	return value, e.getPB(e.clustersDir, id, value)
+}
 
-	var value *model.Bind
-	err := e.getList(key, func(item *mvccpb.KeyValue) {
-		value = &model.Bind{}
-		fjson.MustUnmarshal(value, item.Value)
+// PutServer add or update the server
+func (e *EtcdStore) PutServer(value *metapb.Server) (uint64, error) {
+	return e.putPB(e.serversDir, value, func(id uint64) {
+		value.ID = id
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	if nil == value {
-		return nil, fmt.Errorf("bind <%s> not found", id)
-	}
-
-	return value, err
 }
 
-// GetBinds return binds info
-func (e *EtcdStore) GetBinds() ([]*model.Bind, error) {
-	var values []*model.Bind
-	err := e.getList(e.bindsDir, func(item *mvccpb.KeyValue) {
-		value := &model.Bind{}
-		fjson.MustUnmarshal(value, item.Value)
-		values = append(values, value)
+// RemoveServer remove the server
+func (e *EtcdStore) RemoveServer(id uint64) error {
+	return e.delete(getKey(e.serversDir, id))
+}
+
+// GetServers returns all server
+func (e *EtcdStore) GetServers(limit int64, fn func(interface{}) error) error {
+	return e.getValues(e.serversDir, limit, &metapb.Server{}, fn)
+}
+
+// GetServer returns the server
+func (e *EtcdStore) GetServer(id uint64) (*metapb.Server, error) {
+	value := &metapb.Server{}
+	return value, e.getPB(e.serversDir, id, value)
+}
+
+// PutAPI add or update a API
+func (e *EtcdStore) PutAPI(value *metapb.API) (uint64, error) {
+	return e.putPB(e.apisDir, value, func(id uint64) {
+		value.ID = id
 	})
-
-	return values, err
 }
 
-// SaveCluster save a cluster to store
-func (e *EtcdStore) SaveCluster(cluster *model.Cluster) error {
-	return e.doUpdateCluster(cluster)
+// RemoveAPI remove a api from store
+func (e *EtcdStore) RemoveAPI(id uint64) error {
+	return e.delete(getKey(e.apisDir, id))
 }
 
-// UpdateCluster update a cluster to store
-func (e EtcdStore) UpdateCluster(cluster *model.Cluster) error {
-	if _, err := e.GetCluster(cluster.ID); nil != err {
-		return err
-	}
-
-	return e.doUpdateCluster(cluster)
+// GetAPIs returns all api
+func (e *EtcdStore) GetAPIs(limit int64, fn func(interface{}) error) error {
+	return e.getValues(e.apisDir, limit, &metapb.API{}, fn)
 }
 
-func (e *EtcdStore) doUpdateCluster(cluster *model.Cluster) error {
-	key := fmt.Sprintf("%s/%s", e.clustersDir, cluster.ID)
-	return e.put(key, string(fjson.MustMarshal(cluster)))
+// GetAPI returns the api
+func (e *EtcdStore) GetAPI(id uint64) (*metapb.API, error) {
+	value := &metapb.API{}
+	return value, e.getPB(e.apisDir, id, value)
 }
 
-// DeleteCluster delete a cluster from store
-func (e *EtcdStore) DeleteCluster(id string) error {
-	c, err := e.GetCluster(id)
-	if err != nil {
-		return err
-	}
-
-	if c.HasBind() {
-		return ErrHasBind
-	}
-
-	key := fmt.Sprintf("%s/%s", e.clustersDir, id)
-	return e.delete(key)
-}
-
-// GetClusters return clusters in store
-func (e *EtcdStore) GetClusters() ([]*model.Cluster, error) {
-	var values []*model.Cluster
-	err := e.getList(e.clustersDir, func(item *mvccpb.KeyValue) {
-		c := &model.Cluster{}
-		fjson.MustUnmarshal(c, item.Value)
-		values = append(values, c)
+// PutRouting add or update routing
+func (e *EtcdStore) PutRouting(value *metapb.Routing) (uint64, error) {
+	return e.putPB(e.routingsDir, value, func(id uint64) {
+		value.ID = id
 	})
-
-	return values, err
 }
 
-// GetCluster return cluster info
-func (e *EtcdStore) GetCluster(id string) (*model.Cluster, error) {
-	key := fmt.Sprintf("%s/%s", e.clustersDir, id)
-
-	var value *model.Cluster
-	err := e.getList(key, func(item *mvccpb.KeyValue) {
-		value = &model.Cluster{}
-		fjson.MustUnmarshal(value, item.Value)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if value == nil {
-		return nil, fmt.Errorf("cluster <%s> not found", id)
-	}
-
-	return value, err
+// RemoveRouting remove routing
+func (e *EtcdStore) RemoveRouting(id uint64) error {
+	return e.delete(getKey(e.routingsDir, id))
 }
 
-// SaveServer save a server to store
-func (e *EtcdStore) SaveServer(svr *model.Server) error {
-	return e.doUpdateServer(svr)
+// GetRoutings returns routes in store
+func (e *EtcdStore) GetRoutings(limit int64, fn func(interface{}) error) error {
+	return e.getValues(e.routingsDir, limit, &metapb.Routing{}, fn)
 }
 
-// UpdateServer update a server to store
-func (e *EtcdStore) UpdateServer(svr *model.Server) error {
-	if _, err := e.GetServer(svr.ID); nil != err {
-		return err
-	}
-
-	return e.doUpdateServer(svr)
-}
-
-func (e *EtcdStore) doUpdateServer(svr *model.Server) error {
-	key := fmt.Sprintf("%s/%s", e.serversDir, svr.ID)
-	return e.put(key, string(fjson.MustMarshal(svr)))
-}
-
-// DeleteServer delete a server from store
-func (e *EtcdStore) DeleteServer(id string) error {
-	svr, err := e.GetServer(id)
-	if err != nil {
-		return err
-	}
-
-	if svr.HasBind() {
-		return ErrHasBind
-	}
-
-	key := fmt.Sprintf("%s/%s", e.serversDir, id)
-	return e.delete(key)
-}
-
-// GetServers return server from store
-func (e *EtcdStore) GetServers() ([]*model.Server, error) {
-	var values []*model.Server
-	err := e.getList(e.serversDir, func(item *mvccpb.KeyValue) {
-		svr := &model.Server{}
-		fjson.MustUnmarshal(svr, item.Value)
-		values = append(values, svr)
-	})
-
-	return values, err
-}
-
-// GetServer return spec server
-func (e *EtcdStore) GetServer(id string) (*model.Server, error) {
-	key := fmt.Sprintf("%s/%s", e.serversDir, id)
-
-	var value *model.Server
-	err := e.getList(key, func(item *mvccpb.KeyValue) {
-		value = &model.Server{}
-		fjson.MustUnmarshal(value, item.Value)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if nil == value {
-		return nil, fmt.Errorf("server <%s> not found", id)
-	}
-
-	return value, err
-}
-
-// SaveAPI save a api in store
-func (e *EtcdStore) SaveAPI(api *model.API) error {
-	return e.UpdateAPI(api)
-}
-
-// UpdateAPI update a api in store
-func (e *EtcdStore) UpdateAPI(api *model.API) error {
-	if _, err := e.GetAPI(api.ID); nil != err {
-		return err
-	}
-
-	key := fmt.Sprintf("%s/%s", e.apisDir, api.ID)
-	return e.put(key, string(fjson.MustMarshal(api)))
-}
-
-// DeleteAPI delete a api from store
-func (e *EtcdStore) DeleteAPI(id string) error {
-	key := fmt.Sprintf("%s/%s", e.apisDir, id)
-	return e.delete(key)
-}
-
-// GetAPIs return api list from store
-func (e *EtcdStore) GetAPIs() ([]*model.API, error) {
-	var values []*model.API
-	err := e.getList(e.apisDir, func(item *mvccpb.KeyValue) {
-		value := &model.API{}
-		fjson.MustUnmarshal(value, item.Value)
-		values = append(values, value)
-	})
-
-	return values, err
-}
-
-// GetAPI return api by url from store
-func (e *EtcdStore) GetAPI(id string) (*model.API, error) {
-	key := fmt.Sprintf("%s/%s", e.apisDir, id)
-
-	var value *model.API
-	err := e.getList(key, func(item *mvccpb.KeyValue) {
-		value = &model.API{}
-		fjson.MustUnmarshal(value, item.Value)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if value == nil {
-		return nil, fmt.Errorf("api <%s> not found", id)
-	}
-
-	return value, err
-}
-
-// SaveRouting save route to store
-func (e *EtcdStore) SaveRouting(routing *model.Routing) error {
-	key := fmt.Sprintf("%s/%s", e.routingsDir, routing.ID)
-	return e.put(key, string(fjson.MustMarshal(routing)))
-}
-
-// GetRoutings return routes in store
-func (e *EtcdStore) GetRoutings() ([]*model.Routing, error) {
-	var values []*model.Routing
-	err := e.getList(e.routingsDir, func(item *mvccpb.KeyValue) {
-		value := &model.Routing{}
-		fjson.MustUnmarshal(value, item.Value)
-		values = append(values, value)
-	})
-
-	return values, err
+// GetRouting returns a routing
+func (e *EtcdStore) GetRouting(id uint64) (*metapb.Routing, error) {
+	value := &metapb.Routing{}
+	return value, e.getPB(e.routingsDir, id, value)
 }
 
 // Clean clean data in store
 func (e *EtcdStore) Clean() error {
-	_, err := e.txn().Then(clientv3.OpDelete(e.prefix, clientv3.WithPrefix())).Commit()
-	return err
+	return e.delete(e.prefix, clientv3.WithPrefix())
 }
 
-// Watch watch event from etcd
-func (e *EtcdStore) Watch(evtCh chan *Evt, stopCh chan bool) error {
-	e.evtCh = evtCh
-
-	log.Infof("meta: etcd watch at: <%s>",
-		e.prefix)
-
-	e.doWatch()
-
-	return nil
-}
-
-func (e EtcdStore) doWatch() {
-	watcher := clientv3.NewWatcher(e.cli)
-	defer watcher.Close()
-
-	ctx := e.cli.Ctx()
-	for {
-		rch := watcher.Watch(ctx, e.prefix, clientv3.WithPrefix())
-		for wresp := range rch {
-			if wresp.Canceled {
-				return
-			}
-
-			for _, ev := range wresp.Events {
-				var evtSrc EvtSrc
-				var evtType EvtType
-
-				switch ev.Type {
-				case mvccpb.DELETE:
-					evtType = EventTypeDelete
-				case mvccpb.PUT:
-					if ev.IsCreate() {
-						evtType = EventTypeNew
-					} else if ev.IsModify() {
-						evtType = EventTypeUpdate
-					}
-				}
-
-				key := string(ev.Kv.Key)
-				if strings.HasPrefix(key, e.clustersDir) {
-					evtSrc = EventSrcCluster
-				} else if strings.HasPrefix(key, e.serversDir) {
-					evtSrc = EventSrcServer
-				} else if strings.HasPrefix(key, e.bindsDir) {
-					evtSrc = EventSrcBind
-				} else if strings.HasPrefix(key, e.apisDir) {
-					evtSrc = EventSrcAPI
-				} else if strings.HasPrefix(key, e.routingsDir) {
-					evtSrc = EventSrcRouting
-				} else {
-					continue
-				}
-
-				log.Infof("meta: etcd changed: <%s, %v>",
-					key,
-					evtType)
-				e.evtCh <- e.watchMethodMapping[evtSrc](evtType, ev.Kv)
-			}
-		}
-
-		select {
-		case <-ctx.Done():
-			// server closed, return
-			return
-		default:
-		}
-	}
-}
-
-func (e *EtcdStore) doWatchWithCluster(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
-	cluster := &model.Cluster{}
-	fjson.MustUnmarshal(cluster, []byte(kv.Value))
-
-	return &Evt{
-		Src:   EventSrcCluster,
-		Type:  evtType,
-		Key:   strings.Replace(string(kv.Key), fmt.Sprintf("%s/", e.clustersDir), "", 1),
-		Value: cluster,
-	}
-}
-
-func (e *EtcdStore) doWatchWithServer(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
-	svr := &model.Server{}
-	fjson.MustUnmarshal(svr, kv.Value)
-
-	return &Evt{
-		Src:   EventSrcServer,
-		Type:  evtType,
-		Key:   strings.Replace(string(kv.Key), fmt.Sprintf("%s/", e.serversDir), "", 1),
-		Value: svr,
-	}
-}
-
-func (e *EtcdStore) doWatchWithBind(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
-	key := strings.Replace(string(kv.Key), fmt.Sprintf("%s/", e.bindsDir), "", 1)
-	infos := strings.SplitN(key, "-", 2)
-
-	return &Evt{
-		Src:  EventSrcBind,
-		Type: evtType,
-		Key:  string(kv.Key),
-		Value: &model.Bind{
-			ServerID:  infos[0],
-			ClusterID: infos[1],
-		},
-	}
-}
-
-func (e *EtcdStore) doWatchWithAPI(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
-	api := &model.API{}
-	fjson.MustUnmarshal(api, []byte(kv.Value))
-	value := strings.Replace(string(kv.Key), fmt.Sprintf("%s/", e.apisDir), "", 1)
-
-	return &Evt{
-		Src:   EventSrcAPI,
-		Type:  evtType,
-		Key:   value,
-		Value: api,
-	}
-}
-
-func (e *EtcdStore) doWatchWithRouting(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
-	routing := &model.Routing{}
-	fjson.MustUnmarshal(routing, []byte(kv.Value))
-
-	return &Evt{
-		Src:   EventSrcRouting,
-		Type:  evtType,
-		Key:   strings.Replace(string(kv.Key), fmt.Sprintf("%s/", e.routingsDir), "", 1),
-		Value: routing,
-	}
-}
-
-func (e *EtcdStore) init() {
-	e.watchMethodMapping[EventSrcBind] = e.doWatchWithBind
-	e.watchMethodMapping[EventSrcServer] = e.doWatchWithServer
-	e.watchMethodMapping[EventSrcCluster] = e.doWatchWithCluster
-	e.watchMethodMapping[EventSrcAPI] = e.doWatchWithAPI
-	e.watchMethodMapping[EventSrcRouting] = e.doWatchWithRouting
-}
-
-func (e *EtcdStore) put(key, value string) error {
-	_, err := e.txn().Then(clientv3.OpPut(key, value)).Commit()
+func (e *EtcdStore) put(key, value string, opts ...clientv3.OpOption) error {
+	_, err := e.txn().Then(clientv3.OpPut(key, value, opts...)).Commit()
 	return err
 }
 
 func (e *EtcdStore) putTTL(key, value string, ttl int64) error {
-	lessor := clientv3.NewLease(e.cli)
+	lessor := clientv3.NewLease(e.rawClient)
 	defer lessor.Close()
 
-	ctx, cancel := context.WithTimeout(e.cli.Ctx(), DefaultRequestTimeout)
+	ctx, cancel := context.WithTimeout(e.rawClient.Ctx(), DefaultRequestTimeout)
 	leaseResp, err := lessor.Grant(ctx, ttl)
 	cancel()
 
@@ -584,23 +259,207 @@ func (e *EtcdStore) putTTL(key, value string, ttl int64) error {
 	return err
 }
 
-func (e *EtcdStore) delete(key string) error {
-	_, err := e.txn().Then(clientv3.OpDelete(key)).Commit()
+func (e *EtcdStore) delete(key string, opts ...clientv3.OpOption) error {
+	_, err := e.txn().Then(clientv3.OpDelete(key, opts...)).Commit()
 	return err
 }
 
-func (e *EtcdStore) getList(key string, fn func(*mvccpb.KeyValue)) error {
-	ctx, cancel := context.WithTimeout(e.cli.Ctx(), DefaultRequestTimeout)
-	defer cancel()
+type pb interface {
+	Marshal() ([]byte, error)
+	Unmarshal([]byte) error
+	GetID() uint64
+}
 
-	resp, err := clientv3.NewKV(e.cli).Get(ctx, key, clientv3.WithPrefix())
-	if nil != err {
-		return err
+func (e *EtcdStore) putPB(prefix string, value pb, do func(uint64)) (uint64, error) {
+	if value.GetID() == 0 {
+		id, err := e.allocID()
+		if err != nil {
+			return 0, err
+		}
+
+		do(id)
 	}
 
-	for _, item := range resp.Kvs {
-		fn(item)
+	data, err := value.Marshal()
+	if err != nil {
+		return 0, err
+	}
+
+	return value.GetID(), e.put(getKey(prefix, value.GetID()), string(data))
+}
+
+func (e *EtcdStore) getValues(prefix string, limit int64, value pb, fn func(interface{}) error) error {
+	start := uint64(0)
+	end := getKey(prefix, endID)
+	withRange := clientv3.WithRange(end)
+	withLimit := clientv3.WithLimit(limit)
+
+	for {
+		resp, err := e.get(getKey(prefix, start), withRange, withLimit)
+		if err != nil {
+			return err
+		}
+
+		for _, item := range resp.Kvs {
+			err := value.Unmarshal(item.Value)
+			if err != nil {
+				return err
+			}
+
+			fn(value)
+
+			start = value.GetID() + 1
+		}
+
+		// read complete
+		if len(resp.Kvs) < int(limit) {
+			break
+		}
 	}
 
 	return nil
+}
+
+func (e *EtcdStore) get(key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
+	ctx, cancel := context.WithTimeout(e.rawClient.Ctx(), DefaultRequestTimeout)
+	defer cancel()
+
+	return clientv3.NewKV(e.rawClient).Get(ctx, key, opts...)
+}
+
+func (e *EtcdStore) getPB(prefix string, id uint64, value pb) error {
+	data, err := e.getValue(getKey(prefix, id))
+	if err != nil {
+		return err
+	}
+	if len(data) == 0 {
+		return fmt.Errorf("<%d> not found", id)
+	}
+
+	err = value.Unmarshal(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *EtcdStore) getValue(key string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(e.rawClient.Ctx(), DefaultRequestTimeout)
+	defer cancel()
+
+	resp, err := clientv3.NewKV(e.rawClient).Get(ctx, key)
+	if nil != err {
+		return nil, err
+	}
+
+	if len(resp.Kvs) == 0 {
+		return nil, nil
+	}
+
+	return resp.Kvs[0].Value, nil
+}
+
+func (e *EtcdStore) allocID() (uint64, error) {
+	e.idLock.Lock()
+	defer e.idLock.Unlock()
+
+	if e.base == e.end {
+		end, err := e.generate()
+		if err != nil {
+			return 0, err
+		}
+
+		e.end = end
+		e.base = e.end - batch
+	}
+
+	e.base++
+	return e.base, nil
+}
+
+func (e *EtcdStore) generate() (uint64, error) {
+	for {
+		value, err := e.getID()
+		if err != nil {
+			return 0, err
+		}
+
+		max := value + batch
+
+		// create id
+		if value == 0 {
+			max := value + batch
+			err := e.createID(max)
+			if err == ErrStaleOP {
+				continue
+			}
+			if err != nil {
+				return 0, err
+			}
+
+			return max, nil
+		}
+
+		err = e.updateID(value, max)
+		if err == ErrStaleOP {
+			continue
+		}
+		if err != nil {
+			return 0, err
+		}
+
+		return max, nil
+	}
+}
+
+func (e *EtcdStore) createID(value uint64) error {
+	cmp := clientv3.Compare(clientv3.CreateRevision(e.idPath), "=", 0)
+	op := clientv3.OpPut(e.idPath, string(format.Uint64ToBytes(value)))
+	rsp, err := e.txn().If(cmp).Then(op).Commit()
+	if err != nil {
+		return err
+	}
+
+	if !rsp.Succeeded {
+		return ErrStaleOP
+	}
+
+	return nil
+}
+
+func (e *EtcdStore) getID() (uint64, error) {
+	value, err := e.getValue(e.idPath)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(value) == 0 {
+		return 0, nil
+	}
+
+	return format.BytesToUint64(value)
+}
+
+func (e *EtcdStore) updateID(old, value uint64) error {
+	cmp := clientv3.Compare(clientv3.Value(e.idPath), "=", string(format.Uint64ToBytes(old)))
+	op := clientv3.OpPut(e.idPath, string(format.Uint64ToBytes(value)))
+	rsp, err := e.txn().If(cmp).Then(op).Commit()
+	if err != nil {
+		return err
+	}
+
+	if !rsp.Succeeded {
+		return ErrStaleOP
+	}
+
+	return nil
+}
+
+func (e *EtcdStore) getClusterBindPrefix(id uint64) string {
+	return getKey(e.bindsDir, id)
+}
+
+func (e *EtcdStore) getBindKey(bind *metapb.Bind) string {
+	return getKey(e.getClusterBindPrefix(bind.ClusterID), bind.ServerID)
 }
