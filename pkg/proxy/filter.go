@@ -64,16 +64,16 @@ func newContext(rt *dispatcher, originCtx *fasthttp.RequestCtx, forwardReq *fast
 	}
 }
 
-func (c *proxyContext) GetStartAt() time.Time {
+func (c *proxyContext) StartAt() time.Time {
 	return c.startAt
 }
 
-func (c *proxyContext) GetEndAt() time.Time {
+func (c *proxyContext) EndAt() time.Time {
 	return c.endAt
 }
 
-func (c *proxyContext) SetEndAt(endAt time.Time) {
-	c.endAt = endAt
+func (c *proxyContext) DispatchNode() *metapb.DispatchNode {
+	return c.result.node.meta
 }
 
 func (c *proxyContext) API() *metapb.API {
@@ -96,30 +96,34 @@ func (c *proxyContext) OriginRequest() *fasthttp.RequestCtx {
 	return c.originCtx
 }
 
-func (c *proxyContext) ValidateRequest() bool {
+func (c *proxyContext) Analysis() *util.Analysis {
+	return c.rt.analysiser
+}
+
+func (c *proxyContext) setEndAt(endAt time.Time) {
+	c.endAt = endAt
+}
+
+func (c *proxyContext) validateRequest() bool {
 	return c.result.node.validate(c.ForwardRequest())
 }
 
-func (c *proxyContext) AllowWithBlacklist(ip string) bool {
+func (c *proxyContext) allowWithBlacklist(ip string) bool {
 	return c.result.api.allowWithBlacklist(ip)
 }
 
-func (c *proxyContext) AllowWithWhitelist(ip string) bool {
+func (c *proxyContext) allowWithWhitelist(ip string) bool {
 	return c.result.api.allowWithWhitelist(ip)
 }
 
-func (c *proxyContext) CircuitStatus() metapb.CircuitStatus {
+func (c *proxyContext) circuitStatus() metapb.CircuitStatus {
 	return c.result.dest.circuit
 }
 
-func (c *proxyContext) ChangeCircuitStatusToClose() {
+func (c *proxyContext) changeCircuitStatusToClose() {
 	c.result.dest.circuitToClose()
 }
 
-func (c *proxyContext) ChangeCircuitStatusToOpen() {
+func (c *proxyContext) changeCircuitStatusToOpen() {
 	c.result.dest.circuitToOpen()
-}
-
-func (c *proxyContext) Analysis() *util.Analysis {
-	return c.rt.analysiser
 }

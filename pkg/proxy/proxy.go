@@ -298,7 +298,7 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *di
 	}
 
 	res, err := p.client.Do(forwardReq, svr.meta.Addr, nil)
-	c.SetEndAt(time.Now())
+	c.(*proxyContext).setEndAt(time.Now())
 
 	result.res = res
 

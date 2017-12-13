@@ -10,25 +10,17 @@ import (
 
 // Context filter context
 type Context interface {
-	GetStartAt() time.Time
-	GetEndAt() time.Time
-	SetEndAt(time.Time)
+	StartAt() time.Time
+	EndAt() time.Time
 
 	OriginRequest() *fasthttp.RequestCtx
 	ForwardRequest() *fasthttp.Request
 	Response() *fasthttp.Response
 
 	API() *metapb.API
+	DispatchNode() *metapb.DispatchNode
 	Server() *metapb.Server
 	Analysis() *util.Analysis
-	CircuitStatus() metapb.CircuitStatus
-
-	ChangeCircuitStatusToClose()
-	ChangeCircuitStatusToOpen()
-
-	AllowWithBlacklist(ip string) bool
-	AllowWithWhitelist(ip string) bool
-	ValidateRequest() bool
 }
 
 // Filter filter interface

@@ -28,7 +28,7 @@ func (v ValidationFilter) Name() string {
 
 // Pre pre filter, before proxy reuqest
 func (v ValidationFilter) Pre(c filter.Context) (statusCode int, err error) {
-	if c.ValidateRequest() {
+	if c.(*proxyContext).validateRequest() {
 		return v.BaseFilter.Pre(c)
 	}
 

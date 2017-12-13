@@ -47,10 +47,10 @@ func (f CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) {
 		return f.BaseFilter.Pre(c)
 	}
 
-	switch c.CircuitStatus() {
+	switch c.(*proxyContext).circuitStatus() {
 	case metapb.Open:
 		if f.getFailureRate(c) >= int(cb.FailureRateToClose) {
-			c.ChangeCircuitStatusToClose()
+			c.(*proxyContext).changeCircuitStatusToClose()
 			return http.StatusServiceUnavailable, ErrCircuitClose
 		}
 
@@ -73,8 +73,8 @@ func (f CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error) 
 		return f.BaseFilter.Pre(c)
 	}
 
-	if c.CircuitStatus() == metapb.Half && f.getSucceedRate(c) >= int(cb.SucceedRateToOpen) {
-		c.ChangeCircuitStatusToOpen()
+	if c.(*proxyContext).circuitStatus() == metapb.Half && f.getSucceedRate(c) >= int(cb.SucceedRateToOpen) {
+		c.(*proxyContext).changeCircuitStatusToOpen()
 	}
 
 	return f.BaseFilter.Post(c)
@@ -82,8 +82,8 @@ func (f CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error) 
 
 // PostErr execute proxy has errors
 func (f CircuitBreakeFilter) PostErr(c filter.Context) {
-	if c.CircuitStatus() == metapb.Half {
-		c.ChangeCircuitStatusToClose()
+	if c.(*proxyContext).circuitStatus() == metapb.Half {
+		c.(*proxyContext).changeCircuitStatusToClose()
 	}
 }
 

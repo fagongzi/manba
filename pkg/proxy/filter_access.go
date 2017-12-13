@@ -22,7 +22,7 @@ func (f AccessFilter) Name() string {
 
 // Post execute after proxy
 func (f AccessFilter) Post(c filter.Context) (statusCode int, err error) {
-	cost := c.GetEndAt().Sub(c.GetStartAt())
+	cost := c.EndAt().Sub(c.StartAt())
 
 	log.Infof("filter: %s %s \"%s\" %d \"%s\" %s %s",
 		GetRealClientIP(c.OriginRequest()),
