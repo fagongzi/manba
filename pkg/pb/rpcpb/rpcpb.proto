@@ -25,6 +25,16 @@ service MetaService {
     rpc RemoveServer   (RemoveServerReq)   returns (RemoveServerRsp)       {}
     rpc GetServer      (GetServerReq)      returns (GetServerRsp)          {}
     rpc GetServerList  (GetServerListReq)  returns (stream metapb.Server)  {}
+
+    rpc PutAPI         (PutAPIReq)         returns (PutAPIRsp)             {}
+    rpc RemoveAPI      (RemoveAPIReq)      returns (RemoveAPIRsp)          {}
+    rpc GetAPI         (GetAPIReq)         returns (GetAPIRsp)             {}
+    rpc GetAPIList     (GetAPIListReq)     returns (stream metapb.API)     {}
+
+    rpc PutRouting     (PutRoutingReq)     returns (PutRoutingRsp)         {}
+    rpc RemoveRouting  (RemoveRoutingReq)  returns (RemoveRoutingRsp)      {}
+    rpc GetRouting     (GetRoutingReq)     returns (GetRoutingRsp)         {}
+    rpc GetRoutingList (GetRoutingListReq) returns (stream metapb.Routing) {}
 }
 
 message PutClusterReq {
@@ -90,5 +100,71 @@ message GetServerRsp {
 }
 
 message GetServerListReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message PutAPIReq {
+    optional RpcHeader      header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.API     api     = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "API"];
+}
+
+message PutAPIRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveAPIReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveAPIRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message GetAPIReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message GetAPIRsp {
+    optional RpcHeader      header = 1 [(gogoproto.nullable) = false];
+    optional metapb.API     api    = 2 [(gogoproto.nullable) = true, (gogoproto.customname) = "API"];
+}
+
+message GetAPIListReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message PutRoutingReq {
+    optional RpcHeader      header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.Routing routing = 2 [(gogoproto.nullable) = false];
+}
+
+message PutRoutingRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveRoutingReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveRoutingRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message GetRoutingReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message GetRoutingRsp {
+    optional RpcHeader      header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.Routing routing = 2 [(gogoproto.nullable) = true];
+}
+
+message GetRoutingListReq {
     optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
 }

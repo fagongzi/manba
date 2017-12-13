@@ -20,17 +20,17 @@ func (f AnalysisFilter) Name() string {
 
 // Pre execute before proxy
 func (f AnalysisFilter) Pre(c filter.Context) (statusCode int, err error) {
-	c.GetAnalysis().Request(c.GetProxyServerAddr())
+	c.Analysis().Request(c.Server().ID)
 	return f.BaseFilter.Pre(c)
 }
 
 // Post execute after proxy
 func (f AnalysisFilter) Post(c filter.Context) (statusCode int, err error) {
-	c.GetAnalysis().Response(c.GetProxyServerAddr(), c.GetEndAt().Sub(c.GetStartAt()).Nanoseconds())
+	c.Analysis().Response(c.Server().ID, c.GetEndAt().Sub(c.GetStartAt()).Nanoseconds())
 	return f.BaseFilter.Post(c)
 }
 
 // PostErr execute proxy has errors
 func (f AnalysisFilter) PostErr(c filter.Context) {
-	c.GetAnalysis().Failure(c.GetProxyServerAddr())
+	c.Analysis().Failure(c.Server().ID)
 }

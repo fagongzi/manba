@@ -21,6 +21,16 @@ type Client interface {
 	RemoveServer(id uint64) error
 	GetServer(id uint64) (*metapb.Server, error)
 	GetServerList(fn func(*metapb.Server) bool) error
+
+	PutAPI(api metapb.API) (uint64, error)
+	RemoveAPI(id uint64) error
+	GetAPI(id uint64) (*metapb.API, error)
+	GetAPIList(fn func(*metapb.API) bool) error
+
+	PutRouting(routing metapb.Routing) (uint64, error)
+	RemoveRouting(id uint64) error
+	GetRouting(id uint64) (*metapb.Routing, error)
+	GetRoutingList(fn func(*metapb.Routing) bool) error
 }
 
 // NewClient returns a gateway proxy
@@ -100,10 +110,7 @@ func (c *client) GetClusterList(fn func(*metapb.Cluster) bool) error {
 
 		next := fn(c)
 		if !next {
-			err = stream.(grpc.ClientStream).CloseSend()
-			if err != nil {
-				return err
-			}
+			return nil
 		}
 	}
 }
@@ -158,10 +165,117 @@ func (c *client) GetServerList(fn func(*metapb.Server) bool) error {
 
 		next := fn(c)
 		if !next {
-			err = stream.(grpc.ClientStream).CloseSend()
-			if err != nil {
-				return err
-			}
+			return nil
+		}
+	}
+}
+
+func (c *client) PutAPI(api metapb.API) (uint64, error) {
+	rsp, err := c.metaC.PutAPI(context.Background(), &rpcpb.PutAPIReq{
+		API: api,
+	}, grpc.FailFast(true))
+	if err != nil {
+		return 0, err
+	}
+
+	return rsp.ID, nil
+}
+
+func (c *client) RemoveAPI(id uint64) error {
+	_, err := c.metaC.RemoveAPI(context.Background(), &rpcpb.RemoveAPIReq{
+		ID: id,
+	}, grpc.FailFast(true))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *client) GetAPI(id uint64) (*metapb.API, error) {
+	rsp, err := c.metaC.GetAPI(context.Background(), &rpcpb.GetAPIReq{
+		ID: id,
+	}, grpc.FailFast(true))
+	if err != nil {
+		return nil, err
+	}
+
+	return rsp.API, nil
+}
+
+func (c *client) GetAPIList(fn func(*metapb.API) bool) error {
+	stream, err := c.metaC.GetAPIList(context.Background(), &rpcpb.GetAPIListReq{}, grpc.FailFast(true))
+	if err != nil {
+		return err
+	}
+
+	for {
+		c, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+
+		next := fn(c)
+		if !next {
+			return nil
+		}
+	}
+}
+
+func (c *client) PutRouting(routing metapb.Routing) (uint64, error) {
+	rsp, err := c.metaC.PutRouting(context.Background(), &rpcpb.PutRoutingReq{
+		Routing: routing,
+	}, grpc.FailFast(true))
+	if err != nil {
+		return 0, err
+	}
+
+	return rsp.ID, nil
+}
+
+func (c *client) RemoveRouting(id uint64) error {
+	_, err := c.metaC.RemoveRouting(context.Background(), &rpcpb.RemoveRoutingReq{
+		ID: id,
+	}, grpc.FailFast(true))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *client) GetRouting(id uint64) (*metapb.Routing, error) {
+	rsp, err := c.metaC.GetRouting(context.Background(), &rpcpb.GetRoutingReq{
+		ID: id,
+	}, grpc.FailFast(true))
+	if err != nil {
+		return nil, err
+	}
+
+	return rsp.Routing, nil
+}
+
+func (c *client) GetRoutingList(fn func(*metapb.Routing) bool) error {
+	stream, err := c.metaC.GetRoutingList(context.Background(), &rpcpb.GetRoutingListReq{}, grpc.FailFast(true))
+	if err != nil {
+		return err
+	}
+
+	for {
+		c, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+
+		next := fn(c)
+		if !next {
+			return nil
 		}
 	}
 }

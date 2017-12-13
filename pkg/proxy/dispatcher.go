@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/goetty"
@@ -13,13 +12,12 @@ import (
 )
 
 type dispathNode struct {
-	api   *model.API
-	node  *model.Node
-	dest  *serverRuntime
-	res   *fasthttp.Response
-	err   error
-	code  int
-	merge bool
+	api  *apiRuntime
+	node *apiNode
+	dest *serverRuntime
+	res  *fasthttp.Response
+	err  error
+	code int
 }
 
 func (dn *dispathNode) release() {
@@ -29,27 +27,26 @@ func (dn *dispathNode) release() {
 }
 
 func (dn *dispathNode) needRewrite() bool {
-	return dn.node.Rewrite != ""
+	return dn.node.meta.URLRewrite != ""
 }
 
 func (dn *dispathNode) rewiteURL(req *fasthttp.Request) string {
-	return dn.api.RewriteURL(req, dn.node)
+	return dn.api.rewriteURL(req, dn.node.meta.URLRewrite)
 }
 
 type dispatcher struct {
 	sync.RWMutex
 
 	cnf         *Cfg
-	binds       map[string]*model.Bind
-	clusters    map[string]*clusterRuntime
-	servers     map[string]*serverRuntime
-	mapping     map[string]map[string]*clusterRuntime // map[server id]map[cluster id]cluster
-	checkerC    chan string
-	apis        map[string]*model.API
-	routings    map[string]*model.Routing
+	routings    map[uint64]*routingRuntime
+	apis        map[uint64]*apiRuntime
+	clusters    map[uint64]*clusterRuntime
+	servers     map[uint64]*serverRuntime
+	binds       map[uint64]map[uint64]*clusterRuntime
+	checkerC    chan uint64
 	watchStopC  chan bool
 	watchEventC chan *store.Evt
-	analysiser  *model.Analysis
+	analysiser  *util.Analysis
 	store       store.Store
 	httpClient  *util.FastHTTPClient
 	tw          *goetty.TimeoutWheel
@@ -63,15 +60,14 @@ func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner) *dispatcher {
 		tw:          tw,
 		store:       db,
 		runner:      runner,
-		analysiser:  model.NewAnalysis(tw),
+		analysiser:  util.NewAnalysis(tw),
 		httpClient:  util.NewFastHTTPClient(),
-		binds:       make(map[string]*model.Bind),
-		clusters:    make(map[string]*clusterRuntime),
-		servers:     make(map[string]*serverRuntime),
-		mapping:     make(map[string]map[string]*clusterRuntime),
-		apis:        make(map[string]*model.API),
-		routings:    make(map[string]*model.Routing),
-		checkerC:    make(chan string, 1024),
+		clusters:    make(map[uint64]*clusterRuntime),
+		servers:     make(map[uint64]*serverRuntime),
+		apis:        make(map[uint64]*apiRuntime),
+		routings:    make(map[uint64]*routingRuntime),
+		binds:       make(map[uint64]map[uint64]*clusterRuntime),
+		checkerC:    make(chan uint64, 1024),
 		watchStopC:  make(chan bool),
 		watchEventC: make(chan *store.Evt),
 	}
@@ -85,14 +81,13 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) []*dispathNode {
 
 	var dispathes []*dispathNode
 	for _, api := range r.apis {
-		if api.Matches(req) {
-			dispathes = make([]*dispathNode, len(api.Nodes))
-
-			for index, node := range api.Nodes {
-				dispathes[index] = &dispathNode{
+		if api.matches(req) {
+			dispathes = make([]*dispathNode, len(api.meta.Nodes))
+			for idx, node := range api.nodes {
+				dispathes[idx] = &dispathNode{
 					api:  api,
 					node: node,
-					dest: r.selectServer(req, r.selectClusterByRouting(req, r.clusters[node.ClusterName])),
+					dest: r.selectServer(req, r.selectClusterByRouting(req, r.clusters[node.meta.ClusterID])),
 				}
 			}
 		}
@@ -106,8 +101,8 @@ func (r *dispatcher) selectClusterByRouting(req *fasthttp.Request, src *clusterR
 	targetCluster := src
 
 	for _, routing := range r.routings {
-		if routing.Matches(req) {
-			targetCluster = r.clusters[routing.Cluster]
+		if routing.matches(req) {
+			targetCluster = r.clusters[routing.meta.ClusterID]
 			break
 		}
 	}

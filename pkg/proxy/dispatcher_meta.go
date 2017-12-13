@@ -4,9 +4,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/format"
 	"github.com/fagongzi/util/json"
 )
 
@@ -21,106 +22,87 @@ var (
 	errBindNotFound    = errors.New("Bind not found")
 	errAPINotFound     = errors.New("API not found")
 	errRoutingNotFound = errors.New("Routing not found")
+
+	limit = int64(32)
 )
 
 func (r *dispatcher) load() {
+	go r.watch()
+
+	r.Lock()
 	r.loadClusters()
 	r.loadServers()
 	r.loadBinds()
 	r.loadAPIs()
 	r.loadRoutings()
-
-	go r.watch()
+	r.Unlock()
 }
 
 func (r *dispatcher) loadClusters() {
-	clusters, err := r.store.GetClusters()
+	err := r.store.GetClusters(limit, func(value interface{}) error {
+		return r.addCluster(value.(*metapb.Cluster))
+	})
 	if nil != err {
 		log.Errorf("load clusters failed, errors:\n%+v",
 			err)
 		return
 	}
-
-	log.Infof("load %d clusters", len(clusters))
-	for _, cluster := range clusters {
-		if err := r.addCluster(cluster); nil != err {
-			log.Fatalf("cluster <%s> add failed, errors:\n%+v",
-				json.MustMarshal(cluster),
-				err)
-		}
-	}
 }
 
 func (r *dispatcher) loadServers() {
-	servers, err := r.store.GetServers()
+	err := r.store.GetServers(limit, func(value interface{}) error {
+		return r.addServer(value.(*metapb.Server))
+	})
 	if nil != err {
-		log.Errorf("load servers from store failed, errors:\n%+v",
+		log.Errorf("load servers failed, errors:\n%+v",
 			err)
 		return
-	}
-
-	log.Infof("load %d servers", len(servers))
-	for _, server := range servers {
-		if err := r.addServer(server); nil != err {
-			log.Fatalf("server <%s> add failed, errors:\n%+v",
-				json.MustMarshal(server),
-				err)
-		}
 	}
 }
 
 func (r *dispatcher) loadRoutings() {
-	routings, err := r.store.GetRoutings()
+	err := r.store.GetRoutings(limit, func(value interface{}) error {
+		return r.addRouting(value.(*metapb.Routing))
+	})
 	if nil != err {
-		log.Errorf("load routings from store failed, errors:\n%+v",
+		log.Errorf("load servers failed, errors:\n%+v",
 			err)
 		return
-	}
-
-	log.Infof("load %d routings", len(routings))
-	for _, route := range routings {
-		if err := r.addRouting(route); nil != err {
-			log.Fatalf("routing <%s> add failed, errors:\n%+v",
-				json.MustMarshal(route),
-				err)
-		}
 	}
 }
 
 func (r *dispatcher) loadBinds() {
-	binds, err := r.store.GetBinds()
-	if nil != err {
-		log.Errorf("load binds from store failed, errors:\n%+v",
-			err)
-		return
-	}
-
-	log.Infof("load %d binds", len(binds))
-	for _, b := range binds {
-		err := r.addBind(b)
+	for clusterID := range r.clusters {
+		servers, err := r.store.GetBindServers(clusterID)
 		if nil != err {
-			log.Fatalf("bind <%s> add failed, errors:\n%+v",
-				json.MustMarshal(b),
+			log.Errorf("load binds from store failed, errors:\n%+v",
 				err)
+			return
+		}
+
+		for _, serverID := range servers {
+			b := &metapb.Bind{
+				ClusterID: clusterID,
+				ServerID:  serverID,
+			}
+			err = r.addBind(b)
+			if nil != err {
+				log.Fatalf("bind <%s> add failed, errors:\n%+v",
+					b.String(),
+					err)
+			}
 		}
 	}
 }
 
 func (r *dispatcher) loadAPIs() {
-	apis, err := r.store.GetAPIs()
+	err := r.store.GetAPIs(limit, func(value interface{}) error {
+		return r.addAPI(value.(*metapb.API))
+	})
 	if nil != err {
-		log.Errorf("load apis from store failed, errors:\n%+v",
+		log.Errorf("load apis failed, errors:\n%+v",
 			err)
 		return
-	}
-
-	log.Infof("load %d apis", len(apis))
-	for _, api := range apis {
-		if err := r.addAPI(api); nil != err {
-			log.Fatalf("api <%s> add failed, errors:\n%+v",
-				json.MustMarshal(api),
-				err)
-		}
 	}
 }
 
@@ -154,80 +136,97 @@ func (r *dispatcher) readyToReceiveWatchEvent() {
 }
 
 func (r *dispatcher) doRoutingEvent(evt *store.Evt) {
-	routing, _ := evt.Value.(*model.Routing)
+	routing, _ := evt.Value.(*metapb.Routing)
 
 	if evt.Type == store.EventTypeNew {
 		r.addRouting(routing)
 	} else if evt.Type == store.EventTypeDelete {
-		r.removeRouting(evt.Key)
+		r.removeRouting(format.MustParseStrUInt64(evt.Key))
 	} else if evt.Type == store.EventTypeUpdate {
 		// TODO: impl
 	}
 }
 
 func (r *dispatcher) doAPIEvent(evt *store.Evt) {
-	api, _ := evt.Value.(*model.API)
+	api, _ := evt.Value.(*metapb.API)
 
 	if evt.Type == store.EventTypeNew {
 		r.addAPI(api)
 	} else if evt.Type == store.EventTypeDelete {
-		r.removeAPI(evt.Key)
+		r.removeAPI(format.MustParseStrUInt64(evt.Key))
 	} else if evt.Type == store.EventTypeUpdate {
 		r.updateAPI(api)
 	}
 }
 
 func (r *dispatcher) doClusterEvent(evt *store.Evt) {
-	cluster, _ := evt.Value.(*model.Cluster)
+	cluster, _ := evt.Value.(*metapb.Cluster)
 
 	if evt.Type == store.EventTypeNew {
 		r.addCluster(cluster)
 	} else if evt.Type == store.EventTypeDelete {
-		r.removeCluster(evt.Key)
+		r.removeCluster(format.MustParseStrUInt64(evt.Key))
 	} else if evt.Type == store.EventTypeUpdate {
 		r.updateCluster(cluster)
 	}
 }
 
 func (r *dispatcher) doServerEvent(evt *store.Evt) {
-	svr, _ := evt.Value.(*model.Server)
+	svr, _ := evt.Value.(*metapb.Server)
 
 	if evt.Type == store.EventTypeNew {
 		r.addServer(svr)
 	} else if evt.Type == store.EventTypeDelete {
-		r.removeServer(evt.Key)
+		r.removeServer(format.MustParseStrUInt64(evt.Key))
 	} else if evt.Type == store.EventTypeUpdate {
 		r.updateServer(svr)
 	}
 }
 
 func (r *dispatcher) doBindEvent(evt *store.Evt) {
-	bind, _ := evt.Value.(*model.Bind)
+	bind, _ := evt.Value.(*metapb.Bind)
 
 	if evt.Type == store.EventTypeNew {
 		r.addBind(bind)
 	} else if evt.Type == store.EventTypeDelete {
-		r.removeBind(evt.Key)
+		r.removeBind(bind)
 	}
 }
 
-func (r *dispatcher) addRouting(routing *model.Routing) error {
+func (r *dispatcher) addRouting(meta *metapb.Routing) error {
 	r.Lock()
 	defer r.Unlock()
 
-	if _, ok := r.routings[routing.ID]; ok {
+	if _, ok := r.routings[meta.ID]; ok {
 		return errRoutingExists
 	}
 
-	r.routings[routing.ID] = routing
-	log.Infof("routing <%s> added, data <%s>",
-		routing.ID,
-		json.MustMarshal(routing))
+	r.routings[meta.ID] = newRoutingRuntime(meta)
+	log.Infof("routing <%d> added, data <%s>",
+		meta.ID,
+		meta.String())
 
 	return nil
 }
 
-func (r *dispatcher) removeRouting(id string) error {
+func (r *dispatcher) updateRouting(meta *metapb.Routing) error {
+	r.Lock()
+	defer r.Unlock()
+
+	rt, ok := r.routings[meta.ID]
+	if !ok {
+		return errRoutingNotFound
+	}
+
+	rt.updateMeta(meta)
+	log.Infof("routing <%d> updated, data <%s>",
+		meta.ID,
+		meta.String())
+
+	return nil
+}
+
+func (r *dispatcher) removeRouting(id uint64) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -242,39 +241,40 @@ func (r *dispatcher) removeRouting(id string) error {
 	return nil
 }
 
-func (r *dispatcher) addAPI(api *model.API) error {
+func (r *dispatcher) addAPI(api *metapb.API) error {
 	r.Lock()
 	defer r.Unlock()
 
-	if _, ok := r.apis[api.URL]; ok {
+	if _, ok := r.apis[api.ID]; ok {
 		return errAPIExists
 	}
 
-	r.apis[api.ID] = api
-	log.Infof("api <%s> added, data <%s>",
+	r.apis[api.ID] = newAPIRuntime(api)
+	log.Infof("api <%d> added, data <%s>",
 		api.ID,
-		json.MustMarshal(api))
+		api.String())
 
 	return nil
 }
 
-func (r *dispatcher) updateAPI(api *model.API) error {
+func (r *dispatcher) updateAPI(api *metapb.API) error {
 	r.Lock()
 	defer r.Unlock()
 
-	if _, ok := r.apis[api.ID]; !ok {
+	rt, ok := r.apis[api.ID]
+	if !ok {
 		return errAPINotFound
 	}
 
-	r.apis[api.ID] = api
-	log.Infof("api <%s> updated, data <%s>",
+	rt.updateMeta(api)
+	log.Infof("api <%d> updated, data <%s>",
 		api.ID,
-		json.MustMarshal(api))
+		api.String())
 
 	return nil
 }
 
-func (r *dispatcher) removeAPI(id string) error {
+func (r *dispatcher) removeAPI(id uint64) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -283,13 +283,12 @@ func (r *dispatcher) removeAPI(id string) error {
 	}
 
 	delete(r.apis, id)
-	log.Infof("api <%s> removed",
+	log.Infof("api <%d> removed",
 		id)
-
 	return nil
 }
 
-func (r *dispatcher) addServer(svr *model.Server) error {
+func (r *dispatcher) addServer(svr *metapb.Server) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -298,22 +297,17 @@ func (r *dispatcher) addServer(svr *model.Server) error {
 	}
 
 	rt := newServerRuntime(svr, r.tw)
-
-	binded := make(map[string]*clusterRuntime)
-	r.servers[svr.ID] = rt
-	r.mapping[svr.ID] = binded
-
 	r.addAnalysis(rt)
 	r.addToCheck(rt)
 
-	log.Infof("server <%s> added, data <%s>",
+	log.Infof("server <%d> added, data <%s>",
 		svr.ID,
-		json.MustMarshal(svr))
+		svr.String())
 
 	return nil
 }
 
-func (r *dispatcher) updateServer(meta *model.Server) error {
+func (r *dispatcher) updateServer(meta *metapb.Server) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -334,7 +328,7 @@ func (r *dispatcher) updateServer(meta *model.Server) error {
 	return nil
 }
 
-func (r *dispatcher) removeServer(id string) error {
+func (r *dispatcher) removeServer(id uint64) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -344,18 +338,12 @@ func (r *dispatcher) removeServer(id string) error {
 	}
 
 	delete(r.servers, id)
-
-	binded, _ := r.mapping[svr.meta.ID]
-	delete(r.mapping, svr.meta.ID)
-	log.Infof("all bind of server <%s> removed ",
-		svr.meta.ID)
-
-	for _, cluster := range binded {
+	for _, cluster := range r.clusters {
 		cluster.remove(id)
 	}
-	log.Infof("server <%s> removed",
-		svr.meta.ID)
 
+	log.Infof("server <%d> removed",
+		svr.meta.ID)
 	return nil
 }
 
@@ -363,13 +351,13 @@ func (r *dispatcher) addAnalysis(svr *serverRuntime) {
 	r.analysiser.AddTarget(svr.meta.ID, time.Second)
 	cb := svr.meta.CircuitBreaker
 	if cb != nil {
-		r.analysiser.AddTarget(svr.meta.ID, cb.RateCheckPeriod)
+		r.analysiser.AddTarget(svr.meta.ID, time.Duration(cb.RateCheckPeriod))
 	} else {
 		r.analysiser.RemoveTarget(svr.meta.ID)
 	}
 }
 
-func (r *dispatcher) addCluster(cluster *model.Cluster) error {
+func (r *dispatcher) addCluster(cluster *metapb.Cluster) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -378,14 +366,14 @@ func (r *dispatcher) addCluster(cluster *model.Cluster) error {
 	}
 
 	r.clusters[cluster.ID] = newClusterRuntime(cluster)
-	log.Infof("cluster <%s> added, data <%s>",
+	log.Infof("cluster <%d> added, data <%s>",
 		cluster.ID,
-		json.MustMarshal(cluster))
+		cluster.String())
 
 	return nil
 }
 
-func (r *dispatcher) updateCluster(meta *model.Cluster) error {
+func (r *dispatcher) updateCluster(meta *metapb.Cluster) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -395,14 +383,14 @@ func (r *dispatcher) updateCluster(meta *model.Cluster) error {
 	}
 
 	rt.updateMeta(meta)
-	log.Infof("cluster <%s> updated, data <%s>",
+	log.Infof("cluster <%d> updated, data <%s>",
 		meta.ID,
-		json.MustMarshal(meta))
+		meta.String())
 
 	return nil
 }
 
-func (r *dispatcher) removeCluster(id string) error {
+func (r *dispatcher) removeCluster(id uint64) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -412,25 +400,22 @@ func (r *dispatcher) removeCluster(id string) error {
 	}
 
 	// TODO: check API node loose cluster
-	cluster.foreach(func(id string) {
-		if svr, ok := r.servers[id]; ok {
-			r.doRemoveBind(svr, cluster)
-		}
-	})
+	for _, clusters := range r.binds {
+		delete(clusters, id)
+	}
 
 	delete(r.clusters, cluster.meta.ID)
-	log.Infof("cluster <%s> removed",
+	log.Infof("cluster <%d> removed",
 		cluster.meta.ID)
 
 	return nil
 }
 
-func (r *dispatcher) addBind(bind *model.Bind) error {
+func (r *dispatcher) addBind(bind *metapb.Bind) error {
 	r.Lock()
 	defer r.Unlock()
 
-	svr, ok := r.servers[bind.ServerID]
-	if !ok {
+	if _, ok := r.servers[bind.ServerID]; !ok {
 		log.Warnf("bind failed, server <%s> not found",
 			bind.ServerID)
 		return errServerNotFound
@@ -443,35 +428,22 @@ func (r *dispatcher) addBind(bind *model.Bind) error {
 		return errClusterNotFound
 	}
 
-	binded, _ := r.mapping[svr.meta.ID]
-	if c, ok := binded[cluster.meta.ID]; ok &&
-		c.meta.ID == bind.ClusterID {
-		return errBindExists
+	if _, ok := r.binds[bind.ServerID]; !ok {
+		r.binds[bind.ServerID] = make(map[uint64]*clusterRuntime)
 	}
 
-	r.binds[bind.ID] = bind
-	binded[cluster.meta.ID] = cluster
+	clusters := r.binds[bind.ServerID]
+	clusters[bind.ClusterID] = cluster
 
-	cluster.add(svr.meta.ID)
-
-	log.Infof("bind <%s,%s> stored",
-		bind.ClusterID,
-		bind.ServerID)
-
+	log.Infof("bind <%d,%d> stored", bind.ClusterID, bind.ServerID)
 	return nil
 }
 
-func (r *dispatcher) removeBind(id string) error {
+func (r *dispatcher) removeBind(bind *metapb.Bind) error {
 	r.Lock()
 	defer r.Unlock()
 
-	bind, ok := r.binds[id]
-	if !ok {
-		return errBindNotFound
-	}
-
-	svr, ok := r.servers[bind.ServerID]
-	if !ok {
+	if _, ok := r.servers[bind.ServerID]; !ok {
 		log.Errorf("remove bind failed: server <%s> not found",
 			bind.ServerID)
 		return errServerNotFound
@@ -484,19 +456,10 @@ func (r *dispatcher) removeBind(id string) error {
 		return errClusterNotFound
 	}
 
-	delete(r.binds, id)
-	r.doRemoveBind(svr, cluster)
-
-	log.Infof("bind <%s,%s> removed",
-		bind.ClusterID,
-		bind.ServerID)
+	if clusters, ok := r.binds[bind.ServerID]; ok {
+		delete(clusters, bind.ClusterID)
+	}
+	cluster.remove(bind.ServerID)
 
 	return nil
-}
-
-func (r *dispatcher) doRemoveBind(svr *serverRuntime, cluster *clusterRuntime) {
-	if binded, ok := r.mapping[svr.meta.ID]; ok {
-		delete(binded, cluster.meta.ID)
-		cluster.remove(svr.meta.ID)
-	}
 }

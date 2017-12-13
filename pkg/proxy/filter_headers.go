@@ -34,7 +34,7 @@ func (f HeadersFilter) Name() string {
 // Pre execute before proxy
 func (f HeadersFilter) Pre(c filter.Context) (statusCode int, err error) {
 	for _, h := range hopHeaders {
-		c.GetProxyOuterRequest().Header.Del(h)
+		c.ForwardRequest().Header.Del(h)
 	}
 
 	return f.BaseFilter.Pre(c)
@@ -43,13 +43,13 @@ func (f HeadersFilter) Pre(c filter.Context) (statusCode int, err error) {
 // Post execute after proxy
 func (f HeadersFilter) Post(c filter.Context) (statusCode int, err error) {
 	for _, h := range hopHeaders {
-		c.GetProxyResponse().Header.Del(h)
+		c.Response().Header.Del(h)
 	}
 
 	// 需要合并处理的，不做header的复制，由proxy做合并
-	if !c.NeedMerge() {
-		c.GetOriginRequestCtx().Response.Header.Reset()
-		c.GetProxyResponse().Header.CopyTo(&c.GetOriginRequestCtx().Response.Header)
+	if len(c.API().Nodes) == 1 {
+		c.OriginRequest().Response.Header.Reset()
+		c.Response().Header.CopyTo(&c.OriginRequest().Response.Header)
 	}
 
 	return f.BaseFilter.Post(c)

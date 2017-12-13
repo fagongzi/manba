@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/fagongzi/gateway/pkg/filter"
-	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/valyala/fasthttp"
 )
 
@@ -70,56 +71,45 @@ func (c *proxyContext) GetStartAt() time.Time {
 func (c *proxyContext) GetEndAt() time.Time {
 	return c.endAt
 }
+
 func (c *proxyContext) SetEndAt(endAt time.Time) {
 	c.endAt = endAt
 }
 
-func (c *proxyContext) GetProxyServerAddr() string {
-	return c.result.dest.meta.Addr
+func (c *proxyContext) API() *metapb.API {
+	return c.result.api.meta
 }
 
-func (c *proxyContext) GetProxyOuterRequest() *fasthttp.Request {
+func (c *proxyContext) Server() *metapb.Server {
+	return c.result.dest.meta
+}
+
+func (c *proxyContext) ForwardRequest() *fasthttp.Request {
 	return c.forwardReq
 }
 
-func (c *proxyContext) GetProxyResponse() *fasthttp.Response {
+func (c *proxyContext) Response() *fasthttp.Response {
 	return c.result.res
 }
 
-func (c *proxyContext) NeedMerge() bool {
-	return c.result.merge
-}
-
-func (c *proxyContext) GetOriginRequestCtx() *fasthttp.RequestCtx {
+func (c *proxyContext) OriginRequest() *fasthttp.RequestCtx {
 	return c.originCtx
 }
 
-func (c *proxyContext) GetMaxQPS() int {
-	return c.result.dest.meta.MaxQPS
+func (c *proxyContext) ValidateRequest() bool {
+	return c.result.node.validate(c.ForwardRequest())
 }
 
-func (c *proxyContext) ValidateProxyOuterRequest() bool {
-	return c.result.node.Validate(c.GetProxyOuterRequest())
+func (c *proxyContext) AllowWithBlacklist(ip string) bool {
+	return c.result.api.allowWithBlacklist(ip)
 }
 
-func (c *proxyContext) InBlacklist(ip string) bool {
-	return c.result.api.AccessCheckBlacklist(ip)
+func (c *proxyContext) AllowWithWhitelist(ip string) bool {
+	return c.result.api.allowWithWhitelist(ip)
 }
 
-func (c *proxyContext) InWhitelist(ip string) bool {
-	return c.result.api.AccessCheckWhitelist(ip)
-}
-
-func (c *proxyContext) GetCircuitBreaker() *model.CircuitBreaker {
-	return c.result.dest.meta.CircuitBreaker
-}
-
-func (c *proxyContext) IsCircuitOpen() bool {
-	return c.result.dest.isCircuitStatus(model.CircuitOpen)
-}
-
-func (c *proxyContext) IsCircuitHalf() bool {
-	return c.result.dest.isCircuitStatus(model.CircuitHalf)
+func (c *proxyContext) CircuitStatus() metapb.CircuitStatus {
+	return c.result.dest.circuit
 }
 
 func (c *proxyContext) ChangeCircuitStatusToClose() {
@@ -130,6 +120,6 @@ func (c *proxyContext) ChangeCircuitStatusToOpen() {
 	c.result.dest.circuitToOpen()
 }
 
-func (c *proxyContext) GetAnalysis() *model.Analysis {
+func (c *proxyContext) Analysis() *util.Analysis {
 	return c.rt.analysiser
 }

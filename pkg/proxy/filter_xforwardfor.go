@@ -20,6 +20,6 @@ func (f XForwardForFilter) Name() string {
 
 // Pre execute before proxy
 func (f XForwardForFilter) Pre(c filter.Context) (statusCode int, err error) {
-	c.GetProxyOuterRequest().Header.Add("X-Forwarded-For", c.GetOriginRequestCtx().RemoteIP().String())
+	c.ForwardRequest().Header.Add("X-Forwarded-For", c.OriginRequest().RemoteIP().String())
 	return f.BaseFilter.Pre(c)
 }

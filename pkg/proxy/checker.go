@@ -2,8 +2,9 @@ package proxy
 
 import (
 	"context"
+	"time"
 
-	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
 	"github.com/valyala/fasthttp"
@@ -25,20 +26,20 @@ func (r *dispatcher) readyToHeathChecker() {
 }
 
 func (r *dispatcher) addToCheck(svr *serverRuntime) {
-	svr.circuit = model.CircuitOpen
-	svr.status = model.Down
+	svr.circuit = metapb.Open
+	svr.status = metapb.Unknown
 	if svr.meta.HeathCheck != nil {
-		svr.useCheckDuration = svr.meta.HeathCheck.Interval
+		svr.useCheckDuration = time.Duration(svr.meta.HeathCheck.CheckInterval)
 	}
 	svr.heathTimeout.Stop()
 	r.checkerC <- svr.meta.ID
 }
 
 func (r *dispatcher) heathCheckTimeout(arg interface{}) {
-	r.checkerC <- arg.(string)
+	r.checkerC <- arg.(uint64)
 }
 
-func (r *dispatcher) check(id string) {
+func (r *dispatcher) check(id uint64) {
 	r.Lock()
 	defer r.Unlock()
 
@@ -48,7 +49,7 @@ func (r *dispatcher) check(id string) {
 	}
 
 	defer func() {
-		if svr.meta.HeathCheck != nil && !svr.meta.External {
+		if svr.meta.HeathCheck != nil {
 			if svr.useCheckDuration > r.cnf.Option.LimitIntervalHeathCheck {
 				svr.useCheckDuration = r.cnf.Option.LimitIntervalHeathCheck
 			}
@@ -58,36 +59,37 @@ func (r *dispatcher) check(id string) {
 
 	prev := svr.status
 
-	if svr.meta.External {
-		log.Warnf("server <%s> heath check is using external", svr.meta.ID)
-		svr.changeTo(model.Up)
-	} else if svr.meta.HeathCheck == nil {
+	if svr.meta.HeathCheck == nil {
 		log.Warnf("server <%s> heath check not setting", svr.meta.ID)
-		svr.changeTo(model.Up)
+		svr.changeTo(metapb.Up)
 	} else {
 		if r.doCheck(svr) {
-			svr.changeTo(model.Up)
+			svr.changeTo(metapb.Up)
 		} else {
-			svr.changeTo(model.Down)
+			svr.changeTo(metapb.Down)
 		}
 	}
 
 	if prev != svr.status {
-		binded := r.mapping[svr.meta.ID]
+		clusters, ok := r.binds[svr.meta.ID]
 
-		if svr.status == model.Up {
-			log.Infof("server <%s> UP",
+		if svr.status == metapb.Up {
+			log.Infof("server <%d> UP",
 				svr.meta.ID)
 
-			for _, c := range binded {
-				c.add(svr.meta.ID)
+			if ok {
+				for _, c := range clusters {
+					c.add(svr.meta.ID)
+				}
 			}
 		} else {
-			log.Infof("server <%s> DOWN",
+			log.Infof("server <%d> DOWN",
 				svr.meta.ID)
 
-			for _, c := range binded {
-				c.remove(svr.meta.ID)
+			if ok {
+				for _, c := range clusters {
+					c.remove(svr.meta.ID)
+				}
 			}
 		}
 	}
@@ -100,11 +102,11 @@ func (r *dispatcher) doCheck(svr *serverRuntime) bool {
 	req.SetRequestURI(svr.getCheckURL())
 
 	opt := util.DefaultHTTPOption()
-	opt.ReadTimeout = svr.meta.HeathCheck.Timeout
+	opt.ReadTimeout = time.Duration(svr.meta.HeathCheck.Timeout)
 	resp, err := r.httpClient.Do(req, svr.meta.Addr, opt)
 	defer fasthttp.ReleaseResponse(resp)
 	if err != nil {
-		log.Warnf("server <%s, %s, %d> check failed, errors:\n%+v",
+		log.Warnf("server <%d, %s, %d> check failed, errors:\n%+v",
 			svr.meta.ID,
 			svr.meta.HeathCheck.Path,
 			svr.checkFailCount+1,
@@ -114,7 +116,7 @@ func (r *dispatcher) doCheck(svr *serverRuntime) bool {
 	}
 
 	if fasthttp.StatusOK != resp.StatusCode() {
-		log.Warnf("server <%s, %s, %d, %d> check failed",
+		log.Warnf("server <%d, %s, %d, %d> check failed",
 			svr.meta.ID,
 			svr.meta.HeathCheck.Path,
 			resp.StatusCode(),

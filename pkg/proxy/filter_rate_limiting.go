@@ -30,11 +30,14 @@ func (f RateLimitingFilter) Name() string {
 
 // Pre execute before proxy
 func (f RateLimitingFilter) Pre(c filter.Context) (statusCode int, err error) {
-	requestCounts := c.GetAnalysis().GetRecentlyRequestCount(c.GetProxyServerAddr(), time.Second)
+	requestCounts := c.Analysis().GetRecentlyRequestCount(c.Server().ID, time.Second)
 
-	if requestCounts >= c.GetMaxQPS() {
-		log.Warnf("filter: server <%s> qps: %d, last 1 secs: %d", c.GetProxyServerAddr(), c.GetMaxQPS(), requestCounts)
-		c.GetAnalysis().Reject(c.GetProxyServerAddr())
+	if requestCounts >= int(c.Server().MaxQPS) {
+		log.Warnf("filter: server <%s> qps: %d, last 1 secs: %d",
+			c.Server().ID,
+			c.Server().MaxQPS,
+			requestCounts)
+		c.Analysis().Reject(c.Server().ID)
 		return http.StatusServiceUnavailable, ErrTraffixLimited
 	}
 

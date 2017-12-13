@@ -3,7 +3,8 @@ package filter
 import (
 	"time"
 
-	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/valyala/fasthttp"
 )
 
@@ -13,25 +14,21 @@ type Context interface {
 	GetEndAt() time.Time
 	SetEndAt(time.Time)
 
-	GetProxyServerAddr() string
-	GetOriginRequestCtx() *fasthttp.RequestCtx
-	GetProxyOuterRequest() *fasthttp.Request
-	ValidateProxyOuterRequest() bool
-	GetProxyResponse() *fasthttp.Response
-	NeedMerge() bool
+	OriginRequest() *fasthttp.RequestCtx
+	ForwardRequest() *fasthttp.Request
+	Response() *fasthttp.Response
 
-	GetMaxQPS() int
+	API() *metapb.API
+	Server() *metapb.Server
+	Analysis() *util.Analysis
+	CircuitStatus() metapb.CircuitStatus
 
-	IsCircuitOpen() bool
-	IsCircuitHalf() bool
 	ChangeCircuitStatusToClose()
 	ChangeCircuitStatusToOpen()
-	GetCircuitBreaker() *model.CircuitBreaker
 
-	InBlacklist(ip string) bool
-	InWhitelist(ip string) bool
-
-	GetAnalysis() *model.Analysis
+	AllowWithBlacklist(ip string) bool
+	AllowWithWhitelist(ip string) bool
+	ValidateRequest() bool
 }
 
 // Filter filter interface

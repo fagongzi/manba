@@ -24,6 +24,20 @@
 		GetServerReq
 		GetServerRsp
 		GetServerListReq
+		PutAPIReq
+		PutAPIRsp
+		RemoveAPIReq
+		RemoveAPIRsp
+		GetAPIReq
+		GetAPIRsp
+		GetAPIListReq
+		PutRoutingReq
+		PutRoutingRsp
+		RemoveRoutingReq
+		RemoveRoutingRsp
+		GetRoutingReq
+		GetRoutingRsp
+		GetRoutingListReq
 */
 package rpcpb
 
@@ -390,6 +404,324 @@ func (m *GetServerListReq) GetHeader() RpcHeader {
 	return RpcHeader{}
 }
 
+type PutAPIReq struct {
+	Header           RpcHeader  `protobuf:"bytes,1,opt,name=header" json:"header"`
+	API              metapb.API `protobuf:"bytes,2,opt,name=api" json:"api"`
+	XXX_unrecognized []byte     `json:"-"`
+}
+
+func (m *PutAPIReq) Reset()                    { *m = PutAPIReq{} }
+func (m *PutAPIReq) String() string            { return proto.CompactTextString(m) }
+func (*PutAPIReq) ProtoMessage()               {}
+func (*PutAPIReq) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{15} }
+
+func (m *PutAPIReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *PutAPIReq) GetAPI() metapb.API {
+	if m != nil {
+		return m.API
+	}
+	return metapb.API{}
+}
+
+type PutAPIRsp struct {
+	Header           RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	ID               uint64    `protobuf:"varint,2,opt,name=id" json:"id"`
+	XXX_unrecognized []byte    `json:"-"`
+}
+
+func (m *PutAPIRsp) Reset()                    { *m = PutAPIRsp{} }
+func (m *PutAPIRsp) String() string            { return proto.CompactTextString(m) }
+func (*PutAPIRsp) ProtoMessage()               {}
+func (*PutAPIRsp) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{16} }
+
+func (m *PutAPIRsp) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *PutAPIRsp) GetID() uint64 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
+type RemoveAPIReq struct {
+	Header           RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	ID               uint64    `protobuf:"varint,2,opt,name=id" json:"id"`
+	XXX_unrecognized []byte    `json:"-"`
+}
+
+func (m *RemoveAPIReq) Reset()                    { *m = RemoveAPIReq{} }
+func (m *RemoveAPIReq) String() string            { return proto.CompactTextString(m) }
+func (*RemoveAPIReq) ProtoMessage()               {}
+func (*RemoveAPIReq) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{17} }
+
+func (m *RemoveAPIReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *RemoveAPIReq) GetID() uint64 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
+type RemoveAPIRsp struct {
+	Header           RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	XXX_unrecognized []byte    `json:"-"`
+}
+
+func (m *RemoveAPIRsp) Reset()                    { *m = RemoveAPIRsp{} }
+func (m *RemoveAPIRsp) String() string            { return proto.CompactTextString(m) }
+func (*RemoveAPIRsp) ProtoMessage()               {}
+func (*RemoveAPIRsp) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{18} }
+
+func (m *RemoveAPIRsp) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+type GetAPIReq struct {
+	Header           RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	ID               uint64    `protobuf:"varint,2,opt,name=id" json:"id"`
+	XXX_unrecognized []byte    `json:"-"`
+}
+
+func (m *GetAPIReq) Reset()                    { *m = GetAPIReq{} }
+func (m *GetAPIReq) String() string            { return proto.CompactTextString(m) }
+func (*GetAPIReq) ProtoMessage()               {}
+func (*GetAPIReq) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{19} }
+
+func (m *GetAPIReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *GetAPIReq) GetID() uint64 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
+type GetAPIRsp struct {
+	Header           RpcHeader   `protobuf:"bytes,1,opt,name=header" json:"header"`
+	API              *metapb.API `protobuf:"bytes,2,opt,name=api" json:"api,omitempty"`
+	XXX_unrecognized []byte      `json:"-"`
+}
+
+func (m *GetAPIRsp) Reset()                    { *m = GetAPIRsp{} }
+func (m *GetAPIRsp) String() string            { return proto.CompactTextString(m) }
+func (*GetAPIRsp) ProtoMessage()               {}
+func (*GetAPIRsp) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{20} }
+
+func (m *GetAPIRsp) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *GetAPIRsp) GetAPI() *metapb.API {
+	if m != nil {
+		return m.API
+	}
+	return nil
+}
+
+type GetAPIListReq struct {
+	Header           RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	XXX_unrecognized []byte    `json:"-"`
+}
+
+func (m *GetAPIListReq) Reset()                    { *m = GetAPIListReq{} }
+func (m *GetAPIListReq) String() string            { return proto.CompactTextString(m) }
+func (*GetAPIListReq) ProtoMessage()               {}
+func (*GetAPIListReq) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{21} }
+
+func (m *GetAPIListReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+type PutRoutingReq struct {
+	Header           RpcHeader      `protobuf:"bytes,1,opt,name=header" json:"header"`
+	Routing          metapb.Routing `protobuf:"bytes,2,opt,name=routing" json:"routing"`
+	XXX_unrecognized []byte         `json:"-"`
+}
+
+func (m *PutRoutingReq) Reset()                    { *m = PutRoutingReq{} }
+func (m *PutRoutingReq) String() string            { return proto.CompactTextString(m) }
+func (*PutRoutingReq) ProtoMessage()               {}
+func (*PutRoutingReq) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{22} }
+
+func (m *PutRoutingReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *PutRoutingReq) GetRouting() metapb.Routing {
+	if m != nil {
+		return m.Routing
+	}
+	return metapb.Routing{}
+}
+
+type PutRoutingRsp struct {
+	Header           RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	ID               uint64    `protobuf:"varint,2,opt,name=id" json:"id"`
+	XXX_unrecognized []byte    `json:"-"`
+}
+
+func (m *PutRoutingRsp) Reset()                    { *m = PutRoutingRsp{} }
+func (m *PutRoutingRsp) String() string            { return proto.CompactTextString(m) }
+func (*PutRoutingRsp) ProtoMessage()               {}
+func (*PutRoutingRsp) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{23} }
+
+func (m *PutRoutingRsp) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *PutRoutingRsp) GetID() uint64 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
+type RemoveRoutingReq struct {
+	Header           RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	ID               uint64    `protobuf:"varint,2,opt,name=id" json:"id"`
+	XXX_unrecognized []byte    `json:"-"`
+}
+
+func (m *RemoveRoutingReq) Reset()                    { *m = RemoveRoutingReq{} }
+func (m *RemoveRoutingReq) String() string            { return proto.CompactTextString(m) }
+func (*RemoveRoutingReq) ProtoMessage()               {}
+func (*RemoveRoutingReq) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{24} }
+
+func (m *RemoveRoutingReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *RemoveRoutingReq) GetID() uint64 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
+type RemoveRoutingRsp struct {
+	Header           RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	XXX_unrecognized []byte    `json:"-"`
+}
+
+func (m *RemoveRoutingRsp) Reset()                    { *m = RemoveRoutingRsp{} }
+func (m *RemoveRoutingRsp) String() string            { return proto.CompactTextString(m) }
+func (*RemoveRoutingRsp) ProtoMessage()               {}
+func (*RemoveRoutingRsp) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{25} }
+
+func (m *RemoveRoutingRsp) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+type GetRoutingReq struct {
+	Header           RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	ID               uint64    `protobuf:"varint,2,opt,name=id" json:"id"`
+	XXX_unrecognized []byte    `json:"-"`
+}
+
+func (m *GetRoutingReq) Reset()                    { *m = GetRoutingReq{} }
+func (m *GetRoutingReq) String() string            { return proto.CompactTextString(m) }
+func (*GetRoutingReq) ProtoMessage()               {}
+func (*GetRoutingReq) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{26} }
+
+func (m *GetRoutingReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *GetRoutingReq) GetID() uint64 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
+type GetRoutingRsp struct {
+	Header           RpcHeader       `protobuf:"bytes,1,opt,name=header" json:"header"`
+	Routing          *metapb.Routing `protobuf:"bytes,2,opt,name=routing" json:"routing,omitempty"`
+	XXX_unrecognized []byte          `json:"-"`
+}
+
+func (m *GetRoutingRsp) Reset()                    { *m = GetRoutingRsp{} }
+func (m *GetRoutingRsp) String() string            { return proto.CompactTextString(m) }
+func (*GetRoutingRsp) ProtoMessage()               {}
+func (*GetRoutingRsp) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{27} }
+
+func (m *GetRoutingRsp) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *GetRoutingRsp) GetRouting() *metapb.Routing {
+	if m != nil {
+		return m.Routing
+	}
+	return nil
+}
+
+type GetRoutingListReq struct {
+	Header           RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	XXX_unrecognized []byte    `json:"-"`
+}
+
+func (m *GetRoutingListReq) Reset()                    { *m = GetRoutingListReq{} }
+func (m *GetRoutingListReq) String() string            { return proto.CompactTextString(m) }
+func (*GetRoutingListReq) ProtoMessage()               {}
+func (*GetRoutingListReq) Descriptor() ([]byte, []int) { return fileDescriptorRpcpb, []int{28} }
+
+func (m *GetRoutingListReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
 func init() {
 	proto.RegisterType((*RpcHeader)(nil), "rpcpb.RpcHeader")
 	proto.RegisterType((*PutClusterReq)(nil), "rpcpb.PutClusterReq")
@@ -406,6 +738,20 @@ func init() {
 	proto.RegisterType((*GetServerReq)(nil), "rpcpb.GetServerReq")
 	proto.RegisterType((*GetServerRsp)(nil), "rpcpb.GetServerRsp")
 	proto.RegisterType((*GetServerListReq)(nil), "rpcpb.GetServerListReq")
+	proto.RegisterType((*PutAPIReq)(nil), "rpcpb.PutAPIReq")
+	proto.RegisterType((*PutAPIRsp)(nil), "rpcpb.PutAPIRsp")
+	proto.RegisterType((*RemoveAPIReq)(nil), "rpcpb.RemoveAPIReq")
+	proto.RegisterType((*RemoveAPIRsp)(nil), "rpcpb.RemoveAPIRsp")
+	proto.RegisterType((*GetAPIReq)(nil), "rpcpb.GetAPIReq")
+	proto.RegisterType((*GetAPIRsp)(nil), "rpcpb.GetAPIRsp")
+	proto.RegisterType((*GetAPIListReq)(nil), "rpcpb.GetAPIListReq")
+	proto.RegisterType((*PutRoutingReq)(nil), "rpcpb.PutRoutingReq")
+	proto.RegisterType((*PutRoutingRsp)(nil), "rpcpb.PutRoutingRsp")
+	proto.RegisterType((*RemoveRoutingReq)(nil), "rpcpb.RemoveRoutingReq")
+	proto.RegisterType((*RemoveRoutingRsp)(nil), "rpcpb.RemoveRoutingRsp")
+	proto.RegisterType((*GetRoutingReq)(nil), "rpcpb.GetRoutingReq")
+	proto.RegisterType((*GetRoutingRsp)(nil), "rpcpb.GetRoutingRsp")
+	proto.RegisterType((*GetRoutingListReq)(nil), "rpcpb.GetRoutingListReq")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -427,6 +773,14 @@ type MetaServiceClient interface {
 	RemoveServer(ctx context.Context, in *RemoveServerReq, opts ...grpc.CallOption) (*RemoveServerRsp, error)
 	GetServer(ctx context.Context, in *GetServerReq, opts ...grpc.CallOption) (*GetServerRsp, error)
 	GetServerList(ctx context.Context, in *GetServerListReq, opts ...grpc.CallOption) (MetaService_GetServerListClient, error)
+	PutAPI(ctx context.Context, in *PutAPIReq, opts ...grpc.CallOption) (*PutAPIRsp, error)
+	RemoveAPI(ctx context.Context, in *RemoveAPIReq, opts ...grpc.CallOption) (*RemoveAPIRsp, error)
+	GetAPI(ctx context.Context, in *GetAPIReq, opts ...grpc.CallOption) (*GetAPIRsp, error)
+	GetAPIList(ctx context.Context, in *GetAPIListReq, opts ...grpc.CallOption) (MetaService_GetAPIListClient, error)
+	PutRouting(ctx context.Context, in *PutRoutingReq, opts ...grpc.CallOption) (*PutRoutingRsp, error)
+	RemoveRouting(ctx context.Context, in *RemoveRoutingReq, opts ...grpc.CallOption) (*RemoveRoutingRsp, error)
+	GetRouting(ctx context.Context, in *GetRoutingReq, opts ...grpc.CallOption) (*GetRoutingRsp, error)
+	GetRoutingList(ctx context.Context, in *GetRoutingListReq, opts ...grpc.CallOption) (MetaService_GetRoutingListClient, error)
 }
 
 type metaServiceClient struct {
@@ -555,6 +909,124 @@ func (x *metaServiceGetServerListClient) Recv() (*metapb.Server, error) {
 	return m, nil
 }
 
+func (c *metaServiceClient) PutAPI(ctx context.Context, in *PutAPIReq, opts ...grpc.CallOption) (*PutAPIRsp, error) {
+	out := new(PutAPIRsp)
+	err := grpc.Invoke(ctx, "/rpcpb.MetaService/PutAPI", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metaServiceClient) RemoveAPI(ctx context.Context, in *RemoveAPIReq, opts ...grpc.CallOption) (*RemoveAPIRsp, error) {
+	out := new(RemoveAPIRsp)
+	err := grpc.Invoke(ctx, "/rpcpb.MetaService/RemoveAPI", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metaServiceClient) GetAPI(ctx context.Context, in *GetAPIReq, opts ...grpc.CallOption) (*GetAPIRsp, error) {
+	out := new(GetAPIRsp)
+	err := grpc.Invoke(ctx, "/rpcpb.MetaService/GetAPI", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metaServiceClient) GetAPIList(ctx context.Context, in *GetAPIListReq, opts ...grpc.CallOption) (MetaService_GetAPIListClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_MetaService_serviceDesc.Streams[2], c.cc, "/rpcpb.MetaService/GetAPIList", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &metaServiceGetAPIListClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type MetaService_GetAPIListClient interface {
+	Recv() (*metapb.API, error)
+	grpc.ClientStream
+}
+
+type metaServiceGetAPIListClient struct {
+	grpc.ClientStream
+}
+
+func (x *metaServiceGetAPIListClient) Recv() (*metapb.API, error) {
+	m := new(metapb.API)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *metaServiceClient) PutRouting(ctx context.Context, in *PutRoutingReq, opts ...grpc.CallOption) (*PutRoutingRsp, error) {
+	out := new(PutRoutingRsp)
+	err := grpc.Invoke(ctx, "/rpcpb.MetaService/PutRouting", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metaServiceClient) RemoveRouting(ctx context.Context, in *RemoveRoutingReq, opts ...grpc.CallOption) (*RemoveRoutingRsp, error) {
+	out := new(RemoveRoutingRsp)
+	err := grpc.Invoke(ctx, "/rpcpb.MetaService/RemoveRouting", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metaServiceClient) GetRouting(ctx context.Context, in *GetRoutingReq, opts ...grpc.CallOption) (*GetRoutingRsp, error) {
+	out := new(GetRoutingRsp)
+	err := grpc.Invoke(ctx, "/rpcpb.MetaService/GetRouting", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *metaServiceClient) GetRoutingList(ctx context.Context, in *GetRoutingListReq, opts ...grpc.CallOption) (MetaService_GetRoutingListClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_MetaService_serviceDesc.Streams[3], c.cc, "/rpcpb.MetaService/GetRoutingList", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &metaServiceGetRoutingListClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type MetaService_GetRoutingListClient interface {
+	Recv() (*metapb.Routing, error)
+	grpc.ClientStream
+}
+
+type metaServiceGetRoutingListClient struct {
+	grpc.ClientStream
+}
+
+func (x *metaServiceGetRoutingListClient) Recv() (*metapb.Routing, error) {
+	m := new(metapb.Routing)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // Server API for MetaService service
 
 type MetaServiceServer interface {
@@ -566,6 +1038,14 @@ type MetaServiceServer interface {
 	RemoveServer(context.Context, *RemoveServerReq) (*RemoveServerRsp, error)
 	GetServer(context.Context, *GetServerReq) (*GetServerRsp, error)
 	GetServerList(*GetServerListReq, MetaService_GetServerListServer) error
+	PutAPI(context.Context, *PutAPIReq) (*PutAPIRsp, error)
+	RemoveAPI(context.Context, *RemoveAPIReq) (*RemoveAPIRsp, error)
+	GetAPI(context.Context, *GetAPIReq) (*GetAPIRsp, error)
+	GetAPIList(*GetAPIListReq, MetaService_GetAPIListServer) error
+	PutRouting(context.Context, *PutRoutingReq) (*PutRoutingRsp, error)
+	RemoveRouting(context.Context, *RemoveRoutingReq) (*RemoveRoutingRsp, error)
+	GetRouting(context.Context, *GetRoutingReq) (*GetRoutingRsp, error)
+	GetRoutingList(*GetRoutingListReq, MetaService_GetRoutingListServer) error
 }
 
 func RegisterMetaServiceServer(s *grpc.Server, srv MetaServiceServer) {
@@ -722,6 +1202,156 @@ func (x *metaServiceGetServerListServer) Send(m *metapb.Server) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _MetaService_PutAPI_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutAPIReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetaServiceServer).PutAPI(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcpb.MetaService/PutAPI",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetaServiceServer).PutAPI(ctx, req.(*PutAPIReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetaService_RemoveAPI_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveAPIReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetaServiceServer).RemoveAPI(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcpb.MetaService/RemoveAPI",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetaServiceServer).RemoveAPI(ctx, req.(*RemoveAPIReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetaService_GetAPI_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAPIReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetaServiceServer).GetAPI(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcpb.MetaService/GetAPI",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetaServiceServer).GetAPI(ctx, req.(*GetAPIReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetaService_GetAPIList_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GetAPIListReq)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MetaServiceServer).GetAPIList(m, &metaServiceGetAPIListServer{stream})
+}
+
+type MetaService_GetAPIListServer interface {
+	Send(*metapb.API) error
+	grpc.ServerStream
+}
+
+type metaServiceGetAPIListServer struct {
+	grpc.ServerStream
+}
+
+func (x *metaServiceGetAPIListServer) Send(m *metapb.API) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _MetaService_PutRouting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutRoutingReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetaServiceServer).PutRouting(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcpb.MetaService/PutRouting",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetaServiceServer).PutRouting(ctx, req.(*PutRoutingReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetaService_RemoveRouting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveRoutingReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetaServiceServer).RemoveRouting(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcpb.MetaService/RemoveRouting",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetaServiceServer).RemoveRouting(ctx, req.(*RemoveRoutingReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetaService_GetRouting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRoutingReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetaServiceServer).GetRouting(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcpb.MetaService/GetRouting",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetaServiceServer).GetRouting(ctx, req.(*GetRoutingReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetaService_GetRoutingList_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GetRoutingListReq)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MetaServiceServer).GetRoutingList(m, &metaServiceGetRoutingListServer{stream})
+}
+
+type MetaService_GetRoutingListServer interface {
+	Send(*metapb.Routing) error
+	grpc.ServerStream
+}
+
+type metaServiceGetRoutingListServer struct {
+	grpc.ServerStream
+}
+
+func (x *metaServiceGetRoutingListServer) Send(m *metapb.Routing) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 var _MetaService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "rpcpb.MetaService",
 	HandlerType: (*MetaServiceServer)(nil),
@@ -750,6 +1380,30 @@ var _MetaService_serviceDesc = grpc.ServiceDesc{
 			MethodName: "GetServer",
 			Handler:    _MetaService_GetServer_Handler,
 		},
+		{
+			MethodName: "PutAPI",
+			Handler:    _MetaService_PutAPI_Handler,
+		},
+		{
+			MethodName: "RemoveAPI",
+			Handler:    _MetaService_RemoveAPI_Handler,
+		},
+		{
+			MethodName: "GetAPI",
+			Handler:    _MetaService_GetAPI_Handler,
+		},
+		{
+			MethodName: "PutRouting",
+			Handler:    _MetaService_PutRouting_Handler,
+		},
+		{
+			MethodName: "RemoveRouting",
+			Handler:    _MetaService_RemoveRouting_Handler,
+		},
+		{
+			MethodName: "GetRouting",
+			Handler:    _MetaService_GetRouting_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -760,6 +1414,16 @@ var _MetaService_serviceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "GetServerList",
 			Handler:       _MetaService_GetServerList_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "GetAPIList",
+			Handler:       _MetaService_GetAPIList_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "GetRoutingList",
+			Handler:       _MetaService_GetRoutingList_Handler,
 			ServerStreams: true,
 		},
 	},
@@ -1251,6 +1915,466 @@ func (m *GetServerListReq) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *PutAPIReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PutAPIReq) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n19, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n19
+	dAtA[i] = 0x12
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.API.Size()))
+	n20, err := m.API.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n20
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *PutAPIRsp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PutAPIRsp) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n21, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n21
+	dAtA[i] = 0x10
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *RemoveAPIReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RemoveAPIReq) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n22, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n22
+	dAtA[i] = 0x10
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *RemoveAPIRsp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RemoveAPIRsp) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n23, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n23
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *GetAPIReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetAPIReq) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n24, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n24
+	dAtA[i] = 0x10
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *GetAPIRsp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetAPIRsp) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n25, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n25
+	if m.API != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintRpcpb(dAtA, i, uint64(m.API.Size()))
+		n26, err := m.API.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n26
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *GetAPIListReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetAPIListReq) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n27, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n27
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *PutRoutingReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PutRoutingReq) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n28, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n28
+	dAtA[i] = 0x12
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Routing.Size()))
+	n29, err := m.Routing.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n29
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *PutRoutingRsp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *PutRoutingRsp) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n30, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n30
+	dAtA[i] = 0x10
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *RemoveRoutingReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RemoveRoutingReq) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n31, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n31
+	dAtA[i] = 0x10
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *RemoveRoutingRsp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RemoveRoutingRsp) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n32, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n32
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *GetRoutingReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetRoutingReq) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n33, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n33
+	dAtA[i] = 0x10
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *GetRoutingRsp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetRoutingRsp) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n34, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n34
+	if m.Routing != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintRpcpb(dAtA, i, uint64(m.Routing.Size()))
+		n35, err := m.Routing.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n35
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *GetRoutingListReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetRoutingListReq) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n36, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n36
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func encodeFixed64Rpcpb(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	dAtA[offset+1] = uint8(v >> 8)
@@ -1451,6 +2575,178 @@ func (m *GetServerRsp) Size() (n int) {
 }
 
 func (m *GetServerListReq) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *PutAPIReq) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	l = m.API.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *PutAPIRsp) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RemoveAPIReq) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RemoveAPIRsp) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetAPIReq) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetAPIRsp) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.API != nil {
+		l = m.API.Size()
+		n += 1 + l + sovRpcpb(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetAPIListReq) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *PutRoutingReq) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	l = m.Routing.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *PutRoutingRsp) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RemoveRoutingReq) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RemoveRoutingRsp) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetRoutingReq) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetRoutingRsp) Size() (n int) {
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.Routing != nil {
+		l = m.Routing.Size()
+		n += 1 + l + sovRpcpb(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetRoutingListReq) Size() (n int) {
 	var l int
 	_ = l
 	l = m.Header.Size()
@@ -2928,6 +4224,1380 @@ func (m *GetServerListReq) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *PutAPIReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PutAPIReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PutAPIReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field API", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.API.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PutAPIRsp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PutAPIRsp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PutAPIRsp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RemoveAPIReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RemoveAPIReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RemoveAPIReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RemoveAPIRsp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RemoveAPIRsp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RemoveAPIRsp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetAPIReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetAPIReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetAPIReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetAPIRsp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetAPIRsp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetAPIRsp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field API", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.API == nil {
+				m.API = &metapb.API{}
+			}
+			if err := m.API.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetAPIListReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetAPIListReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetAPIListReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PutRoutingReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PutRoutingReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PutRoutingReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Routing", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Routing.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PutRoutingRsp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PutRoutingRsp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PutRoutingRsp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RemoveRoutingReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RemoveRoutingReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RemoveRoutingReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RemoveRoutingRsp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RemoveRoutingRsp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RemoveRoutingRsp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetRoutingReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetRoutingReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetRoutingReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetRoutingRsp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetRoutingRsp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetRoutingRsp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Routing", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Routing == nil {
+				m.Routing = &metapb.Routing{}
+			}
+			if err := m.Routing.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetRoutingListReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetRoutingListReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetRoutingListReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func skipRpcpb(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3036,37 +5706,52 @@ var (
 func init() { proto.RegisterFile("rpcpb.proto", fileDescriptorRpcpb) }
 
 var fileDescriptorRpcpb = []byte{
-	// 499 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x54, 0xdd, 0x6a, 0xd4, 0x40,
-	0x14, 0xce, 0xac, 0x6b, 0x65, 0xcf, 0x6e, 0xdb, 0x75, 0xba, 0x68, 0x98, 0x8b, 0x54, 0x06, 0x04,
-	0x2f, 0x24, 0x2b, 0xbd, 0x29, 0x14, 0x41, 0xcd, 0x0a, 0x55, 0x50, 0x28, 0xf1, 0xae, 0xa2, 0xb0,
-	0x4d, 0x86, 0x1a, 0xd8, 0x92, 0x31, 0x99, 0xf4, 0x59, 0x7c, 0xa4, 0x5e, 0xf6, 0x09, 0x8a, 0xc6,
-	0xe7, 0x10, 0x24, 0x33, 0x93, 0xc9, 0xcf, 0x86, 0xd2, 0x46, 0x7b, 0xb5, 0xd9, 0x33, 0xe7, 0xfb,
-	0xbe, 0x73, 0xce, 0x7c, 0x73, 0x60, 0x9c, 0xf0, 0x80, 0x9f, 0xb8, 0x3c, 0x89, 0x45, 0x8c, 0xef,
-	0xcb, 0x3f, 0x64, 0xe7, 0x8c, 0x89, 0x25, 0x3f, 0x99, 0xab, 0x1f, 0x75, 0x46, 0x66, 0xa7, 0xf1,
-	0x69, 0x2c, 0x3f, 0xe7, 0xc5, 0x97, 0x8a, 0xd2, 0xa7, 0x30, 0xf2, 0x79, 0xf0, 0x8e, 0x2d, 0x43,
-	0x96, 0x60, 0x1b, 0x86, 0x59, 0x16, 0x85, 0x36, 0x7a, 0x82, 0x9e, 0x8d, 0xbc, 0xe1, 0xc5, 0xd5,
-	0xae, 0xe5, 0xcb, 0x08, 0xe5, 0xb0, 0x79, 0x94, 0x89, 0xc5, 0x2a, 0x4b, 0x05, 0x4b, 0x7c, 0xf6,
-	0x1d, 0xbb, 0xb0, 0xf1, 0x4d, 0x82, 0x64, 0xf2, 0x78, 0x6f, 0xea, 0xaa, 0x3a, 0x0c, 0x99, 0x86,
-	0xeb, 0x2c, 0x3c, 0x87, 0x07, 0x81, 0x42, 0xdb, 0x03, 0x09, 0xd8, 0x76, 0x75, 0x75, 0x9a, 0x54,
-	0xe7, 0x97, 0x59, 0xf4, 0x73, 0x43, 0x31, 0xe5, 0xb7, 0x56, 0x24, 0x30, 0x88, 0x42, 0x29, 0x36,
-	0xf4, 0xa0, 0x38, 0xc9, 0xaf, 0x76, 0x07, 0xef, 0xdf, 0xfa, 0x83, 0x28, 0xa4, 0x5f, 0x61, 0xea,
-	0xb3, 0xb3, 0xf8, 0x9c, 0xfd, 0x43, 0x47, 0xd7, 0xf1, 0x7b, 0x6d, 0xfe, 0xdb, 0xd7, 0x5f, 0x0c,
-	0xe0, 0x90, 0x89, 0x3b, 0x2a, 0x90, 0x37, 0xc8, 0x7b, 0x4c, 0xf7, 0x66, 0xf7, 0x89, 0xaa, 0xfb,
-	0x5c, 0xc0, 0xc3, 0x4a, 0xf1, 0x43, 0x94, 0x8a, 0x1e, 0x2d, 0xd1, 0x15, 0x4c, 0x8e, 0x32, 0xf1,
-	0x89, 0x25, 0xe7, 0xfd, 0x46, 0xf2, 0x1c, 0x36, 0x52, 0x09, 0xd6, 0x45, 0x6f, 0x95, 0x45, 0x2b,
-	0xca, 0x32, 0x5b, 0xe5, 0xd0, 0xe3, 0xba, 0xda, 0x7f, 0x76, 0xe0, 0x17, 0xd8, 0x56, 0x0e, 0xe9,
-	0xdf, 0xcc, 0x75, 0xf4, 0x6f, 0x5a, 0xf4, 0x3d, 0xfc, 0x77, 0x0c, 0x93, 0x43, 0x26, 0xee, 0xa6,
-	0xbc, 0x55, 0x9d, 0xbb, 0xc7, 0x64, 0x6f, 0x72, 0x8f, 0xc8, 0xdc, 0xa3, 0x07, 0x53, 0xa3, 0xd6,
-	0xd3, 0x79, 0x7b, 0x7f, 0xee, 0xc1, 0xf8, 0x23, 0x13, 0xcb, 0x82, 0x25, 0x0a, 0x18, 0x3e, 0x00,
-	0xa8, 0xd6, 0x13, 0x9e, 0x69, 0x74, 0x63, 0x47, 0x92, 0x8e, 0x68, 0xca, 0xa9, 0x85, 0x17, 0xb0,
-	0xd9, 0xd8, 0x0e, 0xf8, 0x71, 0x29, 0xde, 0xda, 0x49, 0xa4, 0xfb, 0x40, 0x92, 0x1c, 0x00, 0x54,
-	0xef, 0xc9, 0x14, 0xd0, 0xd8, 0x18, 0xa4, 0x23, 0x2a, 0xb1, 0xaf, 0x60, 0xab, 0xf9, 0x16, 0xb1,
-	0xbd, 0x96, 0xa9, 0x07, 0x45, 0xda, 0xef, 0x9a, 0x5a, 0x2f, 0x10, 0xde, 0x87, 0x91, 0x79, 0x19,
-	0x78, 0xa7, 0x6a, 0xd3, 0xb8, 0x85, 0xac, 0x07, 0xa5, 0xf2, 0x6b, 0x98, 0xd4, 0x7d, 0x89, 0x1f,
-	0x35, 0x1a, 0xac, 0xe0, 0x9d, 0x71, 0xc9, 0xb0, 0x0f, 0x23, 0x73, 0x99, 0x46, 0xba, 0x6e, 0x54,
-	0xb2, 0x1e, 0x94, 0xc0, 0x97, 0x72, 0xe5, 0x55, 0x2e, 0x30, 0x53, 0x6f, 0x7b, 0x83, 0xb4, 0xdc,
-	0x54, 0x74, 0xec, 0xcd, 0x2e, 0x7f, 0x39, 0xd6, 0x45, 0xee, 0xa0, 0xcb, 0xdc, 0x41, 0x3f, 0x73,
-	0x07, 0xfd, 0xf8, 0xed, 0x58, 0x7f, 0x03, 0x00, 0x00, 0xff, 0xff, 0xf9, 0xb1, 0xb9, 0x8b, 0x7d,
-	0x07, 0x00, 0x00,
+	// 739 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x56, 0xdf, 0x6a, 0xdb, 0x3e,
+	0x14, 0x8e, 0xd3, 0xfe, 0x52, 0x72, 0xd2, 0x3f, 0xf9, 0xa9, 0x65, 0x0b, 0xba, 0x48, 0x87, 0x61,
+	0x30, 0xc6, 0x70, 0x47, 0x77, 0x51, 0x28, 0x63, 0x5d, 0xdc, 0x41, 0x17, 0xd8, 0xc0, 0x78, 0x17,
+	0x85, 0x8e, 0x0d, 0xd2, 0x44, 0x64, 0x86, 0x76, 0xf6, 0x1c, 0xb9, 0xcf, 0xb2, 0x47, 0xea, 0xee,
+	0xfa, 0x04, 0x65, 0xcb, 0x5e, 0x64, 0x58, 0x92, 0x65, 0x49, 0x31, 0x21, 0x55, 0x9b, 0xab, 0xa6,
+	0x47, 0xe7, 0x7c, 0xe7, 0x8f, 0x3e, 0x9f, 0x4f, 0xd0, 0x4a, 0x93, 0x61, 0x72, 0xee, 0x25, 0x69,
+	0x4c, 0x63, 0xf4, 0x1f, 0xfb, 0x07, 0x6f, 0x5f, 0x12, 0x3a, 0x48, 0xce, 0xf7, 0xf8, 0x1f, 0x7e,
+	0x86, 0x77, 0xc6, 0xf1, 0x38, 0x66, 0x3f, 0xf7, 0xf2, 0x5f, 0xdc, 0xea, 0x3e, 0x85, 0x66, 0x98,
+	0x0c, 0xdf, 0x93, 0xc1, 0x88, 0xa4, 0xa8, 0x03, 0xab, 0x59, 0x16, 0x8d, 0x3a, 0xce, 0x13, 0xe7,
+	0x59, 0xd3, 0x5f, 0xbd, 0xbe, 0xdd, 0xad, 0x85, 0xcc, 0xe2, 0x26, 0xb0, 0x11, 0x64, 0xf4, 0xf8,
+	0x22, 0x9b, 0x50, 0x92, 0x86, 0xe4, 0x07, 0xf2, 0xa0, 0xf1, 0x8d, 0x05, 0x31, 0xe7, 0xd6, 0x7e,
+	0xdb, 0xe3, 0x75, 0x48, 0x30, 0x11, 0x2e, 0xbc, 0xd0, 0x1e, 0xac, 0x0d, 0x79, 0x74, 0xa7, 0xce,
+	0x02, 0xb6, 0x3c, 0x51, 0x9d, 0x00, 0x15, 0xfe, 0x85, 0x97, 0xfb, 0x59, 0xcb, 0x38, 0x49, 0xee,
+	0x9c, 0x11, 0x43, 0x3d, 0x1a, 0xb1, 0x64, 0xab, 0x3e, 0xe4, 0x27, 0xd3, 0xdb, 0xdd, 0x7a, 0xff,
+	0x5d, 0x58, 0x8f, 0x46, 0xee, 0x57, 0x68, 0x87, 0xe4, 0x32, 0xbe, 0x22, 0xf7, 0xe8, 0x68, 0x1e,
+	0xbe, 0x6f, 0xe2, 0xdf, 0xbd, 0xfe, 0x7c, 0x00, 0x27, 0x84, 0x2e, 0xa9, 0xc0, 0x44, 0x03, 0xb7,
+	0x98, 0xee, 0x62, 0xf7, 0xe9, 0x94, 0xf7, 0x79, 0x0c, 0xff, 0x97, 0x19, 0x3f, 0x44, 0x13, 0x6a,
+	0xd1, 0x92, 0x7b, 0x01, 0xeb, 0x41, 0x46, 0x3f, 0x91, 0xf4, 0xca, 0x6e, 0x24, 0x2f, 0xa0, 0x31,
+	0x61, 0xc1, 0xa2, 0xe8, 0xcd, 0xa2, 0x68, 0x0e, 0x59, 0x78, 0x73, 0x1f, 0xf7, 0x4c, 0xcd, 0xf6,
+	0xc0, 0x0c, 0xfc, 0x02, 0x5b, 0x9c, 0x21, 0xf6, 0xcd, 0xcc, 0x83, 0xef, 0x19, 0xf0, 0x16, 0xfc,
+	0x3b, 0x83, 0xf5, 0x13, 0x42, 0x97, 0x53, 0xde, 0x85, 0x8a, 0x6d, 0x31, 0xd9, 0x45, 0xee, 0xd1,
+	0x91, 0xf7, 0xe8, 0x43, 0x5b, 0x66, 0xb3, 0x65, 0xde, 0x18, 0x9a, 0x41, 0x46, 0x7b, 0x41, 0xdf,
+	0x66, 0x14, 0xcf, 0x61, 0x65, 0x90, 0x44, 0xa2, 0xd6, 0x56, 0x51, 0x6b, 0x2f, 0xe8, 0xfb, 0x2d,
+	0x31, 0x98, 0x95, 0x1c, 0x39, 0x77, 0x72, 0x4f, 0x65, 0xa2, 0x07, 0x66, 0xdc, 0x19, 0xac, 0x73,
+	0x4a, 0x58, 0x36, 0x31, 0x0f, 0xfb, 0x8d, 0x8a, 0x6d, 0xc1, 0xb5, 0x53, 0x68, 0x9e, 0x10, 0xba,
+	0x84, 0xc2, 0xc6, 0x12, 0xd8, 0x62, 0x9a, 0xf3, 0xaf, 0xcd, 0xd1, 0xae, 0xed, 0x88, 0x2d, 0xd4,
+	0x5e, 0xd0, 0xb7, 0x25, 0x18, 0x57, 0xd8, 0x30, 0xce, 0x68, 0xf4, 0x7d, 0x6c, 0xa9, 0xb0, 0x29,
+	0x8f, 0x36, 0x37, 0xb2, 0x00, 0x2d, 0x14, 0x56, 0x78, 0x09, 0x85, 0x2d, 0x32, 0x2e, 0x4b, 0x61,
+	0xef, 0xd1, 0xd1, 0x42, 0x0a, 0x6b, 0x5f, 0xbf, 0x50, 0xd8, 0x25, 0x15, 0x98, 0x68, 0xe0, 0x76,
+	0x0a, 0xbb, 0xc0, 0x7d, 0x3a, 0xe5, 0x7d, 0x72, 0x85, 0x15, 0x87, 0x96, 0x34, 0xdc, 0xff, 0xb5,
+	0x06, 0xad, 0x8f, 0x84, 0x0e, 0xf2, 0x6d, 0x19, 0x0d, 0x09, 0x3a, 0x04, 0x28, 0x9f, 0x61, 0x68,
+	0x47, 0x44, 0x6b, 0x6f, 0x41, 0x5c, 0x61, 0x9d, 0x24, 0x6e, 0x0d, 0x1d, 0xc3, 0x86, 0xf6, 0x0a,
+	0x42, 0x8f, 0x8b, 0xe4, 0xc6, 0xdb, 0x0b, 0x57, 0x1f, 0x30, 0x90, 0x43, 0x80, 0xf2, 0xdd, 0x20,
+	0x0b, 0xd0, 0x5e, 0x46, 0xb8, 0xc2, 0xca, 0x62, 0x8f, 0x60, 0x53, 0x7f, 0x73, 0xa0, 0xce, 0x8c,
+	0xa7, 0x18, 0x14, 0x36, 0xdf, 0x2f, 0x6e, 0xed, 0xa5, 0x83, 0x0e, 0xd8, 0x32, 0xe6, 0xca, 0x81,
+	0xb6, 0xcb, 0x36, 0xa5, 0x2a, 0xe2, 0x59, 0x23, 0xcb, 0xfc, 0xb6, 0x58, 0x88, 0x22, 0xf6, 0x91,
+	0xd6, 0x60, 0x19, 0x5e, 0x69, 0x67, 0x08, 0x07, 0x6c, 0x73, 0x19, 0xa9, 0x55, 0x41, 0xc6, 0xb3,
+	0x46, 0x16, 0xf8, 0x9a, 0x11, 0xaf, 0x54, 0x3b, 0x39, 0x75, 0x53, 0x03, 0xb1, 0xa1, 0x9a, 0xac,
+	0x63, 0x0f, 0x1a, 0x5c, 0x7e, 0x50, 0xbb, 0xec, 0x8c, 0x2f, 0x66, 0x6c, 0x58, 0x8a, 0x32, 0xe5,
+	0xe6, 0x97, 0x65, 0xaa, 0x3a, 0x83, 0x67, 0x8d, 0x2c, 0xd0, 0x83, 0x06, 0x5f, 0x98, 0x32, 0x91,
+	0x54, 0x00, 0x6c, 0x58, 0x98, 0xff, 0x2b, 0xc6, 0x03, 0xb1, 0x60, 0x55, 0x1e, 0x94, 0x3b, 0x17,
+	0xab, 0x3b, 0x9a, 0x75, 0xc3, 0xd9, 0x2b, 0x3e, 0x09, 0x95, 0xbd, 0xe5, 0x47, 0x8f, 0x2b, 0xac,
+	0x3a, 0x7b, 0x8b, 0x70, 0x9d, 0xa4, 0x0a, 0x42, 0xf5, 0x81, 0xc2, 0x5e, 0xb3, 0x00, 0x6d, 0xeb,
+	0xe0, 0x0a, 0xab, 0xc2, 0x5e, 0xe5, 0x7b, 0x56, 0xd9, 0xab, 0x7f, 0xe6, 0xd8, 0xdc, 0x0d, 0x79,
+	0xf7, 0xfe, 0xce, 0xcd, 0x9f, 0x6e, 0xed, 0x7a, 0xda, 0x75, 0x6e, 0xa6, 0x5d, 0xe7, 0xf7, 0xb4,
+	0xeb, 0xfc, 0xfc, 0xdb, 0xad, 0xfd, 0x0b, 0x00, 0x00, 0xff, 0xff, 0x38, 0x40, 0xe7, 0x2e, 0x31,
+	0x0e, 0x00, 0x00,
 }

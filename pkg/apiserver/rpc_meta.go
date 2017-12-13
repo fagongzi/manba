@@ -150,3 +150,133 @@ func (s *metaService) GetServerList(req *rpcpb.GetServerListReq, stream rpcpb.Me
 		}
 	}
 }
+
+func (s *metaService) PutAPI(ctx context.Context, req *rpcpb.PutAPIReq) (*rpcpb.PutAPIRsp, error) {
+	select {
+	case <-ctx.Done():
+		return nil, errRPCCancel
+	default:
+		id, err := s.db.PutAPI(&req.API)
+		if err != nil {
+			return nil, err
+		}
+
+		return &rpcpb.PutAPIRsp{
+			ID: id,
+		}, nil
+	}
+}
+
+func (s *metaService) RemoveAPI(ctx context.Context, req *rpcpb.RemoveAPIReq) (*rpcpb.RemoveAPIRsp, error) {
+	select {
+	case <-ctx.Done():
+		return nil, errRPCCancel
+	default:
+		err := s.db.RemoveAPI(req.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		return &rpcpb.RemoveAPIRsp{}, nil
+	}
+}
+
+func (s *metaService) GetAPI(ctx context.Context, req *rpcpb.GetAPIReq) (*rpcpb.GetAPIRsp, error) {
+	select {
+	case <-ctx.Done():
+		return nil, errRPCCancel
+	default:
+		value, err := s.db.GetAPI(req.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		return &rpcpb.GetAPIRsp{
+			API: value,
+		}, nil
+	}
+}
+
+func (s *metaService) GetAPIList(req *rpcpb.GetAPIListReq, stream rpcpb.MetaService_GetAPIListServer) error {
+	for {
+		select {
+		case <-stream.Context().Done():
+			return errRPCCancel
+		default:
+			err := s.db.GetAPIs(limit, func(value interface{}) error {
+				return stream.Send(value.(*metapb.API))
+			})
+
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+	}
+}
+
+func (s *metaService) PutRouting(ctx context.Context, req *rpcpb.PutRoutingReq) (*rpcpb.PutRoutingRsp, error) {
+	select {
+	case <-ctx.Done():
+		return nil, errRPCCancel
+	default:
+		id, err := s.db.PutRouting(&req.Routing)
+		if err != nil {
+			return nil, err
+		}
+
+		return &rpcpb.PutRoutingRsp{
+			ID: id,
+		}, nil
+	}
+}
+
+func (s *metaService) RemoveRouting(ctx context.Context, req *rpcpb.RemoveRoutingReq) (*rpcpb.RemoveRoutingRsp, error) {
+	select {
+	case <-ctx.Done():
+		return nil, errRPCCancel
+	default:
+		err := s.db.RemoveRouting(req.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		return &rpcpb.RemoveRoutingRsp{}, nil
+	}
+}
+
+func (s *metaService) GetRouting(ctx context.Context, req *rpcpb.GetRoutingReq) (*rpcpb.GetRoutingRsp, error) {
+	select {
+	case <-ctx.Done():
+		return nil, errRPCCancel
+	default:
+		value, err := s.db.GetRouting(req.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		return &rpcpb.GetRoutingRsp{
+			Routing: value,
+		}, nil
+	}
+}
+
+func (s *metaService) GetRoutingList(req *rpcpb.GetRoutingListReq, stream rpcpb.MetaService_GetRoutingListServer) error {
+	for {
+		select {
+		case <-stream.Context().Done():
+			return errRPCCancel
+		default:
+			err := s.db.GetRoutings(limit, func(value interface{}) error {
+				return stream.Send(value.(*metapb.Routing))
+			})
+
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+	}
+}

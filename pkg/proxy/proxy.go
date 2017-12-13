@@ -5,13 +5,11 @@ import (
 	"errors"
 	"net"
 	"net/http"
-	"net/rpc"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/fagongzi/gateway/pkg/model"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
@@ -85,15 +83,8 @@ func NewProxy(cnf *Cfg) *Proxy {
 func (p *Proxy) Start() {
 	go p.listenToStop()
 
-	err := p.startRPC()
-	if nil != err {
-		log.Fatalf("rpc start failed, addr=<%s> errors:\n%+v",
-			p.cnf.AddrRPC,
-			err)
-	}
-
 	log.Infof("gateway proxy started at <%s>", p.cnf.Addr)
-	err = fasthttp.ListenAndServe(p.cnf.Addr, p.ReverseProxyHandler)
+	err := fasthttp.ListenAndServe(p.cnf.Addr, p.ReverseProxyHandler)
 	if err != nil {
 		log.Errorf("gateway proxy start failed, errors:\n%+v",
 			err)
@@ -112,49 +103,6 @@ func (p *Proxy) Stop() {
 	log.Infof("stop: gateway proxy stopped")
 }
 
-func (p *Proxy) startRPC() error {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", p.cnf.AddrRPC)
-
-	if err != nil {
-		return err
-	}
-
-	p.rpcListener, err = net.ListenTCP("tcp", tcpAddr)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("rpc listen at %s",
-		p.cnf.AddrRPC)
-	server := rpc.NewServer()
-	mgrService := newManager(p)
-	server.Register(mgrService)
-
-	go func() {
-		for {
-			if p.isStopped() {
-				return
-			}
-
-			conn, err := p.rpcListener.Accept()
-			if err != nil {
-				log.Errorf("rpc: accept new conn failed, errors:\n%+v",
-					err)
-				continue
-			}
-
-			if p.isStopped() {
-				conn.Close()
-				return
-			}
-
-			go server.ServeConn(conn)
-		}
-	}()
-
-	return nil
-}
-
 func (p *Proxy) listenToStop() {
 	<-p.stopC
 	p.doStop()
@@ -164,7 +112,6 @@ func (p *Proxy) doStop() {
 	p.stopOnce.Do(func() {
 		defer p.stopWG.Done()
 		p.setStopped()
-		p.stopRPC()
 		p.runner.Stop()
 	})
 }
@@ -192,17 +139,11 @@ func (p *Proxy) init() {
 }
 
 func (p *Proxy) initDispatcher() error {
-	s, err := store.GetStoreFrom(p.cnf.AddrStore, p.cnf.Namespace, p.runner)
+	s, err := store.GetStoreFrom(p.cnf.AddrStore, p.cnf.Namespace)
 
 	if err != nil {
 		return err
 	}
-
-	register, _ := s.(store.Register)
-	register.Registry(&model.ProxyInfo{
-		Addr:    p.cnf.Addr,
-		AddrRPC: p.cnf.AddrRPC,
-	})
 
 	p.dispatcher = newDispatcher(p.cnf, s, p.runner)
 	p.dispatcher.load()
@@ -246,8 +187,6 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 		wg.Add(count)
 
 		for _, result := range results {
-			result.merge = merge
-
 			go func(result *dispathNode) {
 				p.doProxy(ctx, wg, result)
 			}(result)
@@ -260,8 +199,8 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 
 	for _, result := range results {
 		if result.err != nil {
-			if result.api.Mock != nil {
-				result.api.RenderMock(ctx)
+			if result.api.meta.DefaultValue != nil {
+				result.api.renderDefault(ctx)
 				result.release()
 				return
 			}
@@ -292,7 +231,7 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 
 	for index, result := range results {
 		ctx.WriteString("\"")
-		ctx.WriteString(result.node.AttrName)
+		ctx.WriteString(result.node.meta.AttrName)
 		ctx.WriteString("\":")
 		ctx.Write(result.res.Body())
 		if index < count-1 {
@@ -336,7 +275,7 @@ func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *di
 		} else {
 			log.Warnf("proxy: rewrite not matches, origin=<%s> pattern=<%s>",
 				string(ctx.URI().FullURI()),
-				result.node.Rewrite)
+				result.node.meta.URLRewrite)
 
 			result.err = ErrRewriteNotMatch
 			result.code = http.StatusBadRequest

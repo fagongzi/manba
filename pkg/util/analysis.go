@@ -1,11 +1,10 @@
-package model
+package util
 
 import (
 	"sync"
 	"time"
 
 	"github.com/fagongzi/goetty"
-
 	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/atomic"
 )
@@ -40,13 +39,13 @@ type Analysis struct {
 	sync.RWMutex
 
 	tw             *goetty.TimeoutWheel
-	points         map[string]*point
-	recentlyPoints map[string]map[time.Duration]*Recently
+	points         map[uint64]*point
+	recentlyPoints map[uint64]map[time.Duration]*Recently
 }
 
 // Recently recently point data
 type Recently struct {
-	key       string
+	key       uint64
 	timeout   goetty.Timeout
 	period    time.Duration
 	prev      *point
@@ -62,7 +61,7 @@ type Recently struct {
 	avg       int64
 }
 
-func newRecently(key string, period time.Duration) *Recently {
+func newRecently(key uint64, period time.Duration) *Recently {
 	return &Recently{
 		key:     key,
 		prev:    newPoint(),
@@ -78,14 +77,14 @@ func newPoint() *point {
 // NewAnalysis returns a Analysis
 func NewAnalysis(tw *goetty.TimeoutWheel) *Analysis {
 	return &Analysis{
-		points:         make(map[string]*point),
-		recentlyPoints: make(map[string]map[time.Duration]*Recently),
+		points:         make(map[uint64]*point),
+		recentlyPoints: make(map[uint64]map[time.Duration]*Recently),
 		tw:             tw,
 	}
 }
 
 // RemoveTarget remove analysis point on a key
-func (a *Analysis) RemoveTarget(key string) {
+func (a *Analysis) RemoveTarget(key uint64) {
 	a.Lock()
 	defer a.Unlock()
 
@@ -100,7 +99,7 @@ func (a *Analysis) RemoveTarget(key string) {
 }
 
 // AddTarget add analysis point on a key
-func (a *Analysis) AddTarget(key string, interval time.Duration) {
+func (a *Analysis) AddTarget(key uint64, interval time.Duration) {
 	a.Lock()
 	defer a.Unlock()
 
@@ -135,7 +134,7 @@ func (a *Analysis) AddTarget(key string, interval time.Duration) {
 }
 
 // GetRecentlyRequestCount return the server request count in spec duration
-func (a *Analysis) GetRecentlyRequestCount(server string, interval time.Duration) int {
+func (a *Analysis) GetRecentlyRequestCount(server uint64, interval time.Duration) int {
 	a.RLock()
 	defer a.RUnlock()
 
@@ -148,7 +147,7 @@ func (a *Analysis) GetRecentlyRequestCount(server string, interval time.Duration
 }
 
 // GetRecentlyMax return max latency in spec secs
-func (a *Analysis) GetRecentlyMax(server string, interval time.Duration) int {
+func (a *Analysis) GetRecentlyMax(server uint64, interval time.Duration) int {
 	a.RLock()
 	defer a.RUnlock()
 
@@ -161,7 +160,7 @@ func (a *Analysis) GetRecentlyMax(server string, interval time.Duration) int {
 }
 
 // GetRecentlyMin return min latency in spec duration
-func (a *Analysis) GetRecentlyMin(server string, interval time.Duration) int {
+func (a *Analysis) GetRecentlyMin(server uint64, interval time.Duration) int {
 	a.RLock()
 	defer a.RUnlock()
 
@@ -174,7 +173,7 @@ func (a *Analysis) GetRecentlyMin(server string, interval time.Duration) int {
 }
 
 // GetRecentlyAvg return avg latency in spec secs
-func (a *Analysis) GetRecentlyAvg(server string, interval time.Duration) int {
+func (a *Analysis) GetRecentlyAvg(server uint64, interval time.Duration) int {
 	a.RLock()
 	defer a.RUnlock()
 
@@ -187,7 +186,7 @@ func (a *Analysis) GetRecentlyAvg(server string, interval time.Duration) int {
 }
 
 // GetQPS return qps in spec duration
-func (a *Analysis) GetQPS(server string, interval time.Duration) int {
+func (a *Analysis) GetQPS(server uint64, interval time.Duration) int {
 	a.RLock()
 	defer a.RUnlock()
 
@@ -200,7 +199,7 @@ func (a *Analysis) GetQPS(server string, interval time.Duration) int {
 }
 
 // GetRecentlyRejectCount return reject count in spec duration
-func (a *Analysis) GetRecentlyRejectCount(server string, interval time.Duration) int {
+func (a *Analysis) GetRecentlyRejectCount(server uint64, interval time.Duration) int {
 	a.RLock()
 	defer a.RUnlock()
 
@@ -213,7 +212,7 @@ func (a *Analysis) GetRecentlyRejectCount(server string, interval time.Duration)
 }
 
 // GetRecentlyRequestSuccessedCount return successed request count in spec secs
-func (a *Analysis) GetRecentlyRequestSuccessedCount(server string, interval time.Duration) int {
+func (a *Analysis) GetRecentlyRequestSuccessedCount(server uint64, interval time.Duration) int {
 	a.RLock()
 	defer a.RUnlock()
 
@@ -226,7 +225,7 @@ func (a *Analysis) GetRecentlyRequestSuccessedCount(server string, interval time
 }
 
 // GetRecentlyRequestFailureCount return failure request count in spec duration
-func (a *Analysis) GetRecentlyRequestFailureCount(server string, interval time.Duration) int {
+func (a *Analysis) GetRecentlyRequestFailureCount(server uint64, interval time.Duration) int {
 	a.RLock()
 	defer a.RUnlock()
 
@@ -239,7 +238,7 @@ func (a *Analysis) GetRecentlyRequestFailureCount(server string, interval time.D
 }
 
 // GetContinuousFailureCount return Continuous failure request count in spec secs
-func (a *Analysis) GetContinuousFailureCount(server string) int {
+func (a *Analysis) GetContinuousFailureCount(server uint64) int {
 	a.RLock()
 	defer a.RUnlock()
 
@@ -252,7 +251,7 @@ func (a *Analysis) GetContinuousFailureCount(server string) int {
 }
 
 // Reject incr reject count
-func (a *Analysis) Reject(key string) {
+func (a *Analysis) Reject(key uint64) {
 	a.Lock()
 	p := a.points[key]
 	p.rejects.Incr()
@@ -260,7 +259,7 @@ func (a *Analysis) Reject(key string) {
 }
 
 // Failure incr failure count
-func (a *Analysis) Failure(key string) {
+func (a *Analysis) Failure(key uint64) {
 	a.Lock()
 	p := a.points[key]
 	p.failure.Incr()
@@ -269,7 +268,7 @@ func (a *Analysis) Failure(key string) {
 }
 
 // Request incr request count
-func (a *Analysis) Request(key string) {
+func (a *Analysis) Request(key uint64) {
 	a.Lock()
 	p := a.points[key]
 	p.requests.Incr()
@@ -277,7 +276,7 @@ func (a *Analysis) Request(key string) {
 }
 
 // Response incr successed count
-func (a *Analysis) Response(key string, cost int64) {
+func (a *Analysis) Response(key uint64, cost int64) {
 	a.Lock()
 	p := a.points[key]
 	p.successed.Incr()
@@ -294,7 +293,7 @@ func (a *Analysis) Response(key string, cost int64) {
 	a.Unlock()
 }
 
-func (a *Analysis) getPoint(key string, interval time.Duration) *Recently {
+func (a *Analysis) getPoint(key uint64, interval time.Duration) *Recently {
 	points, ok := a.recentlyPoints[key]
 	if !ok {
 		return nil

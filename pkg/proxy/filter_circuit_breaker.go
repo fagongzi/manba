@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/fagongzi/gateway/pkg/filter"
-	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/gateway/pkg/pb/metapb"
 )
 
 const (
@@ -26,11 +26,6 @@ var (
 	rd = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
-type evt struct {
-	status model.Circuit
-	server *model.Server
-}
-
 // CircuitBreakeFilter CircuitBreakeFilter
 type CircuitBreakeFilter struct {
 	filter.BaseFilter
@@ -47,37 +42,38 @@ func (f CircuitBreakeFilter) Name() string {
 
 // Pre execute before proxy
 func (f CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) {
-	cb := c.GetCircuitBreaker()
+	cb := c.Server().CircuitBreaker
 	if cb == nil {
 		return f.BaseFilter.Pre(c)
 	}
 
-	if c.IsCircuitOpen() {
-		if f.getFailureRate(c) >= cb.FailureRateToClose {
+	switch c.CircuitStatus() {
+	case metapb.Open:
+		if f.getFailureRate(c) >= int(cb.FailureRateToClose) {
 			c.ChangeCircuitStatusToClose()
 			return http.StatusServiceUnavailable, ErrCircuitClose
 		}
 
 		return http.StatusOK, nil
-	} else if c.IsCircuitHalf() {
+	case metapb.Half:
 		if limitAllow(cb.HalfTrafficRate) {
 			return f.BaseFilter.Pre(c)
 		}
 
 		return http.StatusServiceUnavailable, ErrCircuitHalfLimited
-	} else {
+	default:
 		return http.StatusServiceUnavailable, ErrCircuitClose
 	}
 }
 
 // Post execute after proxy
 func (f CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error) {
-	cb := c.GetCircuitBreaker()
+	cb := c.Server().CircuitBreaker
 	if cb == nil {
 		return f.BaseFilter.Pre(c)
 	}
 
-	if c.IsCircuitHalf() && f.getSucceedRate(c) >= cb.SucceedRateToOpen {
+	if c.CircuitStatus() == metapb.Half && f.getSucceedRate(c) >= int(cb.SucceedRateToOpen) {
 		c.ChangeCircuitStatusToOpen()
 	}
 
@@ -86,14 +82,16 @@ func (f CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error) 
 
 // PostErr execute proxy has errors
 func (f CircuitBreakeFilter) PostErr(c filter.Context) {
-	if c.IsCircuitHalf() {
+	if c.CircuitStatus() == metapb.Half {
 		c.ChangeCircuitStatusToClose()
 	}
 }
 
 func (f CircuitBreakeFilter) getFailureRate(c filter.Context) int {
-	failureCount := c.GetAnalysis().GetRecentlyRequestFailureCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().RateCheckPeriod)
-	totalCount := c.GetAnalysis().GetRecentlyRequestCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().RateCheckPeriod)
+	cb := c.Server().CircuitBreaker
+
+	failureCount := c.Analysis().GetRecentlyRequestFailureCount(c.Server().ID, time.Duration(cb.RateCheckPeriod))
+	totalCount := c.Analysis().GetRecentlyRequestCount(c.Server().ID, time.Duration(cb.RateCheckPeriod))
 
 	if totalCount == 0 {
 		return -1
@@ -103,8 +101,10 @@ func (f CircuitBreakeFilter) getFailureRate(c filter.Context) int {
 }
 
 func (f CircuitBreakeFilter) getSucceedRate(c filter.Context) int {
-	succeedCount := c.GetAnalysis().GetRecentlyRequestSuccessedCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().RateCheckPeriod)
-	totalCount := c.GetAnalysis().GetRecentlyRequestCount(c.GetProxyServerAddr(), c.GetCircuitBreaker().RateCheckPeriod)
+	cb := c.Server().CircuitBreaker
+
+	succeedCount := c.Analysis().GetRecentlyRequestSuccessedCount(c.Server().ID, time.Duration(cb.RateCheckPeriod))
+	totalCount := c.Analysis().GetRecentlyRequestCount(c.Server().ID, time.Duration(cb.RateCheckPeriod))
 
 	if totalCount == 0 {
 		return 100
@@ -113,7 +113,7 @@ func (f CircuitBreakeFilter) getSucceedRate(c filter.Context) int {
 	return int(succeedCount * 100 / totalCount)
 }
 
-func limitAllow(rate int) bool {
+func limitAllow(rate int32) bool {
 	randValue := rd.Intn(RateBase)
-	return randValue < rate
+	return randValue < int(rate)
 }

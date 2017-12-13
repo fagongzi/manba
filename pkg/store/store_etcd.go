@@ -11,7 +11,6 @@ import (
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/util/format"
-	"github.com/fagongzi/util/task"
 	"golang.org/x/net/context"
 )
 
@@ -53,11 +52,10 @@ type EtcdStore struct {
 	watchMethodMapping map[EvtSrc]func(EvtType, *mvccpb.KeyValue) *Evt
 
 	rawClient *clientv3.Client
-	runner    *task.Runner
 }
 
 // NewEtcdStore create a etcd store
-func NewEtcdStore(etcdAddrs []string, prefix string, taskRunner *task.Runner) (Store, error) {
+func NewEtcdStore(etcdAddrs []string, prefix string) (Store, error) {
 	store := &EtcdStore{
 		prefix:             prefix,
 		clustersDir:        fmt.Sprintf("%s/clusters", prefix),
@@ -68,7 +66,6 @@ func NewEtcdStore(etcdAddrs []string, prefix string, taskRunner *task.Runner) (S
 		routingsDir:        fmt.Sprintf("%s/routings", prefix),
 		idPath:             fmt.Sprintf("%s/id", prefix),
 		watchMethodMapping: make(map[EvtSrc]func(EvtType, *mvccpb.KeyValue) *Evt),
-		runner:             taskRunner,
 		base:               100,
 		end:                100,
 	}

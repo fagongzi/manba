@@ -25,12 +25,12 @@ func (f AccessFilter) Post(c filter.Context) (statusCode int, err error) {
 	cost := c.GetEndAt().Sub(c.GetStartAt())
 
 	log.Infof("filter: %s %s \"%s\" %d \"%s\" %s %s",
-		GetRealClientIP(c.GetOriginRequestCtx()),
-		c.GetOriginRequestCtx().Method(),
-		c.GetProxyOuterRequest().RequestURI(),
-		c.GetProxyResponse().StatusCode(),
-		c.GetOriginRequestCtx().UserAgent(),
-		c.GetProxyServerAddr(),
+		GetRealClientIP(c.OriginRequest()),
+		c.OriginRequest().Method(),
+		c.ForwardRequest().RequestURI(),
+		c.Response().StatusCode(),
+		c.OriginRequest().UserAgent(),
+		c.Server().Addr,
 		cost)
 
 	return f.BaseFilter.Post(c)

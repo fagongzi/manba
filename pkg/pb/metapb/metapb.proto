@@ -10,8 +10,9 @@ option (gogoproto.goproto_enum_prefix_all) = false;
 
 // Status is the components status
 enum Status {
-    Down = 0;
-    Up   = 1;
+    Down    = 0;
+    Up      = 1;
+    Unknown = 2;
 }
 
 // CircuitStatus is the circuit breaker status
@@ -149,8 +150,8 @@ message Validation {
 // DispatchNode is the request forward to
 message DispatchNode {
     optional uint64     clusterID   = 1 [(gogoproto.nullable) = false];
-    optional uint64     urlRewrite  = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "URLRewrite"];
-    optional uint64     attrName    = 3 [(gogoproto.nullable) = false];
+    optional string     urlRewrite  = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "URLRewrite"];
+    optional string     attrName    = 3 [(gogoproto.nullable) = false];
     repeated Validation validations = 4;
 }
 
@@ -177,7 +178,7 @@ message Condition {
 // Routing is a routing 
 message Routing {
     optional uint64          id          = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
-    optional int64           clusterID   = 2 [(gogoproto.nullable) = false];
+    optional uint64          clusterID   = 2 [(gogoproto.nullable) = false];
     repeated Condition       conditions  = 3 [(gogoproto.nullable) = false];
     optional RoutingStrategy strategy    = 4 [(gogoproto.nullable) = false];
     optional int32           trafficRate = 5 [(gogoproto.nullable) = false];

@@ -3,22 +3,18 @@ package lb
 import (
 	"container/list"
 
+	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/valyala/fasthttp"
 )
 
-const (
-	// ROUNDROBIN round robin
-	ROUNDROBIN = "ROUNDROBIN"
-)
-
 var (
-	supportLbs = []string{ROUNDROBIN}
+	supportLbs = []metapb.LoadBalance{metapb.RoundRobin}
 )
 
 var (
 	// LBS map loadBalance name and process function
-	LBS = map[string]func() LoadBalance{
-		ROUNDROBIN: NewRoundRobin,
+	LBS = map[metapb.LoadBalance]func() LoadBalance{
+		metapb.RoundRobin: NewRoundRobin,
 	}
 )
 
@@ -28,11 +24,11 @@ type LoadBalance interface {
 }
 
 // GetSupportLBS return supported loadBalances
-func GetSupportLBS() []string {
+func GetSupportLBS() []metapb.LoadBalance {
 	return supportLbs
 }
 
 // NewLoadBalance create a LoadBalance
-func NewLoadBalance(name string) LoadBalance {
+func NewLoadBalance(name metapb.LoadBalance) LoadBalance {
 	return LBS[name]()
 }
