@@ -17,6 +17,7 @@ import (
 	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/collection"
 	"github.com/valyala/fasthttp"
+	"golang.org/x/time/rate"
 )
 
 type clusterRuntime struct {
@@ -190,6 +191,7 @@ type apiNode struct {
 }
 
 type apiRuntime struct {
+	limiter         *rate.Limiter
 	meta            *metapb.API
 	nodes           []*apiNode
 	urlPattern      *regexp.Regexp

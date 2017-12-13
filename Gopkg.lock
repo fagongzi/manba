@@ -22,14 +22,8 @@
 [[projects]]
   branch = "master"
   name = "github.com/fagongzi/util"
-  packages = ["atomic","collection","format","json","protoc","task","uuid"]
+  packages = ["atomic","collection","format","json","protoc","task"]
   revision = "c20791831670e4bc8e43bfda4141900875124451"
-
-[[projects]]
-  name = "github.com/go-ozzo/ozzo-validation"
-  packages = ["."]
-  revision = "85dcd8368eba387e65a03488b003e233994e87e9"
-  version = "v3.3"
 
 [[projects]]
   branch = "master"
@@ -81,6 +75,12 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/time"
+  packages = ["rate"]
+  revision = "6dc17368e09b0e8634d71cac8168d853e869a0c7"
+
+[[projects]]
+  branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/api/annotations","googleapis/rpc/status"]
   revision = "73cb5d0be5af113b42057925bd6c93e3cd9f60fd"
@@ -94,6 +94,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d35981339c42c0e6a12886994fc21808ca26a001195cb495b7da132b06cec761"
+  inputs-digest = "0d20e48b8b94bc88f217b6a44b8889e20419e9c297d42ce366d4b32a9724e667"
   solver-name = "gps-cdcl"
   solver-version = 1

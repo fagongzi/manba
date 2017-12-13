@@ -3,10 +3,9 @@ package proxy
 import (
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/fagongzi/gateway/pkg/filter"
-	"github.com/fagongzi/log"
+	"golang.org/x/net/context"
 )
 
 var (
@@ -30,15 +29,9 @@ func (f RateLimitingFilter) Name() string {
 
 // Pre execute before proxy
 func (f RateLimitingFilter) Pre(c filter.Context) (statusCode int, err error) {
-	requestCounts := c.Analysis().GetRecentlyRequestCount(c.Server().ID, time.Second)
-
-	if requestCounts >= int(c.Server().MaxQPS) {
-		log.Warnf("filter: server <%s> qps: %d, last 1 secs: %d",
-			c.Server().ID,
-			c.Server().MaxQPS,
-			requestCounts)
-		c.Analysis().Reject(c.Server().ID)
-		return http.StatusServiceUnavailable, ErrTraffixLimited
+	err = c.(*proxyContext).result.api.limiter.Wait(context.Background())
+	if err != nil {
+		return http.StatusInternalServerError, err
 	}
 
 	return f.BaseFilter.Pre(c)
