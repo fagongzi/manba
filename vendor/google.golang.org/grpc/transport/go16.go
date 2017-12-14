@@ -22,7 +22,6 @@ package transport
 
 import (
 	"net"
-	"net/http"
 
 	"google.golang.org/grpc/codes"
 
@@ -43,9 +42,4 @@ func ContextErr(err error) StreamError {
 		return streamErrorf(codes.Canceled, "%v", err)
 	}
 	return streamErrorf(codes.Internal, "Unexpected error from context packet: %v", err)
-}
-
-// contextFromRequest returns a background context.
-func contextFromRequest(r *http.Request) context.Context {
-	return context.Background()
 }

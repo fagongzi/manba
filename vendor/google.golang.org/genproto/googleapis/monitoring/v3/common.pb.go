@@ -10,6 +10,8 @@ It is generated from these files:
 	google/monitoring/v3/group_service.proto
 	google/monitoring/v3/metric.proto
 	google/monitoring/v3/metric_service.proto
+	google/monitoring/v3/uptime.proto
+	google/monitoring/v3/uptime_service.proto
 
 It has these top-level messages:
 	TypedValue
@@ -38,6 +40,16 @@ It has these top-level messages:
 	ListTimeSeriesResponse
 	CreateTimeSeriesRequest
 	CreateTimeSeriesError
+	UptimeCheckConfig
+	UptimeCheckIp
+	ListUptimeCheckConfigsRequest
+	ListUptimeCheckConfigsResponse
+	GetUptimeCheckConfigRequest
+	CreateUptimeCheckConfigRequest
+	UpdateUptimeCheckConfigRequest
+	DeleteUptimeCheckConfigRequest
+	ListUptimeCheckIpsRequest
+	ListUptimeCheckIpsResponse
 */
 package monitoring
 

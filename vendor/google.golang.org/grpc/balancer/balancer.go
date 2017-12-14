@@ -23,7 +23,6 @@ package balancer
 import (
 	"errors"
 	"net"
-	"strings"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/connectivity"
@@ -37,17 +36,15 @@ var (
 )
 
 // Register registers the balancer builder to the balancer map.
-// b.Name (lowercased) will be used as the name registered with
-// this builder.
+// b.Name will be used as the name registered with this builder.
 func Register(b Builder) {
-	m[strings.ToLower(b.Name())] = b
+	m[b.Name()] = b
 }
 
 // Get returns the resolver builder registered with the given name.
-// Note that the compare is done in a case-insenstive fashion.
 // If no builder is register with the name, nil will be returned.
 func Get(name string) Builder {
-	if b, ok := m[strings.ToLower(name)]; ok {
+	if b, ok := m[name]; ok {
 		return b
 	}
 	return nil
@@ -66,11 +63,6 @@ func Get(name string) Builder {
 // When the connection encounters an error, it will reconnect immediately.
 // When the connection becomes IDLE, it will not reconnect unless Connect is
 // called.
-//
-// This interface is to be implemented by gRPC. Users should not need a
-// brand new implementation of this interface. For the situations like
-// testing, the new implementation should embed this interface. This allows
-// gRPC to add new methods to this interface.
 type SubConn interface {
 	// UpdateAddresses updates the addresses used in this SubConn.
 	// gRPC checks if currently-connected address is still in the new list.
@@ -88,11 +80,6 @@ type SubConn interface {
 type NewSubConnOptions struct{}
 
 // ClientConn represents a gRPC ClientConn.
-//
-// This interface is to be implemented by gRPC. Users should not need a
-// brand new implementation of this interface. For the situations like
-// testing, the new implementation should embed this interface. This allows
-// gRPC to add new methods to this interface.
 type ClientConn interface {
 	// NewSubConn is called by balancer to create a new SubConn.
 	// It doesn't block and wait for the connections to be established.
@@ -141,10 +128,6 @@ type PickOptions struct{}
 type DoneInfo struct {
 	// Err is the rpc error the RPC finished with. It could be nil.
 	Err error
-	// BytesSent indicates if any bytes have been sent to the server.
-	BytesSent bool
-	// BytesReceived indicates if any byte has been received from the server.
-	BytesReceived bool
 }
 
 var (

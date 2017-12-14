@@ -9,19 +9,23 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fagongzi/gateway/pkg/apiserver"
+	"github.com/coreos/etcd/clientv3"
+	"github.com/fagongzi/gateway/pkg/pb/rpcpb"
+	"github.com/fagongzi/gateway/pkg/service"
 	"github.com/fagongzi/gateway/pkg/store"
+	"github.com/fagongzi/grpcx"
 	"github.com/fagongzi/log"
+	"google.golang.org/grpc"
 )
 
 var (
-	addr           = flag.String("addr", ":8080", "Addr: client entrypoint")
+	addr           = flag.String("addr", "127.0.0.1:8080", "Addr: client entrypoint")
 	addrStore      = flag.String("addr-store", "etcd://127.0.0.1:2379", "Addr: store address")
 	namespace      = flag.String("namespace", "dev", "The namespace to isolation the environment.")
 	discovery      = flag.Bool("discovery", false, "Publish apiserver service via discovery.")
 	servicePrefix  = flag.String("service-prefix", "/services", "The prefix for service name.")
 	publishLease   = flag.Int64("publish-lease", 10, "Publish service lease seconds")
-	publishTimeout = flag.Int("publish-lease", 30, "Publish service timeout seconds")
+	publishTimeout = flag.Int("publish-timeout", 30, "Publish service timeout seconds")
 )
 
 func main() {
@@ -37,19 +41,28 @@ func main() {
 			err)
 	}
 
-	var opts []apiserver.Option
+	var opts []grpcx.ServerOption
 	if *discovery {
-		opts = append(opts, apiserver.WithEtcdServiceDiscovery(db.Raw(), *servicePrefix, *publishLease, time.Second*time.Duration(*publishTimeout)))
+		opts = append(opts, grpcx.WithEtcdPublisher(db.Raw().(*clientv3.Client), *servicePrefix, *publishLease, time.Second*time.Duration(*publishTimeout)))
 	}
 
-	s := apiserver.NewGRPCAPIServer(*addr, db, opts...)
+	s := grpcx.NewGRPCServer(*addr, func(svr *grpc.Server) []grpcx.Service {
+		var services []grpcx.Service
+
+		rpcpb.RegisterMetaServiceServer(svr, service.NewMetaService(db))
+		services = append(services, grpcx.Service{
+			Name: rpcpb.ServiceMeta,
+		})
+
+		return services
+	}, opts...)
 
 	go s.Start()
 
 	waitStop(s)
 }
 
-func waitStop(s *apiserver.GRPCAPIServer) {
+func waitStop(s *grpcx.GRPCServer) {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc,
 		syscall.SIGHUP,

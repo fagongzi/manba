@@ -15,6 +15,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/fagongzi/grpcx"
+  packages = ["."]
+  revision = "ebe705903c573a4df762543c47448a7191500de8"
+
+[[projects]]
+  branch = "master"
   name = "github.com/fagongzi/log"
   packages = ["."]
   revision = "9a647df25e0e4ba3d967bd8a16b871e8c7e7eb6c"
@@ -65,13 +71,13 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","http2","http2/hpack","idna","internal/timeseries","lex/httplex","trace"]
-  revision = "dc871a5d77e227f5bbf6545176ef3eeebf87e76e"
+  revision = "d866cfc389cec985d6fda2859936a575a55a3ab6"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "3b24cac7bc3a458991ab409aa2a339ac9e0d60d6"
+  revision = "c4d099d611ac3ded35360abf03581e13d91c828f"
 
 [[projects]]
   branch = "master"
@@ -83,17 +89,17 @@
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/api/annotations","googleapis/rpc/status"]
-  revision = "73cb5d0be5af113b42057925bd6c93e3cd9f60fd"
+  revision = "a8101f21cf983e773d0c1133ebc5424792003214"
 
 [[projects]]
   name = "google.golang.org/grpc"
-  packages = [".","balancer","balancer/roundrobin","codes","connectivity","credentials","encoding","grpclb/grpc_lb_v1/messages","grpclog","health/grpc_health_v1","internal","keepalive","metadata","naming","peer","resolver","resolver/dns","resolver/manual","resolver/passthrough","stats","status","tap","transport"]
-  revision = "be077907e29fdb945d351e4284eb5361e7f8924e"
-  version = "v1.8.1"
+  packages = [".","balancer","balancer/roundrobin","codes","connectivity","credentials","encoding","grpclb/grpc_lb_v1/messages","grpclog","health/grpc_health_v1","internal","keepalive","metadata","naming","peer","resolver","resolver/dns","resolver/passthrough","stats","status","tap","transport"]
+  revision = "e687fa4e6424368ece6e4fe727cea2c806a0fcb4"
+  version = "v1.8.2"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0d20e48b8b94bc88f217b6a44b8889e20419e9c297d42ce366d4b32a9724e667"
+  inputs-digest = "5a020215085310590e90f7fc6ff27b220caa652fcc33ff4dccf9eb68ecf2b4aa"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -361,10 +361,8 @@ func setUpWithOptions(t *testing.T, port int, serverConfig *ServerConfig, ht hTy
 	target := TargetInfo{
 		Addr: addr,
 	}
-	connectCtx, cancel := context.WithDeadline(context.Background(), time.Now().Add(2*time.Second))
-	ct, connErr = NewClientTransport(connectCtx, context.Background(), target, copts, func() {})
+	ct, connErr = NewClientTransport(context.Background(), target, copts, 2*time.Second)
 	if connErr != nil {
-		cancel() // Do not cancel in success path.
 		t.Fatalf("failed to create transport: %v", connErr)
 	}
 	return server, ct
@@ -386,10 +384,8 @@ func setUpWithNoPingServer(t *testing.T, copts ConnectOptions, done chan net.Con
 		}
 		done <- conn
 	}()
-	connectCtx, cancel := context.WithDeadline(context.Background(), time.Now().Add(2*time.Second))
-	tr, err := NewClientTransport(connectCtx, context.Background(), TargetInfo{Addr: lis.Addr().String()}, copts, func() {})
+	tr, err := NewClientTransport(context.Background(), TargetInfo{Addr: lis.Addr().String()}, copts, 2*time.Second)
 	if err != nil {
-		cancel() // Do not cancel in success path.
 		// Server clean-up.
 		lis.Close()
 		if conn, ok := <-done; ok {
@@ -2095,10 +2091,8 @@ func setUpHTTPStatusTest(t *testing.T, httpStatus int, wh writeHeaders) (stream 
 		wh:         wh,
 	}
 	server.start(t, lis)
-	connectCtx, cancel := context.WithDeadline(context.Background(), time.Now().Add(2*time.Second))
-	client, err = newHTTP2Client(connectCtx, context.Background(), TargetInfo{Addr: lis.Addr().String()}, ConnectOptions{}, func() {})
+	client, err = newHTTP2Client(context.Background(), TargetInfo{Addr: lis.Addr().String()}, ConnectOptions{}, 2*time.Second)
 	if err != nil {
-		cancel() // Do not cancel in success path.
 		t.Fatalf("Error creating client. Err: %v", err)
 	}
 	stream, err = client.NewStream(context.Background(), &CallHdr{Method: "bogus/method", Flush: true})

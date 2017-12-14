@@ -31,6 +31,10 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.com/fagongzi/grpcx"
+
+[[constraint]]
+  branch = "master"
   name = "github.com/fagongzi/log"
 
 [[constraint]]

@@ -97,9 +97,6 @@ type dialOptions struct {
 	callOptions []CallOption
 	// This is to support v1 balancer.
 	balancerBuilder balancer.Builder
-	// This is to support grpclb.
-	resolverBuilder  resolver.Builder
-	waitForHandshake bool
 }
 
 const (
@@ -109,15 +106,6 @@ const (
 
 // DialOption configures how we set up the connection.
 type DialOption func(*dialOptions)
-
-// WithWaitForHandshake blocks until the initial settings frame is received from the
-// server before assigning RPCs to the connection.
-// Experimental API.
-func WithWaitForHandshake() DialOption {
-	return func(o *dialOptions) {
-		o.waitForHandshake = true
-	}
-}
 
 // WithWriteBufferSize lets you set the size of write buffer, this determines how much data can be batched
 // before doing a write on the wire.
@@ -216,13 +204,6 @@ func WithBalancerBuilder(b balancer.Builder) DialOption {
 	}
 }
 
-// withResolverBuilder is only for grpclb.
-func withResolverBuilder(b resolver.Builder) DialOption {
-	return func(o *dialOptions) {
-		o.resolverBuilder = b
-	}
-}
-
 // WithServiceConfig returns a DialOption which has a channel to read the service configuration.
 // DEPRECATED: service config should be received through name resolver, as specified here.
 // https://github.com/grpc/grpc/blob/master/doc/service_config.md
@@ -250,7 +231,7 @@ func WithBackoffConfig(b BackoffConfig) DialOption {
 	return withBackoff(b)
 }
 
-// withBackoff sets the backoff strategy used for connectRetryNum after a
+// withBackoff sets the backoff strategy used for retries after a
 // failed connection attempt.
 //
 // This can be exported if arbitrary backoff strategies are allowed by gRPC.
@@ -302,23 +283,18 @@ func WithTimeout(d time.Duration) DialOption {
 	}
 }
 
-func withContextDialer(f func(context.Context, string) (net.Conn, error)) DialOption {
-	return func(o *dialOptions) {
-		o.copts.Dialer = f
-	}
-}
-
 // WithDialer returns a DialOption that specifies a function to use for dialing network addresses.
 // If FailOnNonTempDialError() is set to true, and an error is returned by f, gRPC checks the error's
 // Temporary() method to decide if it should try to reconnect to the network address.
 func WithDialer(f func(string, time.Duration) (net.Conn, error)) DialOption {
-	return withContextDialer(
-		func(ctx context.Context, addr string) (net.Conn, error) {
+	return func(o *dialOptions) {
+		o.copts.Dialer = func(ctx context.Context, addr string) (net.Conn, error) {
 			if deadline, ok := ctx.Deadline(); ok {
 				return f(addr, deadline.Sub(time.Now()))
 			}
 			return f(addr, 0)
-		})
+		}
+	}
 }
 
 // WithStatsHandler returns a DialOption that specifies the stats handler
@@ -504,19 +480,17 @@ func DialContext(ctx context.Context, target string, opts ...DialOption) (conn *
 		Dialer:    cc.dopts.copts.Dialer,
 	}
 
+	if cc.dopts.balancerBuilder != nil {
+		cc.customBalancer = true
+		// Build should not take long time. So it's ok to not have a goroutine for it.
+		cc.balancerWrapper = newCCBalancerWrapper(cc, cc.dopts.balancerBuilder, cc.balancerBuildOpts)
+	}
+
 	// Build the resolver.
 	cc.resolverWrapper, err = newCCResolverWrapper(cc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build resolver: %v", err)
 	}
-	// Start the resolver wrapper goroutine after resolverWrapper is created.
-	//
-	// If the goroutine is started before resolverWrapper is ready, the
-	// following may happen: The goroutine sends updates to cc. cc forwards
-	// those to balancer. Balancer creates new addrConn. addrConn fails to
-	// connect, and calls resolveNow(). resolveNow() tries to use the non-ready
-	// resolverWrapper.
-	cc.resolverWrapper.start()
 
 	// A blocking dial blocks until the clientConn is ready.
 	if cc.dopts.block {
@@ -589,6 +563,7 @@ type ClientConn struct {
 	dopts        dialOptions
 	csMgr        *connectivityStateManager
 
+	customBalancer    bool // If this is true, switching balancer will be disabled.
 	balancerBuildOpts balancer.BuildOptions
 	resolverWrapper   *ccResolverWrapper
 	blockingpicker    *pickerWrapper
@@ -649,55 +624,42 @@ func (cc *ClientConn) handleResolvedAddrs(addrs []resolver.Address, err error) {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
 	if cc.conns == nil {
-		// cc was closed.
-		return
-	}
-
-	if reflect.DeepEqual(cc.curAddresses, addrs) {
 		return
 	}
 
 	// TODO(bar switching) when grpclb is submitted, check address type and start grpclb.
-	if cc.balancerWrapper == nil {
-		// First time handling resolved addresses. Build a balancer use either
-		// the builder specified by dial option, or pickfirst.
-		builder := cc.dopts.balancerBuilder
-		if builder == nil {
-			// No customBalancer was specified by DialOption, and this is the first
-			// time handling resolved addresses, create a pickfirst balancer.
-			builder = newPickfirstBuilder()
-		}
+	if !cc.customBalancer && cc.balancerWrapper == nil {
+		// No customBalancer was specified by DialOption, and this is the first
+		// time handling resolved addresses, create a pickfirst balancer.
+		builder := newPickfirstBuilder()
 		cc.curBalancerName = builder.Name()
 		cc.balancerWrapper = newCCBalancerWrapper(cc, builder, cc.balancerBuildOpts)
 	}
 
+	// TODO(bar switching) compare addresses, if there's no update, don't notify balancer.
 	cc.curAddresses = addrs
 	cc.balancerWrapper.handleResolvedAddrs(addrs, nil)
 }
 
 // switchBalancer starts the switching from current balancer to the balancer with name.
-//
-// Caller must hold cc.mu.
 func (cc *ClientConn) switchBalancer(name string) {
 	if cc.conns == nil {
 		return
 	}
 	grpclog.Infof("ClientConn switching balancer to %q", name)
 
-	if cc.dopts.balancerBuilder != nil {
+	if cc.customBalancer {
 		grpclog.Infoln("ignoring service config balancer configuration: WithBalancer DialOption used instead")
 		return
 	}
 
-	if strings.ToLower(cc.curBalancerName) == strings.ToLower(name) {
+	if cc.curBalancerName == name {
 		return
 	}
 
 	// TODO(bar switching) change this to two steps: drain and close.
 	// Keep track of sc in wrapper.
-	if cc.balancerWrapper != nil {
-		cc.balancerWrapper.close()
-	}
+	cc.balancerWrapper.close()
 
 	builder := balancer.Get(name)
 	if builder == nil {
@@ -722,8 +684,6 @@ func (cc *ClientConn) handleSubConnStateChange(sc balancer.SubConn, s connectivi
 }
 
 // newAddrConn creates an addrConn for addrs and adds it to cc.conns.
-//
-// Caller needs to make sure len(addrs) > 0.
 func (cc *ClientConn) newAddrConn(addrs []resolver.Address) (*addrConn, error) {
 	ac := &addrConn{
 		cc:    cc,
@@ -814,7 +774,6 @@ func (ac *addrConn) tryUpdateAddrs(addrs []resolver.Address) bool {
 	grpclog.Infof("addrConn: tryUpdateAddrs curAddrFound: %v", curAddrFound)
 	if curAddrFound {
 		ac.addrs = addrs
-		ac.reconnectIdx = 0 // Start reconnecting from beginning in the new list.
 	}
 
 	return curAddrFound
@@ -864,16 +823,6 @@ func (cc *ClientConn) handleServiceConfig(js string) error {
 	return nil
 }
 
-func (cc *ClientConn) resolveNow(o resolver.ResolveNowOption) {
-	cc.mu.Lock()
-	r := cc.resolverWrapper
-	cc.mu.Unlock()
-	if r == nil {
-		return
-	}
-	go r.resolveNow(o)
-}
-
 // Close tears down the ClientConn and all underlying connections.
 func (cc *ClientConn) Close() error {
 	cc.cancel()
@@ -910,16 +859,15 @@ type addrConn struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	cc     *ClientConn
-	addrs  []resolver.Address
-	dopts  dialOptions
-	events trace.EventLog
-	acbw   balancer.SubConn
+	cc      *ClientConn
+	curAddr resolver.Address
+	addrs   []resolver.Address
+	dopts   dialOptions
+	events  trace.EventLog
+	acbw    balancer.SubConn
 
-	mu           sync.Mutex
-	curAddr      resolver.Address
-	reconnectIdx int // The index in addrs list to start reconnecting from.
-	state        connectivity.State
+	mu    sync.Mutex
+	state connectivity.State
 	// ready is closed and becomes nil when a new transport is up or failed
 	// due to timeout.
 	ready     chan struct{}
@@ -927,14 +875,6 @@ type addrConn struct {
 
 	// The reason this addrConn is torn down.
 	tearDownErr error
-
-	connectRetryNum int
-	// backoffDeadline is the time until which resetTransport needs to
-	// wait before increasing connectRetryNum count.
-	backoffDeadline time.Time
-	// connectDeadline is the time by which all connection
-	// negotiations must complete.
-	connectDeadline time.Time
 }
 
 // adjustParams updates parameters used to create transports upon
@@ -969,15 +909,6 @@ func (ac *addrConn) errorf(format string, a ...interface{}) {
 
 // resetTransport recreates a transport to the address for ac.  The old
 // transport will close itself on error or when the clientconn is closed.
-// The created transport must receive initial settings frame from the server.
-// In case that doesnt happen, transportMonitor will kill the newly created
-// transport after connectDeadline has expired.
-// In case there was an error on the transport before the settings frame was
-// received, resetTransport resumes connecting to backends after the one that
-// was previously connected to. In case end of the list is reached, resetTransport
-// backs off until the original deadline.
-// If the DialOption WithWaitForHandshake was set, resetTrasport returns
-// successfully only after server settings are received.
 //
 // TODO(bar) make sure all state transitions are valid.
 func (ac *addrConn) resetTransport() error {
@@ -991,38 +922,19 @@ func (ac *addrConn) resetTransport() error {
 		ac.ready = nil
 	}
 	ac.transport = nil
-	ridx := ac.reconnectIdx
+	ac.curAddr = resolver.Address{}
 	ac.mu.Unlock()
 	ac.cc.mu.RLock()
 	ac.dopts.copts.KeepaliveParams = ac.cc.mkp
 	ac.cc.mu.RUnlock()
-	var backoffDeadline, connectDeadline time.Time
-	for connectRetryNum := 0; ; connectRetryNum++ {
+	for retries := 0; ; retries++ {
+		sleepTime := ac.dopts.bs.backoff(retries)
+		timeout := minConnectTimeout
 		ac.mu.Lock()
-		if ac.backoffDeadline.IsZero() {
-			// This means either a successful HTTP2 connection was established
-			// or this is the first time this addrConn is trying to establish a
-			// connection.
-			backoffFor := ac.dopts.bs.backoff(connectRetryNum) // time.Duration.
-			// This will be the duration that dial gets to finish.
-			dialDuration := minConnectTimeout
-			if backoffFor > dialDuration {
-				// Give dial more time as we keep failing to connect.
-				dialDuration = backoffFor
-			}
-			start := time.Now()
-			backoffDeadline = start.Add(backoffFor)
-			connectDeadline = start.Add(dialDuration)
-			ridx = 0 // Start connecting from the beginning.
-		} else {
-			// Continue trying to conect with the same deadlines.
-			connectRetryNum = ac.connectRetryNum
-			backoffDeadline = ac.backoffDeadline
-			connectDeadline = ac.connectDeadline
-			ac.backoffDeadline = time.Time{}
-			ac.connectDeadline = time.Time{}
-			ac.connectRetryNum = 0
+		if timeout < time.Duration(int(sleepTime)/len(ac.addrs)) {
+			timeout = time.Duration(int(sleepTime) / len(ac.addrs))
 		}
+		connectTime := time.Now()
 		if ac.state == connectivity.Shutdown {
 			ac.mu.Unlock()
 			return errConnClosing
@@ -1037,153 +949,93 @@ func (ac *addrConn) resetTransport() error {
 		copy(addrsIter, ac.addrs)
 		copts := ac.dopts.copts
 		ac.mu.Unlock()
-		connected, err := ac.createTransport(connectRetryNum, ridx, backoffDeadline, connectDeadline, addrsIter, copts)
-		if err != nil {
-			return err
-		}
-		if connected {
-			return nil
-		}
-	}
-}
-
-// createTransport creates a connection to one of the backends in addrs.
-// It returns true if a connection was established.
-func (ac *addrConn) createTransport(connectRetryNum, ridx int, backoffDeadline, connectDeadline time.Time, addrs []resolver.Address, copts transport.ConnectOptions) (bool, error) {
-	for i := ridx; i < len(addrs); i++ {
-		addr := addrs[i]
-		target := transport.TargetInfo{
-			Addr:      addr.Addr,
-			Metadata:  addr.Metadata,
-			Authority: ac.cc.authority,
-		}
-		done := make(chan struct{})
-		onPrefaceReceipt := func() {
-			close(done)
-			ac.mu.Lock()
-			if !ac.backoffDeadline.IsZero() {
-				// If we haven't already started reconnecting to
-				// other backends.
-				// Note, this can happen when writer notices an error
-				// and triggers resetTransport while at the same time
-				// reader receives the preface and invokes this closure.
-				ac.backoffDeadline = time.Time{}
-				ac.connectDeadline = time.Time{}
-				ac.connectRetryNum = 0
-			}
-			ac.mu.Unlock()
-		}
-		// Do not cancel in the success path because of
-		// this issue in Go1.6: https://github.com/golang/go/issues/15078.
-		connectCtx, cancel := context.WithDeadline(ac.ctx, connectDeadline)
-		newTr, err := transport.NewClientTransport(connectCtx, ac.cc.ctx, target, copts, onPrefaceReceipt)
-		if err != nil {
-			cancel()
-			if e, ok := err.(transport.ConnectionError); ok && !e.Temporary() {
-				ac.mu.Lock()
-				if ac.state != connectivity.Shutdown {
-					ac.state = connectivity.TransientFailure
-					ac.cc.handleSubConnStateChange(ac.acbw, ac.state)
-				}
-				ac.mu.Unlock()
-				return false, err
-			}
+		for _, addr := range addrsIter {
 			ac.mu.Lock()
 			if ac.state == connectivity.Shutdown {
 				// ac.tearDown(...) has been invoked.
 				ac.mu.Unlock()
-				return false, errConnClosing
+				return errConnClosing
 			}
 			ac.mu.Unlock()
-			grpclog.Warningf("grpc: addrConn.createTransport failed to connect to %v. Err :%v. Reconnecting...", addr, err)
-			continue
-		}
-		if ac.dopts.waitForHandshake {
-			select {
-			case <-done:
-			case <-connectCtx.Done():
-				// Didn't receive server preface, must kill this new transport now.
-				grpclog.Warningf("grpc: addrConn.createTransport failed to receive server preface before deadline.")
-				newTr.Close()
-				break
-			case <-ac.ctx.Done():
+			sinfo := transport.TargetInfo{
+				Addr:      addr.Addr,
+				Metadata:  addr.Metadata,
+				Authority: ac.cc.authority,
 			}
+			newTransport, err := transport.NewClientTransport(ac.cc.ctx, sinfo, copts, timeout)
+			if err != nil {
+				if e, ok := err.(transport.ConnectionError); ok && !e.Temporary() {
+					ac.mu.Lock()
+					if ac.state != connectivity.Shutdown {
+						ac.state = connectivity.TransientFailure
+						ac.cc.handleSubConnStateChange(ac.acbw, ac.state)
+					}
+					ac.mu.Unlock()
+					return err
+				}
+				grpclog.Warningf("grpc: addrConn.resetTransport failed to create client transport: %v; Reconnecting to %v", err, addr)
+				ac.mu.Lock()
+				if ac.state == connectivity.Shutdown {
+					// ac.tearDown(...) has been invoked.
+					ac.mu.Unlock()
+					return errConnClosing
+				}
+				ac.mu.Unlock()
+				continue
+			}
+			ac.mu.Lock()
+			ac.printf("ready")
+			if ac.state == connectivity.Shutdown {
+				// ac.tearDown(...) has been invoked.
+				ac.mu.Unlock()
+				newTransport.Close()
+				return errConnClosing
+			}
+			ac.state = connectivity.Ready
+			ac.cc.handleSubConnStateChange(ac.acbw, ac.state)
+			t := ac.transport
+			ac.transport = newTransport
+			if t != nil {
+				t.Close()
+			}
+			ac.curAddr = addr
+			if ac.ready != nil {
+				close(ac.ready)
+				ac.ready = nil
+			}
+			ac.mu.Unlock()
+			return nil
 		}
 		ac.mu.Lock()
-		if ac.state == connectivity.Shutdown {
-			ac.mu.Unlock()
-			// ac.tearDonn(...) has been invoked.
-			newTr.Close()
-			return false, errConnClosing
-		}
-		ac.printf("ready")
-		ac.state = connectivity.Ready
+		ac.state = connectivity.TransientFailure
 		ac.cc.handleSubConnStateChange(ac.acbw, ac.state)
-		ac.transport = newTr
-		ac.curAddr = addr
 		if ac.ready != nil {
 			close(ac.ready)
 			ac.ready = nil
 		}
-		ac.connectRetryNum = connectRetryNum
-		ac.backoffDeadline = backoffDeadline
-		ac.connectDeadline = connectDeadline
-		ac.reconnectIdx = i + 1 // Start reconnecting from the next backend in the list.
 		ac.mu.Unlock()
-		return true, nil
-	}
-	ac.mu.Lock()
-	ac.state = connectivity.TransientFailure
-	ac.cc.handleSubConnStateChange(ac.acbw, ac.state)
-	ac.cc.resolveNow(resolver.ResolveNowOption{})
-	if ac.ready != nil {
-		close(ac.ready)
-		ac.ready = nil
-	}
-	ac.mu.Unlock()
-	timer := time.NewTimer(backoffDeadline.Sub(time.Now()))
-	select {
-	case <-timer.C:
-	case <-ac.ctx.Done():
+		timer := time.NewTimer(sleepTime - time.Since(connectTime))
+		select {
+		case <-timer.C:
+		case <-ac.ctx.Done():
+			timer.Stop()
+			return ac.ctx.Err()
+		}
 		timer.Stop()
-		return false, ac.ctx.Err()
 	}
-	return false, nil
 }
 
 // Run in a goroutine to track the error in transport and create the
 // new transport if an error happens. It returns when the channel is closing.
 func (ac *addrConn) transportMonitor() {
 	for {
-		var timer *time.Timer
-		var cdeadline <-chan time.Time
 		ac.mu.Lock()
 		t := ac.transport
-		if !ac.connectDeadline.IsZero() {
-			timer = time.NewTimer(ac.connectDeadline.Sub(time.Now()))
-			cdeadline = timer.C
-		}
 		ac.mu.Unlock()
 		// Block until we receive a goaway or an error occurs.
 		select {
 		case <-t.GoAway():
 		case <-t.Error():
-		case <-cdeadline:
-			ac.mu.Lock()
-			// This implies that client received server preface.
-			if ac.backoffDeadline.IsZero() {
-				ac.mu.Unlock()
-				continue
-			}
-			ac.mu.Unlock()
-			timer = nil
-			// No server preface received until deadline.
-			// Kill the connection.
-			grpclog.Warningf("grpc: addrConn.transportMonitor didn't get server preface after waiting. Closing the new transport now.")
-			t.Close()
-		}
-		if timer != nil {
-			timer.Stop()
 		}
 		// If a GoAway happened, regardless of error, adjust our keepalive
 		// parameters as appropriate.
@@ -1201,7 +1053,6 @@ func (ac *addrConn) transportMonitor() {
 		// resetTransport. Transition READY->CONNECTING is not valid.
 		ac.state = connectivity.TransientFailure
 		ac.cc.handleSubConnStateChange(ac.acbw, ac.state)
-		ac.cc.resolveNow(resolver.ResolveNowOption{})
 		ac.curAddr = resolver.Address{}
 		ac.mu.Unlock()
 		if err := ac.resetTransport(); err != nil {

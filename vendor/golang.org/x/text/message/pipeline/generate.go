@@ -131,7 +131,7 @@ func Generate(w io.Writer, pkg string, extracted *Locale, trans ...*Locale) (n i
 		cw.WriteVar(langVars[i]+"Index", index)
 		cw.WriteConst(langVars[i]+"Data", strings.Join(a, ""))
 	}
-	return cw.WriteGo(w, pkg)
+	return cw.WriteGo(w, pkg, "")
 }
 
 func assemble(m *Message, t *Text) (msg catmsg.Message, err error) {
