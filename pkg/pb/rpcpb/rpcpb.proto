@@ -16,25 +16,30 @@ message RpcHeader {
 
 // MetaService is a interface for meta manager
 service MetaService {
-    rpc PutCluster     (PutClusterReq)     returns (PutClusterRsp)         {}
-    rpc RemoveCluster  (RemoveClusterReq)  returns (RemoveClusterRsp)      {}
-    rpc GetCluster     (GetClusterReq)     returns (GetClusterRsp)         {}
-    rpc GetClusterList (GetClusterListReq) returns (stream metapb.Cluster) {}
-
-    rpc PutServer      (PutServerReq)      returns (PutServerRsp)          {}
-    rpc RemoveServer   (RemoveServerReq)   returns (RemoveServerRsp)       {}
-    rpc GetServer      (GetServerReq)      returns (GetServerRsp)          {}
-    rpc GetServerList  (GetServerListReq)  returns (stream metapb.Server)  {}
-
-    rpc PutAPI         (PutAPIReq)         returns (PutAPIRsp)             {}
-    rpc RemoveAPI      (RemoveAPIReq)      returns (RemoveAPIRsp)          {}
-    rpc GetAPI         (GetAPIReq)         returns (GetAPIRsp)             {}
-    rpc GetAPIList     (GetAPIListReq)     returns (stream metapb.API)     {}
-
-    rpc PutRouting     (PutRoutingReq)     returns (PutRoutingRsp)         {}
-    rpc RemoveRouting  (RemoveRoutingReq)  returns (RemoveRoutingRsp)      {}
-    rpc GetRouting     (GetRoutingReq)     returns (GetRoutingRsp)         {}
-    rpc GetRoutingList (GetRoutingListReq) returns (stream metapb.Routing) {}
+    rpc PutCluster        (PutClusterReq)        returns (PutClusterRsp)         {}
+    rpc RemoveCluster     (RemoveClusterReq)     returns (RemoveClusterRsp)      {}
+    rpc GetCluster        (GetClusterReq)        returns (GetClusterRsp)         {}
+    rpc GetClusterList    (GetClusterListReq)    returns (stream metapb.Cluster) {}
+      
+    rpc PutServer         (PutServerReq)         returns (PutServerRsp)          {}
+    rpc RemoveServer      (RemoveServerReq)      returns (RemoveServerRsp)       {}
+    rpc GetServer         (GetServerReq)         returns (GetServerRsp)          {}
+    rpc GetServerList     (GetServerListReq)     returns (stream metapb.Server)  {}
+      
+    rpc PutAPI            (PutAPIReq)            returns (PutAPIRsp)             {}
+    rpc RemoveAPI         (RemoveAPIReq)         returns (RemoveAPIRsp)          {}
+    rpc GetAPI            (GetAPIReq)            returns (GetAPIRsp)             {}
+    rpc GetAPIList        (GetAPIListReq)        returns (stream metapb.API)     {}
+      
+    rpc PutRouting        (PutRoutingReq)        returns (PutRoutingRsp)         {}
+    rpc RemoveRouting     (RemoveRoutingReq)     returns (RemoveRoutingRsp)      {}
+    rpc GetRouting        (GetRoutingReq)        returns (GetRoutingRsp)         {}
+    rpc GetRoutingList    (GetRoutingListReq)    returns (stream metapb.Routing) {}
+      
+    rpc AddBind           (AddBindReq)           returns (AddBindRsp)            {}
+    rpc RemoveBind        (RemoveBindReq)        returns (RemoveBindRsp)         {}
+    rpc RemoveClusterBind (RemoveClusterBindReq) returns (RemoveClusterBindRsp)  {}
+    rpc GetBindServers    (GetBindServersReq)    returns (GetBindServersRsp)     {}
 }
 
 message PutClusterReq {
@@ -167,4 +172,43 @@ message GetRoutingRsp {
 
 message GetRoutingListReq {
     optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message AddBindReq {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+    optional uint64     cluster = 2 [(gogoproto.nullable) = false];
+    optional uint64     server  = 3 [(gogoproto.nullable) = false];
+}
+
+message AddBindRsp {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+}
+
+message RemoveBindReq {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+    optional uint64     cluster = 2 [(gogoproto.nullable) = false];
+    optional uint64     server  = 3 [(gogoproto.nullable) = false];
+}
+
+message RemoveBindRsp {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+}
+
+message RemoveClusterBindReq {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+    optional uint64     cluster = 2 [(gogoproto.nullable) = false];
+}
+
+message RemoveClusterBindRsp {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+}
+
+message GetBindServersReq {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+    optional uint64     cluster = 2 [(gogoproto.nullable) = false];
+}
+
+message GetBindServersRsp {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+    repeated uint64     servers = 2 [(gogoproto.nullable) = true];
 }

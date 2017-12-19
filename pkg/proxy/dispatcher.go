@@ -82,13 +82,12 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) []*dispathNode {
 	var dispathes []*dispathNode
 	for _, api := range r.apis {
 		if api.matches(req) {
-			dispathes = make([]*dispathNode, len(api.meta.Nodes))
-			for idx, node := range api.nodes {
-				dispathes[idx] = &dispathNode{
+			for _, node := range api.nodes {
+				dispathes = append(dispathes, &dispathNode{
 					api:  api,
 					node: node,
 					dest: r.selectServer(req, r.selectClusterByRouting(req, r.clusters[node.meta.ClusterID])),
-				}
+				})
 			}
 		}
 	}

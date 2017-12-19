@@ -174,7 +174,7 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 
 	results := p.dispatcher.dispatch(&ctx.Request)
 
-	if nil == results || len(results) == 0 {
+	if len(results) == 0 {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		return
 	}

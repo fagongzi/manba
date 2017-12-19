@@ -33,6 +33,11 @@ type Client interface {
 	RemoveRouting(id uint64) error
 	GetRouting(id uint64) (*metapb.Routing, error)
 	GetRoutingList(fn func(*metapb.Routing) bool) error
+
+	AddBind(cluster, server uint64) error
+	RemoveBind(cluster, server uint64) error
+	RemoveClusterBind(cluster uint64) error
+	GetBindServers(cluster uint64) ([]uint64, error)
 }
 
 // NewClient returns a gateway client, using direct address
@@ -380,4 +385,70 @@ func (c *client) GetRoutingList(fn func(*metapb.Routing) bool) error {
 			return nil
 		}
 	}
+}
+
+func (c *client) AddBind(cluster, server uint64) error {
+	meta, err := c.getMetaClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = meta.AddBind(context.Background(), &rpcpb.AddBindReq{
+		Cluster: cluster,
+		Server:  server,
+	}, grpc.FailFast(true))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *client) RemoveBind(cluster, server uint64) error {
+	meta, err := c.getMetaClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = meta.RemoveBind(context.Background(), &rpcpb.RemoveBindReq{
+		Cluster: cluster,
+		Server:  server,
+	}, grpc.FailFast(true))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *client) RemoveClusterBind(cluster uint64) error {
+	meta, err := c.getMetaClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = meta.RemoveClusterBind(context.Background(), &rpcpb.RemoveClusterBindReq{
+		Cluster: cluster,
+	}, grpc.FailFast(true))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *client) GetBindServers(cluster uint64) ([]uint64, error) {
+	meta, err := c.getMetaClient()
+	if err != nil {
+		return nil, err
+	}
+
+	rsp, err := meta.GetBindServers(context.Background(), &rpcpb.GetBindServersReq{
+		Cluster: cluster,
+	}, grpc.FailFast(true))
+	if err != nil {
+		return nil, err
+	}
+
+	return rsp.Servers, nil
 }

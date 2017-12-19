@@ -13,7 +13,8 @@ import (
 type ServerOption func(*serverOptions)
 
 type serverOptions struct {
-	publisher Publisher
+	publisher  Publisher
+	httpServer string
 }
 
 // WithEtcdPublisher use etcd to publish service
@@ -25,6 +26,13 @@ func WithEtcdPublisher(client *clientv3.Client, prefix string, ttl int64, timeou
 				err)
 		}
 		opts.publisher = p
+	}
+}
+
+// WithHTTPServer with http server
+func WithHTTPServer(addr string) ServerOption {
+	return func(opts *serverOptions) {
+		opts.httpServer = addr
 	}
 }
 

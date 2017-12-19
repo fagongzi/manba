@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	addr           = flag.String("addr", "127.0.0.1:8080", "Addr: client entrypoint")
+	addr           = flag.String("addr", "127.0.0.1:9092", "Addr: client entrypoint")
 	addrStore      = flag.String("addr-store", "etcd://127.0.0.1:2379", "Addr: store address")
 	namespace      = flag.String("namespace", "dev", "The namespace to isolation the environment.")
 	discovery      = flag.Bool("discovery", false, "Publish apiserver service via discovery.")

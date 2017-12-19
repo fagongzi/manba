@@ -125,7 +125,7 @@ func (a *Analysis) AddTarget(key uint64, interval time.Duration) {
 	recently := newRecently(key, interval)
 	a.recentlyPoints[key][interval] = recently
 
-	log.Infof("analysis: added, key=<%s> interval=<%s>",
+	log.Infof("analysis: added, key=<%d> interval=<%s>",
 		key,
 		interval)
 

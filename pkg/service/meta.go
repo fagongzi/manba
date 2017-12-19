@@ -281,3 +281,67 @@ func (s *metaService) GetRoutingList(req *rpcpb.GetRoutingListReq, stream rpcpb.
 		}
 	}
 }
+
+func (s *metaService) AddBind(ctx context.Context, req *rpcpb.AddBindReq) (*rpcpb.AddBindRsp, error) {
+	select {
+	case <-ctx.Done():
+		return nil, errRPCCancel
+	default:
+		err := s.db.AddBind(&metapb.Bind{
+			ClusterID: req.Cluster,
+			ServerID:  req.Server,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &rpcpb.AddBindRsp{}, nil
+	}
+}
+
+func (s *metaService) RemoveBind(ctx context.Context, req *rpcpb.RemoveBindReq) (*rpcpb.RemoveBindRsp, error) {
+	select {
+	case <-ctx.Done():
+		return nil, errRPCCancel
+	default:
+		err := s.db.RemoveBind(&metapb.Bind{
+			ClusterID: req.Cluster,
+			ServerID:  req.Server,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &rpcpb.RemoveBindRsp{}, nil
+	}
+}
+
+func (s *metaService) RemoveClusterBind(ctx context.Context, req *rpcpb.RemoveClusterBindReq) (*rpcpb.RemoveClusterBindRsp, error) {
+	select {
+	case <-ctx.Done():
+		return nil, errRPCCancel
+	default:
+		err := s.db.RemoveClusterBind(req.Cluster)
+		if err != nil {
+			return nil, err
+		}
+
+		return &rpcpb.RemoveClusterBindRsp{}, nil
+	}
+}
+
+func (s *metaService) GetBindServers(ctx context.Context, req *rpcpb.GetBindServersReq) (*rpcpb.GetBindServersRsp, error) {
+	select {
+	case <-ctx.Done():
+		return nil, errRPCCancel
+	default:
+		servers, err := s.db.GetBindServers(req.Cluster)
+		if err != nil {
+			return nil, err
+		}
+
+		return &rpcpb.GetBindServersRsp{
+			Servers: servers,
+		}, nil
+	}
+}

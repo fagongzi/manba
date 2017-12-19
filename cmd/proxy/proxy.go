@@ -30,8 +30,8 @@ var (
 	defaultFilters = &filterFlag{}
 	filters        = &filterFlag{}
 
-	addr                          = flag.String("addr", ":80", "Addr: http request entrypoint")
-	addrRPC                       = flag.String("addr-rpc", ":8081", "Addr: manager request entrypoint")
+	addr                          = flag.String("addr", "127.0.0.1:80", "Addr: http request entrypoint")
+	addrRPC                       = flag.String("addr-rpc", "127.0.0.1:9091", "Addr: manager request entrypoint")
 	addrStore                     = flag.String("addr-store", "etcd://127.0.0.1:2379", "Addr: store of meta data, support etcd or consul")
 	addrPPROF                     = flag.String("addr-pprof", "", "Addr: pprof addr")
 	namespace                     = flag.String("namespace", "dev", "The namespace to isolation the environment.")
@@ -42,9 +42,9 @@ var (
 	limitDurationConnIdleSec      = flag.Int("limit-conn-idle", 30, "Limit(sec): Idle for backend server connections")
 	limitTimeoutWriteSec          = flag.Int("limit-timeout-write", 30, "Limit(sec): Timeout for write to backend servers")
 	limitTimeoutReadSec           = flag.Int("limit-timeout-read", 30, "Limit(sec): Timeout for read from backend servers")
-	limitBufferRead               = flag.Int("limit-buf-read", 30, "Limit(bytes): Bytes for read buffer size")
-	limitBufferWrite              = flag.Int("limit-buf-write", 30, "Limit(bytes): Bytes for write buffer size")
-	limitBytesBodyMB              = flag.Int("limit-body", 30, "Limit(MB): MB for body size")
+	limitBufferRead               = flag.Int("limit-buf-read", 64, "Limit(bytes): Bytes for read buffer size")
+	limitBufferWrite              = flag.Int("limit-buf-write", 64, "Limit(bytes): Bytes for write buffer size")
+	limitBytesBodyMB              = flag.Int("limit-body", 10, "Limit(MB): MB for body size")
 )
 
 func init() {

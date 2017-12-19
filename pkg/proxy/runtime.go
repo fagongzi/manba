@@ -50,17 +50,16 @@ func (c *clusterRuntime) foreach(do func(uint64)) {
 
 func (c *clusterRuntime) remove(id uint64) {
 	collection.Remove(c.svrs, id)
-	log.Infof("bind <%d,%d> removed.", c.meta.ID, id)
+	log.Infof("bind <%d,%d> inactived", c.meta.ID, id)
 }
 
 func (c *clusterRuntime) add(id uint64) {
 	if collection.IndexOf(c.svrs, id) >= 0 {
-		log.Warnf("bind <%d,%d> already created.", c.meta.ID, id)
 		return
 	}
 
 	c.svrs.PushBack(id)
-	log.Infof("bind <%d,%d> created.", c.meta.ID, id)
+	log.Infof("bind <%d,%d> actived", c.meta.ID, id)
 }
 
 func (c *clusterRuntime) selectServer(req *fasthttp.Request) uint64 {
@@ -80,6 +79,7 @@ func (c *clusterRuntime) selectServer(req *fasthttp.Request) uint64 {
 
 type serverRuntime struct {
 	tw               *goetty.TimeoutWheel
+	limiter          *rate.Limiter
 	meta             *metapb.Server
 	status           metapb.Status
 	heathTimeout     goetty.Timeout
@@ -90,17 +90,20 @@ type serverRuntime struct {
 
 func newServerRuntime(meta *metapb.Server, tw *goetty.TimeoutWheel) *serverRuntime {
 	rt := &serverRuntime{
-		meta:    meta,
 		tw:      tw,
 		status:  metapb.Down,
 		circuit: metapb.Open,
+		limiter: rate.NewLimiter(rate.Every(time.Second), int(meta.MaxQPS)),
 	}
+
+	rt.updateMeta(meta)
 
 	return rt
 }
 
 func (s *serverRuntime) updateMeta(meta *metapb.Server) {
 	s.meta = meta
+	s.limiter = rate.NewLimiter(rate.Every(time.Second), int(meta.MaxQPS))
 }
 
 func (s *serverRuntime) getCheckURL() string {
@@ -191,7 +194,6 @@ type apiNode struct {
 }
 
 type apiRuntime struct {
-	limiter         *rate.Limiter
 	meta            *metapb.API
 	nodes           []*apiNode
 	urlPattern      *regexp.Regexp

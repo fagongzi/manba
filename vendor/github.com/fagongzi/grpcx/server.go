@@ -8,22 +8,17 @@ import (
 	"google.golang.org/grpc/naming"
 )
 
-// Service is a service define
-type Service struct {
-	Name     string
-	Metadata interface{}
-}
-
 // ServiceRegister registry grpc services
 type ServiceRegister func(*grpc.Server) []Service
 
 // GRPCServer is a grpc server
 type GRPCServer struct {
-	addr     string
-	server   *grpc.Server
-	opts     *serverOptions
-	register ServiceRegister
-	services []Service
+	addr       string
+	httpServer *httpServer
+	server     *grpc.Server
+	opts       *serverOptions
+	register   ServiceRegister
+	services   []Service
 }
 
 // NewGRPCServer returns a grpc server
@@ -60,6 +55,23 @@ func (s *GRPCServer) Start() error {
 	s.services = s.register(s.server)
 	s.publishServices()
 
+	if s.opts.httpServer != "" {
+		s.httpServer = newHTTPServer(s.opts.httpServer)
+		for _, service := range s.services {
+			if len(service.opts.httpEntrypoints) > 0 {
+				s.httpServer.addService(service)
+				log.Infof("rpc: service %s added to http proxy", service.Name)
+			}
+		}
+
+		go func() {
+			err := s.httpServer.start()
+			if err != nil {
+				log.Fatalf("rpc: start http proxy failed, errors:\n%+v", err)
+			}
+		}()
+	}
+
 	if err := s.server.Serve(lis); err != nil {
 		return err
 	}
@@ -69,6 +81,9 @@ func (s *GRPCServer) Start() error {
 
 // GracefulStop stop the grpc server
 func (s *GRPCServer) GracefulStop() {
+	if s.httpServer != nil {
+		s.httpServer.stop()
+	}
 	s.server.GracefulStop()
 }
 

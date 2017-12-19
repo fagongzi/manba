@@ -13,6 +13,8 @@ import (
 func (r *dispatcher) readyToHeathChecker() {
 	for i := 0; i < r.cnf.Option.LimitCountHeathCheckWorker; i++ {
 		r.runner.RunCancelableTask(func(ctx context.Context) {
+			log.Infof("start server check worker")
+
 			for {
 				select {
 				case <-ctx.Done():
@@ -63,6 +65,7 @@ func (r *dispatcher) check(id uint64) {
 		log.Warnf("server <%s> heath check not setting", svr.meta.ID)
 		svr.changeTo(metapb.Up)
 	} else {
+
 		if r.doCheck(svr) {
 			svr.changeTo(metapb.Up)
 		} else {
