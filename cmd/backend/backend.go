@@ -13,6 +13,8 @@ var (
 )
 
 func main() {
+	flag.Parse()
+
 	server := echo.New()
 	server.GET("/check", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK")
@@ -22,11 +24,13 @@ func main() {
 		user := make(map[string]interface{})
 		user["id"] = c.Param("id")
 		user["name"] = fmt.Sprintf("v1-name-%s", c.Param("id"))
+		user["source"] = *addr
 		return c.JSON(http.StatusOK, user)
 	})
 	server.GET("/v1/account/:id", func(c echo.Context) error {
 		account := make(map[string]interface{})
 		account["id"] = c.Param("id")
+		account["source"] = *addr
 		account["account"] = fmt.Sprintf("v1-account-%s", c.Param("id"))
 		return c.JSON(http.StatusOK, account)
 	})
@@ -34,12 +38,14 @@ func main() {
 	server.GET("/v2/users/:id", func(c echo.Context) error {
 		user := make(map[string]interface{})
 		user["id"] = c.Param("id")
+		user["source"] = *addr
 		user["name"] = fmt.Sprintf("v2-name-%s", c.Param("id"))
 		return c.JSON(http.StatusOK, user)
 	})
 	server.GET("/v2/account/:id", func(c echo.Context) error {
 		account := make(map[string]interface{})
 		account["id"] = c.Param("id")
+		account["source"] = *addr
 		account["account"] = fmt.Sprintf("v2-account-%s", c.Param("id"))
 		return c.JSON(http.StatusOK, account)
 	})

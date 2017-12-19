@@ -24,7 +24,7 @@ func (e *EtcdStore) Watch(evtCh chan *Evt, stopCh chan bool) error {
 	return nil
 }
 
-func (e EtcdStore) doWatch() {
+func (e *EtcdStore) doWatch() {
 	watcher := clientv3.NewWatcher(e.rawClient)
 	defer watcher.Close()
 
@@ -62,6 +62,8 @@ func (e EtcdStore) doWatch() {
 					evtSrc = EventSrcAPI
 				} else if strings.HasPrefix(key, e.routingsDir) {
 					evtSrc = EventSrcRouting
+				} else if strings.HasPrefix(key, e.proxiesDir) {
+					evtSrc = EventSrcProxy
 				} else {
 					continue
 				}
@@ -154,10 +156,25 @@ func (e *EtcdStore) doWatchWithRouting(evtType EvtType, kv *mvccpb.KeyValue) *Ev
 	}
 }
 
+func (e *EtcdStore) doWatchWithProxy(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
+	value := &metapb.Proxy{}
+	if len(kv.Value) > 0 {
+		protoc.MustUnmarshal(value, []byte(kv.Value))
+	}
+
+	return &Evt{
+		Src:   EventSrcProxy,
+		Type:  evtType,
+		Key:   strings.Replace(string(kv.Key), fmt.Sprintf("%s/", e.proxiesDir), "", 1),
+		Value: value,
+	}
+}
+
 func (e *EtcdStore) init() {
 	e.watchMethodMapping[EventSrcBind] = e.doWatchWithBind
 	e.watchMethodMapping[EventSrcServer] = e.doWatchWithServer
 	e.watchMethodMapping[EventSrcCluster] = e.doWatchWithCluster
 	e.watchMethodMapping[EventSrcAPI] = e.doWatchWithAPI
 	e.watchMethodMapping[EventSrcRouting] = e.doWatchWithRouting
+	e.watchMethodMapping[EventSrcProxy] = e.doWatchWithProxy
 }

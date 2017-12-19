@@ -10,6 +10,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/util/format"
 	"golang.org/x/net/context"
 )
@@ -62,7 +63,7 @@ func NewEtcdStore(etcdAddrs []string, prefix string) (Store, error) {
 		serversDir:         fmt.Sprintf("%s/servers", prefix),
 		bindsDir:           fmt.Sprintf("%s/binds", prefix),
 		apisDir:            fmt.Sprintf("%s/apis", prefix),
-		proxiesDir:         fmt.Sprintf("%s/proxy", prefix),
+		proxiesDir:         fmt.Sprintf("%s/proxies", prefix),
 		routingsDir:        fmt.Sprintf("%s/routings", prefix),
 		idPath:             fmt.Sprintf("%s/id", prefix),
 		watchMethodMapping: make(map[EvtSrc]func(EvtType, *mvccpb.KeyValue) *Evt),
@@ -152,7 +153,7 @@ func (e *EtcdStore) RemoveCluster(id uint64) error {
 
 // GetClusters returns all clusters
 func (e *EtcdStore) GetClusters(limit int64, fn func(interface{}) error) error {
-	return e.getValues(e.clustersDir, limit, &metapb.Cluster{}, fn)
+	return e.getValues(e.clustersDir, limit, func() pb { return &metapb.Cluster{} }, fn)
 }
 
 // GetCluster returns the cluster
@@ -175,7 +176,7 @@ func (e *EtcdStore) RemoveServer(id uint64) error {
 
 // GetServers returns all server
 func (e *EtcdStore) GetServers(limit int64, fn func(interface{}) error) error {
-	return e.getValues(e.serversDir, limit, &metapb.Server{}, fn)
+	return e.getValues(e.serversDir, limit, func() pb { return &metapb.Server{} }, fn)
 }
 
 // GetServer returns the server
@@ -198,7 +199,7 @@ func (e *EtcdStore) RemoveAPI(id uint64) error {
 
 // GetAPIs returns all api
 func (e *EtcdStore) GetAPIs(limit int64, fn func(interface{}) error) error {
-	return e.getValues(e.apisDir, limit, &metapb.API{}, fn)
+	return e.getValues(e.apisDir, limit, func() pb { return &metapb.API{} }, fn)
 }
 
 // GetAPI returns the api
@@ -221,13 +222,73 @@ func (e *EtcdStore) RemoveRouting(id uint64) error {
 
 // GetRoutings returns routes in store
 func (e *EtcdStore) GetRoutings(limit int64, fn func(interface{}) error) error {
-	return e.getValues(e.routingsDir, limit, &metapb.Routing{}, fn)
+	return e.getValues(e.routingsDir, limit, func() pb { return &metapb.Routing{} }, fn)
 }
 
 // GetRouting returns a routing
 func (e *EtcdStore) GetRouting(id uint64) (*metapb.Routing, error) {
 	value := &metapb.Routing{}
 	return value, e.getPB(e.routingsDir, id, value)
+}
+
+// RegistryProxy registry
+func (e *EtcdStore) RegistryProxy(proxy *metapb.Proxy, ttl int64) error {
+	key := getAddrKey(e.proxiesDir, proxy.Addr)
+	data, err := proxy.Marshal()
+	if err != nil {
+		return err
+	}
+
+	lessor := clientv3.NewLease(e.rawClient)
+	defer lessor.Close()
+
+	ctx, cancel := context.WithTimeout(e.rawClient.Ctx(), DefaultRequestTimeout)
+	leaseResp, err := lessor.Grant(ctx, ttl)
+	cancel()
+	if err != nil {
+		return err
+	}
+
+	_, err = e.rawClient.KeepAlive(e.rawClient.Ctx(), leaseResp.ID)
+	if err != nil {
+		return err
+	}
+
+	return e.put(key, string(data), clientv3.WithLease(leaseResp.ID))
+}
+
+// GetProxies returns proxies in store
+func (e *EtcdStore) GetProxies(limit int64, fn func(*metapb.Proxy) error) error {
+	start := util.MinAddrFormat
+	end := getAddrKey(e.proxiesDir, util.MaxAddrFormat)
+	withRange := clientv3.WithRange(end)
+	withLimit := clientv3.WithLimit(limit)
+
+	for {
+		resp, err := e.get(getAddrKey(e.proxiesDir, start), withRange, withLimit)
+		if err != nil {
+			return err
+		}
+
+		for _, item := range resp.Kvs {
+			value := &metapb.Proxy{}
+			err := value.Unmarshal(item.Value)
+			if err != nil {
+				return err
+			}
+
+			fn(value)
+
+			start = util.GetAddrNextFormat(value.Addr)
+		}
+
+		// read complete
+		if len(resp.Kvs) < int(limit) {
+			break
+		}
+	}
+
+	return nil
 }
 
 // Clean clean data in store
@@ -285,7 +346,7 @@ func (e *EtcdStore) putPB(prefix string, value pb, do func(uint64)) (uint64, err
 	return value.GetID(), e.put(getKey(prefix, value.GetID()), string(data))
 }
 
-func (e *EtcdStore) getValues(prefix string, limit int64, value pb, fn func(interface{}) error) error {
+func (e *EtcdStore) getValues(prefix string, limit int64, factory func() pb, fn func(interface{}) error) error {
 	start := uint64(0)
 	end := getKey(prefix, endID)
 	withRange := clientv3.WithRange(end)
@@ -298,6 +359,7 @@ func (e *EtcdStore) getValues(prefix string, limit int64, value pb, fn func(inte
 		}
 
 		for _, item := range resp.Kvs {
+			value := factory()
 			err := value.Unmarshal(item.Value)
 			if err != nil {
 				return err

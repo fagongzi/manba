@@ -37,14 +37,15 @@ var (
 	namespace                     = flag.String("namespace", "dev", "The namespace to isolation the environment.")
 	limitCountHeathCheckWorker    = flag.Int("limit-heathcheck", 1, "Limit: Count of heath check worker")
 	limitIntervalHeathCheckSec    = flag.Int("limit-heathcheck-interval", 60, "Limit(sec): Interval for heath check")
-	limitCountConn                = flag.Int("limit-conn", 1, "Limit(count): Count of connection per backend server")
+	limitCountConn                = flag.Int("limit-conn", 64, "Limit(count): Count of connection per backend server")
 	limitDurationConnKeepaliveSec = flag.Int("limit-conn-keepalive", 60, "Limit(sec): Keepalive for backend server connections")
 	limitDurationConnIdleSec      = flag.Int("limit-conn-idle", 30, "Limit(sec): Idle for backend server connections")
 	limitTimeoutWriteSec          = flag.Int("limit-timeout-write", 30, "Limit(sec): Timeout for write to backend servers")
 	limitTimeoutReadSec           = flag.Int("limit-timeout-read", 30, "Limit(sec): Timeout for read from backend servers")
-	limitBufferRead               = flag.Int("limit-buf-read", 64, "Limit(bytes): Bytes for read buffer size")
-	limitBufferWrite              = flag.Int("limit-buf-write", 64, "Limit(bytes): Bytes for write buffer size")
+	limitBufferRead               = flag.Int("limit-buf-read", 2048, "Limit(bytes): Bytes for read buffer size")
+	limitBufferWrite              = flag.Int("limit-buf-write", 1024, "Limit(bytes): Bytes for write buffer size")
 	limitBytesBodyMB              = flag.Int("limit-body", 10, "Limit(MB): MB for body size")
+	ttlProxy                      = flag.Int64("ttl-proxy", 10, "TTL(secs): proxy")
 )
 
 func init() {
@@ -109,6 +110,7 @@ func getCfg() *proxy.Cfg {
 	cfg.AddrRPC = *addrRPC
 	cfg.AddrPPROF = *addrPPROF
 	cfg.AddrStore = *addrStore
+	cfg.TTLProxy = *ttlProxy
 	cfg.Namespace = fmt.Sprintf("/%s", *namespace)
 	cfg.Option.LimitBytesBody = *limitBytesBodyMB * 1024 * 1024
 	cfg.Option.LimitBufferRead = *limitBufferRead

@@ -6,6 +6,7 @@ import (
 
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/store"
+	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/format"
 	"github.com/fagongzi/util/json"
@@ -16,10 +17,12 @@ var (
 	errClusterExists   = errors.New("Cluster already exist")
 	errBindExists      = errors.New("Bind already exist")
 	errAPIExists       = errors.New("API already exist")
+	errProxyExists     = errors.New("Proxy already exist")
 	errRoutingExists   = errors.New("Routing already exist")
 	errServerNotFound  = errors.New("Server not found")
 	errClusterNotFound = errors.New("Cluster not found")
 	errBindNotFound    = errors.New("Bind not found")
+	errProxyNotFound   = errors.New("Proxy not found")
 	errAPINotFound     = errors.New("API not found")
 	errRoutingNotFound = errors.New("Routing not found")
 
@@ -29,11 +32,25 @@ var (
 func (r *dispatcher) load() {
 	go r.watch()
 
+	r.loadProxies()
 	r.loadClusters()
 	r.loadServers()
 	r.loadBinds()
 	r.loadAPIs()
 	r.loadRoutings()
+}
+
+func (r *dispatcher) loadProxies() {
+	log.Infof("load proxies")
+
+	err := r.store.GetProxies(limit, func(value *metapb.Proxy) error {
+		return r.addProxy(value)
+	})
+	if nil != err {
+		log.Errorf("load proxies failed, errors:\n%+v",
+			err)
+		return
+	}
 }
 
 func (r *dispatcher) loadClusters() {
@@ -137,6 +154,8 @@ func (r *dispatcher) readyToReceiveWatchEvent() {
 			r.doAPIEvent(evt)
 		} else if evt.Src == store.EventSrcRouting {
 			r.doRoutingEvent(evt)
+		} else if evt.Src == store.EventSrcProxy {
+			r.doProxyEvent(evt)
 		} else {
 			log.Warnf("unknown event <%+v>", evt)
 		}
@@ -151,7 +170,17 @@ func (r *dispatcher) doRoutingEvent(evt *store.Evt) {
 	} else if evt.Type == store.EventTypeDelete {
 		r.removeRouting(format.MustParseStrUInt64(evt.Key))
 	} else if evt.Type == store.EventTypeUpdate {
-		// TODO: impl
+		r.updateRouting(routing)
+	}
+}
+
+func (r *dispatcher) doProxyEvent(evt *store.Evt) {
+	proxy, _ := evt.Value.(*metapb.Proxy)
+
+	if evt.Type == store.EventTypeNew {
+		r.addProxy(proxy)
+	} else if evt.Type == store.EventTypeDelete {
+		r.removeProxy(evt.Key)
 	}
 }
 
@@ -243,9 +272,41 @@ func (r *dispatcher) removeRouting(id uint64) error {
 	}
 
 	delete(r.routings, id)
-	log.Infof("routing <%s> deleted",
+	log.Infof("routing <%d> deleted",
 		id)
 
+	return nil
+}
+
+func (r *dispatcher) addProxy(meta *metapb.Proxy) error {
+	r.Lock()
+	defer r.Unlock()
+
+	key := util.GetAddrFormat(meta.Addr)
+
+	if _, ok := r.proxies[key]; ok {
+		return errProxyExists
+	}
+
+	r.proxies[key] = meta
+	r.refreshAllQPS()
+
+	log.Infof("proxy <%s> added", key)
+	return nil
+}
+
+func (r *dispatcher) removeProxy(addr string) error {
+	r.Lock()
+	defer r.Unlock()
+
+	if _, ok := r.proxies[addr]; !ok {
+		return errProxyNotFound
+	}
+
+	delete(r.proxies, addr)
+	r.refreshAllQPS()
+
+	log.Infof("proxy <%s> deleted", addr)
 	return nil
 }
 
@@ -296,6 +357,17 @@ func (r *dispatcher) removeAPI(id uint64) error {
 	return nil
 }
 
+func (r *dispatcher) refreshAllQPS() {
+	for _, svr := range r.servers {
+		r.refreshQPS(svr.meta)
+		svr.updateMeta(svr.meta)
+	}
+}
+
+func (r *dispatcher) refreshQPS(svr *metapb.Server) {
+	svr.MaxQPS = svr.MaxQPS / int64(len(r.proxies))
+}
+
 func (r *dispatcher) addServer(svr *metapb.Server) error {
 	r.Lock()
 	defer r.Unlock()
@@ -303,6 +375,8 @@ func (r *dispatcher) addServer(svr *metapb.Server) error {
 	if _, ok := r.servers[svr.ID]; ok {
 		return errServerExists
 	}
+
+	r.refreshQPS(svr)
 
 	rt := newServerRuntime(svr, r.tw)
 	r.servers[svr.ID] = rt
@@ -325,6 +399,8 @@ func (r *dispatcher) updateServer(meta *metapb.Server) error {
 	if !ok {
 		return errServerNotFound
 	}
+
+	r.refreshQPS(meta)
 
 	rt.updateMeta(meta)
 

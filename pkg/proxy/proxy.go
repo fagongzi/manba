@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
@@ -86,7 +87,7 @@ func (p *Proxy) Start() {
 	log.Infof("gateway proxy started at <%s>", p.cnf.Addr)
 	err := fasthttp.ListenAndServe(p.cnf.Addr, p.ReverseProxyHandler)
 	if err != nil {
-		log.Errorf("gateway proxy start failed, errors:\n%+v",
+		log.Fatalf("gateway proxy start failed, errors:\n%+v",
 			err)
 		return
 	}
@@ -136,6 +137,17 @@ func (p *Proxy) init() {
 		log.Fatalf("init route table failed, errors:\n%+v",
 			err)
 	}
+
+	err = p.dispatcher.store.RegistryProxy(&metapb.Proxy{
+		Addr:    p.cnf.Addr,
+		AddrRPC: p.cnf.AddrRPC,
+	}, p.cnf.TTLProxy)
+	if err != nil {
+		log.Fatalf("init route table failed, errors:\n%+v",
+			err)
+	}
+
+	p.dispatcher.load()
 }
 
 func (p *Proxy) initDispatcher() error {
@@ -146,8 +158,6 @@ func (p *Proxy) initDispatcher() error {
 	}
 
 	p.dispatcher = newDispatcher(p.cnf, s, p.runner)
-	p.dispatcher.load()
-
 	return nil
 }
 

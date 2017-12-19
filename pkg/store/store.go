@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/toolkits/net"
 )
 
@@ -47,6 +48,8 @@ const (
 	EventSrcAPI = EvtSrc(3)
 	// EventSrcRouting routing event
 	EventSrcRouting = EvtSrc(4)
+	// EventSrcProxy routing event
+	EventSrcProxy = EvtSrc(5)
 )
 
 // Evt event
@@ -129,6 +132,9 @@ type Store interface {
 	GetRoutings(limit int64, fn func(interface{}) error) error
 	GetRouting(id uint64) (*metapb.Routing, error)
 
+	RegistryProxy(proxy *metapb.Proxy, ttl int64) error
+	GetProxies(limit int64, fn func(*metapb.Proxy) error) error
+
 	Watch(evtCh chan *Evt, stopCh chan bool) error
 
 	Clean() error
@@ -136,4 +142,8 @@ type Store interface {
 
 func getKey(prefix string, id uint64) string {
 	return fmt.Sprintf("%s/%020d", prefix, id)
+}
+
+func getAddrKey(prefix string, addr string) string {
+	return fmt.Sprintf("%s/%s", prefix, util.GetAddrFormat(addr))
 }

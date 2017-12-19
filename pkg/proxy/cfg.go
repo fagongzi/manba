@@ -27,6 +27,7 @@ type Cfg struct {
 	AddrStore string
 	AddrPPROF string
 	Namespace string
+	TTLProxy int64
 	Filers    []*FilterSpec
 
 	Option *Option

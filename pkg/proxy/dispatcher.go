@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/goetty"
@@ -43,6 +44,7 @@ type dispatcher struct {
 	clusters    map[uint64]*clusterRuntime
 	servers     map[uint64]*serverRuntime
 	binds       map[uint64]map[uint64]*clusterRuntime
+	proxies     map[string]*metapb.Proxy
 	checkerC    chan uint64
 	watchStopC  chan bool
 	watchEventC chan *store.Evt
@@ -67,6 +69,7 @@ func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner) *dispatcher {
 		apis:        make(map[uint64]*apiRuntime),
 		routings:    make(map[uint64]*routingRuntime),
 		binds:       make(map[uint64]map[uint64]*clusterRuntime),
+		proxies:     make(map[string]*metapb.Proxy),
 		checkerC:    make(chan uint64, 1024),
 		watchStopC:  make(chan bool),
 		watchEventC: make(chan *store.Evt),
@@ -89,6 +92,7 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) []*dispathNode {
 					dest: r.selectServer(req, r.selectClusterByRouting(req, r.clusters[node.meta.ClusterID])),
 				})
 			}
+			break
 		}
 	}
 
