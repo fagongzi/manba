@@ -1,4 +1,4 @@
-package net
+package grpcx
 
 import (
 	"net"
@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func IntranetIP() (ips []string, err error) {
+func intranetIP() (ips []string, err error) {
 	ips = make([]string, 0)
 
 	ifaces, e := net.Interfaces()
@@ -52,7 +52,7 @@ func IntranetIP() (ips []string, err error) {
 			}
 
 			ipStr := ip.String()
-			if IsIntranet(ipStr) {
+			if isIntranet(ipStr) {
 				ips = append(ips, ipStr)
 			}
 		}
@@ -61,7 +61,7 @@ func IntranetIP() (ips []string, err error) {
 	return ips, nil
 }
 
-func IsIntranet(ipStr string) bool {
+func isIntranet(ipStr string) bool {
 	if strings.HasPrefix(ipStr, "10.") || strings.HasPrefix(ipStr, "192.168.") {
 		return true
 	}

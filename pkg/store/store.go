@@ -8,7 +8,6 @@ import (
 
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/util"
-	"github.com/toolkits/net"
 )
 
 var (
@@ -89,18 +88,6 @@ func getEtcdStoreFrom(addr, prefix string) (Store, error) {
 	}
 
 	return NewEtcdStore(addrs, prefix)
-}
-
-func convertIP(addr string) string {
-	if strings.HasPrefix(addr, ":") {
-		ips, err := net.IntranetIP()
-
-		if err == nil {
-			addr = strings.Replace(addr, ":", fmt.Sprintf("%s:", ips[0]), 1)
-		}
-	}
-
-	return addr
 }
 
 // Store store interface

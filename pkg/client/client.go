@@ -14,22 +14,22 @@ import (
 
 // Client gateway client
 type Client interface {
-	PutCluster(cluster metapb.Cluster) (uint64, error)
+	NewClusterBuilder() *ClusterBuilder
 	RemoveCluster(id uint64) error
 	GetCluster(id uint64) (*metapb.Cluster, error)
 	GetClusterList(fn func(*metapb.Cluster) bool) error
 
-	PutServer(server metapb.Server) (uint64, error)
+	NewServerBuilder() *ServerBuilder
 	RemoveServer(id uint64) error
 	GetServer(id uint64) (*metapb.Server, error)
 	GetServerList(fn func(*metapb.Server) bool) error
 
-	PutAPI(api metapb.API) (uint64, error)
+	NewAPIBuilder() *APIBuilder
 	RemoveAPI(id uint64) error
 	GetAPI(id uint64) (*metapb.API, error)
 	GetAPIList(fn func(*metapb.API) bool) error
 
-	PutRouting(routing metapb.Routing) (uint64, error)
+	NewRoutingBuilder() *RoutingBuilder
 	RemoveRouting(id uint64) error
 	GetRouting(id uint64) (*metapb.Routing, error)
 	GetRoutingList(fn func(*metapb.Routing) bool) error
@@ -87,7 +87,7 @@ func (c *client) getMetaClient() (rpcpb.MetaServiceClient, error) {
 	return cli.(rpcpb.MetaServiceClient), nil
 }
 
-func (c *client) PutCluster(cluster metapb.Cluster) (uint64, error) {
+func (c *client) putCluster(cluster metapb.Cluster) (uint64, error) {
 	meta, err := c.getMetaClient()
 	if err != nil {
 		return 0, err
@@ -162,7 +162,7 @@ func (c *client) GetClusterList(fn func(*metapb.Cluster) bool) error {
 	}
 }
 
-func (c *client) PutServer(server metapb.Server) (uint64, error) {
+func (c *client) putServer(server metapb.Server) (uint64, error) {
 	meta, err := c.getMetaClient()
 	if err != nil {
 		return 0, err
@@ -237,7 +237,7 @@ func (c *client) GetServerList(fn func(*metapb.Server) bool) error {
 	}
 }
 
-func (c *client) PutAPI(api metapb.API) (uint64, error) {
+func (c *client) putAPI(api metapb.API) (uint64, error) {
 	meta, err := c.getMetaClient()
 	if err != nil {
 		return 0, err
@@ -312,7 +312,7 @@ func (c *client) GetAPIList(fn func(*metapb.API) bool) error {
 	}
 }
 
-func (c *client) PutRouting(routing metapb.Routing) (uint64, error) {
+func (c *client) putRouting(routing metapb.Routing) (uint64, error) {
 	meta, err := c.getMetaClient()
 	if err != nil {
 		return 0, err

@@ -22,8 +22,8 @@
 [[projects]]
   name = "github.com/fagongzi/grpcx"
   packages = ["."]
-  revision = "524fdd1207920b3946d98b1e18678179a0d7ad9f"
-  version = "v1.0-beta"
+  revision = "a3f8aaa5df1f0d2fa8d644e387f9b185dea2d55a"
+  version = "v1.0-RC.1"
 
 [[projects]]
   branch = "master"
@@ -84,12 +84,6 @@
   packages = ["."]
   revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
   version = "v0.0.3"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/toolkits/net"
-  packages = ["."]
-  revision = "3f39ab6fe3cec98207da42dab32703b498ed92e4"
 
 [[projects]]
   branch = "master"
@@ -154,6 +148,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5a020215085310590e90f7fc6ff27b220caa652fcc33ff4dccf9eb68ecf2b4aa"
+  inputs-digest = "82af1a2f877deb7d34a70424e47c62a7d3648a881a79df1bf901de1cc1351167"
   solver-name = "gps-cdcl"
   solver-version = 1
