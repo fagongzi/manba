@@ -31,6 +31,35 @@ func (ab *APIBuilder) Name(name string) *APIBuilder {
 	return ab
 }
 
+// AuthPlugin set a auth filter plugin
+func (ab *APIBuilder) AuthPlugin(name string) *APIBuilder {
+	ab.value.AuthFilter = name
+	return ab
+}
+
+// AddPerm add a perm
+func (ab *APIBuilder) AddPerm(perm string) *APIBuilder {
+	ab.value.Perms = append(ab.value.Perms, perm)
+	return ab
+}
+
+// RemovePerm remove a perm
+func (ab *APIBuilder) RemovePerm(perm string) *APIBuilder {
+	if len(ab.value.Perms) == 0 {
+		return ab
+	}
+
+	var perms []string
+	for _, p := range ab.value.Perms {
+		if p != perm {
+			perms = append(perms, p)
+		}
+	}
+
+	ab.value.Perms = perms
+	return ab
+}
+
 // MatchURLPattern set a match path
 func (ab *APIBuilder) MatchURLPattern(urlPattern string) *APIBuilder {
 	ab.value.URLPattern = urlPattern

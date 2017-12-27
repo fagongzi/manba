@@ -61,6 +61,12 @@ func (sb *ServerBuilder) CheckHTTPBody(path, body string, interval time.Duration
 	return sb
 }
 
+// Addr set addr
+func (sb *ServerBuilder) Addr(addr string) *ServerBuilder {
+	sb.value.Addr = addr
+	return sb
+}
+
 // HTTPBackend set backend is http backend
 func (sb *ServerBuilder) HTTPBackend() *ServerBuilder {
 	sb.value.Protocol = metapb.HTTP

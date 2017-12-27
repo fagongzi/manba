@@ -52,6 +52,8 @@ type proxyContext struct {
 	forwardReq *fasthttp.Request
 	originCtx  *fasthttp.RequestCtx
 	rt         *dispatcher
+
+	attrs map[string]interface{}
 }
 
 func newContext(rt *dispatcher, originCtx *fasthttp.RequestCtx, forwardReq *fasthttp.Request, result *dispathNode) filter.Context {
@@ -61,7 +63,16 @@ func newContext(rt *dispatcher, originCtx *fasthttp.RequestCtx, forwardReq *fast
 		forwardReq: forwardReq,
 		rt:         rt,
 		startAt:    time.Now(),
+		attrs:      make(map[string]interface{}),
 	}
+}
+
+func (c *proxyContext) SetAttr(key string, value interface{}) {
+	c.attrs[key] = value
+}
+
+func (c *proxyContext) GetAttr(key string) interface{} {
+	return c.attrs[key]
 }
 
 func (c *proxyContext) StartAt() time.Time {

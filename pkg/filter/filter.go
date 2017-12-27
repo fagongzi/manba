@@ -21,6 +21,9 @@ type Context interface {
 	DispatchNode() *metapb.DispatchNode
 	Server() *metapb.Server
 	Analysis() *util.Analysis
+
+	SetAttr(key string, value interface{})
+	GetAttr(key string) interface{}
 }
 
 // Filter filter interface
