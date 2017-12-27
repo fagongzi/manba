@@ -26,6 +26,7 @@ type Context interface {
 // Filter filter interface
 type Filter interface {
 	Name() string
+	Init(cfg string) error
 
 	Pre(c Context) (statusCode int, err error)
 	Post(c Context) (statusCode int, err error)

@@ -170,6 +170,13 @@ func (p *Proxy) initFilters() {
 				err)
 		}
 
+		err = f.Init(filter.ExternalCfg)
+		if nil != err {
+			log.Fatalf("init filter failed, filter=<%+v> errors:\n%+v",
+				filter,
+				err)
+		}
+
 		log.Infof("filter added, filter=<%+v>", filter)
 		p.filters.PushBack(f)
 	}

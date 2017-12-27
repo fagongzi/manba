@@ -27,7 +27,7 @@ type Cfg struct {
 	AddrStore string
 	AddrPPROF string
 	Namespace string
-	TTLProxy int64
+	TTLProxy  int64
 	Filers    []*FilterSpec
 
 	Option *Option
@@ -43,6 +43,7 @@ type FilterSpec struct {
 	Name               string `json:"name"`
 	External           bool   `json:"external,omitempty"`
 	ExternalPluginFile string `json:"externalPluginFile,omitempty"`
+	ExternalCfg        string `json:"externalCfg,omitempty"`
 }
 
 // ParseFilter returns a filter
@@ -57,6 +58,12 @@ func ParseFilter(filter string) (*FilterSpec, error) {
 			Name:               specs[0],
 			External:           true,
 			ExternalPluginFile: specs[1]}, nil
+	case 3:
+		return &FilterSpec{
+			Name:               specs[0],
+			External:           true,
+			ExternalPluginFile: specs[1],
+			ExternalCfg:        specs[2]}, nil
 	default:
 		return nil, fmt.Errorf("error format: %s", filter)
 	}

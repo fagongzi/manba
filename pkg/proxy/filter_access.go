@@ -15,13 +15,18 @@ func newAccessFilter() filter.Filter {
 	return &AccessFilter{}
 }
 
+// Init init filter
+func (f *AccessFilter) Init(cfg string) error {
+	return nil
+}
+
 // Name return name of this filter
-func (f AccessFilter) Name() string {
+func (f *AccessFilter) Name() string {
 	return FilterHTTPAccess
 }
 
 // Post execute after proxy
-func (f AccessFilter) Post(c filter.Context) (statusCode int, err error) {
+func (f *AccessFilter) Post(c filter.Context) (statusCode int, err error) {
 	cost := c.EndAt().Sub(c.StartAt())
 
 	log.Infof("filter: %s %s \"%s\" %d \"%s\" %s %s",

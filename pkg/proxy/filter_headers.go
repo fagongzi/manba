@@ -26,13 +26,18 @@ func newHeadersFilter() filter.Filter {
 	return &HeadersFilter{}
 }
 
+// Init init filter
+func (f *HeadersFilter) Init(cfg string) error {
+	return nil
+}
+
 // Name return name of this filter
-func (f HeadersFilter) Name() string {
+func (f *HeadersFilter) Name() string {
 	return FilterHeader
 }
 
 // Pre execute before proxy
-func (f HeadersFilter) Pre(c filter.Context) (statusCode int, err error) {
+func (f *HeadersFilter) Pre(c filter.Context) (statusCode int, err error) {
 	for _, h := range hopHeaders {
 		c.ForwardRequest().Header.Del(h)
 	}
@@ -41,7 +46,7 @@ func (f HeadersFilter) Pre(c filter.Context) (statusCode int, err error) {
 }
 
 // Post execute after proxy
-func (f HeadersFilter) Post(c filter.Context) (statusCode int, err error) {
+func (f *HeadersFilter) Post(c filter.Context) (statusCode int, err error) {
 	for _, h := range hopHeaders {
 		c.Response().Header.Del(h)
 	}

@@ -32,16 +32,21 @@ type CircuitBreakeFilter struct {
 }
 
 func newCircuitBreakeFilter() filter.Filter {
-	return CircuitBreakeFilter{}
+	return &CircuitBreakeFilter{}
+}
+
+// Init init filter
+func (f *CircuitBreakeFilter) Init(cfg string) error {
+	return nil
 }
 
 // Name return name of this filter
-func (f CircuitBreakeFilter) Name() string {
+func (f *CircuitBreakeFilter) Name() string {
 	return FilterCircuitBreake
 }
 
 // Pre execute before proxy
-func (f CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) {
+func (f *CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) {
 	cb := c.Server().CircuitBreaker
 	if cb == nil {
 		return f.BaseFilter.Pre(c)
@@ -67,7 +72,7 @@ func (f CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) {
 }
 
 // Post execute after proxy
-func (f CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error) {
+func (f *CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error) {
 	cb := c.Server().CircuitBreaker
 	if cb == nil {
 		return f.BaseFilter.Pre(c)
@@ -81,13 +86,13 @@ func (f CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error) 
 }
 
 // PostErr execute proxy has errors
-func (f CircuitBreakeFilter) PostErr(c filter.Context) {
+func (f *CircuitBreakeFilter) PostErr(c filter.Context) {
 	if c.(*proxyContext).circuitStatus() == metapb.Half {
 		c.(*proxyContext).changeCircuitStatusToClose()
 	}
 }
 
-func (f CircuitBreakeFilter) getFailureRate(c filter.Context) int {
+func (f *CircuitBreakeFilter) getFailureRate(c filter.Context) int {
 	cb := c.Server().CircuitBreaker
 
 	failureCount := c.Analysis().GetRecentlyRequestFailureCount(c.Server().ID, time.Duration(cb.RateCheckPeriod))
@@ -100,7 +105,7 @@ func (f CircuitBreakeFilter) getFailureRate(c filter.Context) int {
 	return int(failureCount * 100 / totalCount)
 }
 
-func (f CircuitBreakeFilter) getSucceedRate(c filter.Context) int {
+func (f *CircuitBreakeFilter) getSucceedRate(c filter.Context) int {
 	cb := c.Server().CircuitBreaker
 
 	succeedCount := c.Analysis().GetRecentlyRequestSuccessedCount(c.Server().ID, time.Duration(cb.RateCheckPeriod))

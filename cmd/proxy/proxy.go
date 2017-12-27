@@ -61,7 +61,7 @@ func init() {
 }
 
 func main() {
-	flag.Var(filters, "filter", "Plugin(Filter): format is <filter name>[:plugin file path]")
+	flag.Var(filters, "filter", "Plugin(Filter): format is <filter name>[:plugin file path][:plugin config file path]")
 	flag.Parse()
 
 	log.InitLog()

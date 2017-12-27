@@ -166,6 +166,8 @@ message API {
     optional IPAccessControl ipAccessControl = 7 [(gogoproto.nullable) = true, (gogoproto.customname) = "IPAccessControl"];
     optional HTTPResult      defaultValue    = 8 [(gogoproto.nullable) = true];
     repeated DispatchNode    nodes           = 9;
+    repeated string          perms           = 10;
+    optional string          authFilter      = 11 [(gogoproto.nullable) = false];
 }
 
 // Condition is a condition for routing

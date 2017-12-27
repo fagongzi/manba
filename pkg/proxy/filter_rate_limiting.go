@@ -22,13 +22,18 @@ func newRateLimitingFilter() filter.Filter {
 	return &RateLimitingFilter{}
 }
 
+// Init init filter
+func (f *RateLimitingFilter) Init(cfg string) error {
+	return nil
+}
+
 // Name return name of this filter
-func (f RateLimitingFilter) Name() string {
+func (f *RateLimitingFilter) Name() string {
 	return FilterRateLimiting
 }
 
 // Pre execute before proxy
-func (f RateLimitingFilter) Pre(c filter.Context) (statusCode int, err error) {
+func (f *RateLimitingFilter) Pre(c filter.Context) (statusCode int, err error) {
 	err = c.(*proxyContext).result.dest.limiter.Wait(context.Background())
 	if err != nil {
 		return http.StatusInternalServerError, err
