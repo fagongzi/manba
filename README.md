@@ -24,7 +24,7 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 * 开放管理API
 
 # Install
-[参见](./docs/build.md)
+[更多](./docs/build.md)
 
 # Docker
 使用 `docker pull fagongzi/gateway` 命令下载Docker镜像, 使用 `docker run -d fagongzi/gateway` 运行镜像. 镜像启动后export 3个端口:
@@ -54,13 +54,13 @@ ApiServer对外提供GRPC的接口，用来管理元信息，[更多](./docs/api
 Server是一个真实的后端服务，[更多](./docs/server.md)。
 
 ### Cluster
-Cluster是一个逻辑概念，它由一组提供相同服务的Server组成。会依据负载均衡策略选择一个可用的Server，[这里](./docs/cluster.md)。
+Cluster是一个逻辑概念，它由一组提供相同服务的Server组成。会依据负载均衡策略选择一个可用的Server，[更多](./docs/cluster.md)。
 
 ### API
-API是Gateway的核心概念，我们可以在Gateway的中维护对外的API，以及API的分发规则，聚合规则以及URL匹配规则，[这里](./docs/api.md)。
+API是Gateway的核心概念，我们可以在Gateway的中维护对外的API，以及API的分发规则，聚合规则以及URL匹配规则，[更多](./docs/api.md)。
 
 ### Routing
-Routing是一个路由策略，根据HTTP Request中的cookie，query string、header中的一些信息把流量分发到指定的Cluster，通过这个功能，我们可以实现AB Test，[这里](./docs/routing.md)。
+Routing是一个路由策略，根据HTTP Request中的cookie，query string、header中的一些信息把流量分发到指定的Cluster，通过这个功能，我们可以实现AB Test，[更多](./docs/routing.md)。
   
 # Gateway能帮助你做什么
 ## API 定义
@@ -85,7 +85,7 @@ Gateway 通过 **Routing** 功能可以线上引流。
 Gateway以go1.8的plugin机制提供如下的扩展点
 
 * filter
-  使用go1.8的plugin的机制，编写自定义插件，扩展gateway功能。[如何编写自定义filter](./docs/plugin-filter.md)
+  使用go1.8的plugin的机制，编写自定义插件，扩展gateway功能。[如何编写自定义filter](./docs/plugin.md)
 
 # 交流方式
 微信: 13675153174
