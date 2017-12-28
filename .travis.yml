@@ -1,6 +1,6 @@
 language: go
-
+dist: xenial
 go:
   - 1.9
 
-script: true
+script: go build  ./...
