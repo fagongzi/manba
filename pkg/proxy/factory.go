@@ -17,7 +17,7 @@ const (
 	// FilterHTTPAccess access log filter
 	FilterHTTPAccess = "HTTP-ACCESS"
 	// FilterHeader header filter
-	FilterHeader = "HEAD" // process header fiter
+	FilterHeader = "HEADER" // process header fiter
 	// FilterXForward xforward fiter
 	FilterXForward = "XFORWARD"
 	// FilterBlackList blacklist filter
@@ -29,7 +29,7 @@ const (
 	// FilterRateLimiting limit filter
 	FilterRateLimiting = "RATE-LIMITING"
 	// FilterCircuitBreake circuit breake filter
-	FilterCircuitBreake = "CIRCUIT-BREAKE"
+	FilterCircuitBreake = "CIRCUIT-BREAKER"
 	// FilterValidation validation request filter
 	FilterValidation = "VALIDATION"
 )

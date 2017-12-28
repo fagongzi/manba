@@ -1,4 +1,4 @@
-<img src="images/logo.png" height=80></img>
+<img src="./images/logo.png" height=80></img>
 
 [![Gitter](https://badges.gitter.im/fagongzi/gateway.svg)](https://gitter.im/fagongzi/gateway?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![Build Status](https://api.travis-ci.org/fagongzi/gateway.svg)](https://travis-ci.org/fagongzi/gateway)
@@ -6,122 +6,86 @@
 
 Gateway
 -------
-Gateway is a http restful API gateway. 
-
-[简体中文](./docs-cn/README.md)
+Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的API接入层。
 
 # Features
-* Traffic Control
-* Circuit Breaker
-* Loadbalance
-* Service Discovery
-* Plugin mechanism
-* Routing based on URL
-* API aggregation
-* API Validation
-* API Access Control(blacklist and whitelist)
-* API Mock
-* Backend Server heath check
-* Use [fasthttp](https://github.com/valyala/fasthttp)
-* Admin WEBUI
+* 流量控制
+* 熔断
+* 负载均衡
+* 服务发现
+* 插件机制
+* 路由
+* API 聚合
+* API 参数校验
+* API 访问控制（黑白名单）
+* API 默认返回值
+* 后端server的健康检查
+* 使用 [fasthttp](https://github.com/valyala/fasthttp)
+* 开放管理API
 
 # Install
-Gateway dependency [etcd](https://github.com/coreos/etcd) or [consul](https://github.com/hashicorp/consul)
+[参见](./docs/build.md)
 
-## Compile from source
-You are must used go1.8 beause of the plugin mechanism.
-
-```
-git clone https://github.com/fagongzi/gateway.git
-cd $GOPATH/src/github.com/fagongzi/gateway
-go build cmd/proxy/proxy.go
-go build cmd/admin/admin.go
-```
-
-## Download binary file
-[linux-64bit](http://7xtbpp.com1.z0.glb.clouddn.com/gateway-linux64.tar.gz)
-
-## Docker
-You can run `docker pull fagongzi/gateway` to get docker images, then use `docker run -d fagongzi/gateway` to run. It export 3 ports:
+# Docker
+使用 `docker pull fagongzi/gateway` 命令下载Docker镜像, 使用 `docker run -d fagongzi/gateway` 运行镜像. 镜像启动后export 3个端口:
 
 * 80
 
-  proxy http serve port
+  Proxy的http端口，这个端口就是直接为终端用户服务的
 
-* 8081
+* 9092
 
-  proxy manager port
+  APIServer的对外GRPC的端口
 
-* 8080
-  
-  admin http port
-
-You can read [this](./docs/build.md) for more infomation about build and run gateway.
-
-# Online Demo
-
-* admin
-
-  http://demo-admin.fagongzi.win admin/admin
-
-* proxy
-  
-  http://demo-proxy.fagongzi.win 
-
-# Architecture
+# 架构
 ![](./images/arch.png)
 
-## Components
-Gateway has three component: proxy, admin, etcd.
+## 组件
+Gateway由`proxy`, `apiserver`组成
 
 ### Proxy
-The proxy provide http server. Proxy is stateless, you can scale proxy node to deal with large traffic.
+Proxy是Gateway对终端用户提供服务的组件，Proxy是一个无状态的节点，可以部署多个来支撑更大的流量，[更多](./docs/proxy.md)。
 
-### Admin 
-The admin is a backend manager system. Admin also is a stateless node, you can use a Nginx node for HA. One Admin node can manager a set of proxy which has a same etcd prefix configuration.
+### ApiServer 
+ApiServer对外提供GRPC的接口，用来管理元信息，[更多](./docs/apiserver.md)。
 
-### Etcd Or Consul
-The Etcd or consul store gateway's mete data.
+## Gateway中的概念
+### Server
+Server是一个真实的后端服务，[更多](./docs/server.md)。
 
-## Concept of gateway
+### Cluster
+Cluster是一个逻辑概念，它由一组提供相同服务的Server组成。会依据负载均衡策略选择一个可用的Server，[这里](./docs/cluster.md)。
 
-* Server
+### API
+API是Gateway的核心概念，我们可以在Gateway的中维护对外的API，以及API的分发规则，聚合规则以及URL匹配规则，[这里](./docs/api.md)。
 
-  Server is a backend server which provide restfule json service.The server is the basic unit at gateway. [more](./docs/server.md).
-
-* Cluster
-
-  Cluster is a set of servers which provide the same service. The Loadbalancer select a usable server to use. [more](./docs/cluster.md).
-
-* API
-
-  API is the core concept in gateway.  You can define a API with a URL pattern, http method, and at least one dispatch node. [more](./docs/api.md).
-
-* Routing
-
-  Routing is a approach to control http traffic to clusters. You can use cookie, query string, request header infomation in a expression for control.
-
-# What gateway can help you
-## API Definition
-You can define restful API based on backend real apis. You can also define a aggregation API use more backend apis.
+### Routing
+Routing是一个路由策略，根据HTTP Request中的cookie，query string、header中的一些信息把流量分发到指定的Cluster，通过这个功能，我们可以实现AB Test，[这里](./docs/routing.md)。
+  
+# Gateway能帮助你做什么
+## API 定义
+你可以在Gateway中动态的定义API，这些API可以对应后端服务的一个真实的API或者一组真实的API。并且可以随时上线和下线这些API。
 
 ## Validation
-You can create some validation rules for api, these rules can validate args of api is correct.
+你可以为每一个API设置一组校验规则，这些校验规则可以动态的修改，并且实时生效。
 
 ## API Mock
-You can create a mock API. These API is not depend on backend server api. It can used for front-end developer or default return value that the back-end server does not respond to.
+你可以完全Mock一个后端不存在的API或者为一个API作为发生错误的返回默认值，定义返回的JSON数据以及Header、Cookie等信息。使用这个功能可以用来作为后端服务错误（被流控，被降级等）的时候的默认返回值；也可以帮助前端开发人员在开发阶段独立完成功能。
 
-## Protect backend server
-Gateway can use **Traffic Control** and **Circuit Breaker** functions to avoid backend crash by hight triffic.
+## 保护后端服务
+Gateway 通过 **流控** and **熔断** 的功能保护后端服务。
 
 ## AB Test
-Gateway's **Routing** fucntion can help your AB Test.
+Gateway 通过 **Routing** 功能可以做AB测试。
 
-# Plugin mechanism
-Gateway provides the following extension points with the plugin mechanism of go1.8
+## 线上引流
+Gateway 通过 **Routing** 功能可以线上引流。
 
-* Filter
-   Use the plugin mechanism of go1.8 to write custom plugins and extend the gateway function. [How to write a custom filter](./docs/plugin-filter.md)
-   
-# Contact
-WeChat: 13675153174
+# 插件机制
+Gateway以go1.8的plugin机制提供如下的扩展点
+
+* filter
+  使用go1.8的plugin的机制，编写自定义插件，扩展gateway功能。[如何编写自定义filter](./docs/plugin-filter.md)
+
+# 交流方式
+微信: 13675153174
