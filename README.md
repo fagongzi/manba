@@ -9,7 +9,7 @@ Gateway
 Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的API接入层。
 
 # Note
-原先老版本的Gateway不在维护，这个master是基于2.0.0版本，从这个版本开始，不再支持Admin管理UI，不在支持Consul作为元数据存储。元数据的管理提供客户端来管理。
+原先老版本的Gateway不在维护，这个master是基于2.0.0版本，从这个版本开始，不再支持Admin管理UI，不再支持Consul作为元数据存储。元数据的管理提供客户端来管理。
 
 # Features
 * 流量控制
