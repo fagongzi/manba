@@ -3,7 +3,7 @@ sudo: true
 dist: xenial
 
 before_install:
- - git config --system core.longpaths true
+ - git config --global core.longpaths true
 
 go:
   - 1.9
