@@ -2,9 +2,6 @@ language: go
 sudo: true
 dist: xenial
 
-before_install:
- - git config --global core.longpaths true
-
 go:
   - 1.9
 
