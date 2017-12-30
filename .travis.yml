@@ -1,10 +1,17 @@
 language: go
+sudo: true
 dist: xenial
 
 before_install:
-  - git config --global core.longpaths true
+ - git config --system core.longpaths true
 
 go:
   - 1.9
 
 script: go build  ./...
+
+env:
+  global:
+    core: 
+      longpaths: true
+    core.longpaths: true
