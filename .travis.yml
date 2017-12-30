@@ -1,8 +1,8 @@
 language: go
 dist: xenial
 
-git:
-  depth: false
+before_install:
+  - git config --global core.longpaths true
 
 go:
   - 1.9
