@@ -62,7 +62,7 @@ func (r *dispatcher) check(id uint64) {
 	prev := svr.status
 
 	if svr.meta.HeathCheck == nil {
-		log.Warnf("server <%s> heath check not setting", svr.meta.ID)
+		log.Warnf("server <%d> heath check not setting", svr.meta.ID)
 		svr.changeTo(metapb.Up)
 	} else {
 

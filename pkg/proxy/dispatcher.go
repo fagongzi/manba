@@ -12,13 +12,43 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+type copyReq struct {
+	origin *fasthttp.Request
+	api    *apiRuntime
+	node   *apiNode
+	to     *serverRuntime
+}
+
+func (req *copyReq) prepare() {
+	if req.needRewrite() {
+		// if not use rewrite, it only change uri path and query string
+		realPath := req.rewiteURL()
+		if "" != realPath {
+			req.origin.SetRequestURI(realPath)
+			req.origin.SetHost(req.to.meta.Addr)
+		}
+	}
+}
+
+func (req *copyReq) needRewrite() bool {
+	return req.node.meta.URLRewrite != ""
+}
+
+func (req *copyReq) rewiteURL() string {
+	return req.api.rewriteURL(req.origin, req.node.meta.URLRewrite)
+}
+
 type dispathNode struct {
-	api  *apiRuntime
-	node *apiNode
-	dest *serverRuntime
-	res  *fasthttp.Response
-	err  error
-	code int
+	ctx *fasthttp.RequestCtx
+	wg  *sync.WaitGroup
+
+	api    *apiRuntime
+	node   *apiNode
+	dest   *serverRuntime
+	copyTo *serverRuntime
+	res    *fasthttp.Response
+	err    error
+	code   int
 }
 
 func (dn *dispathNode) release() {
@@ -86,11 +116,14 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) []*dispathNode {
 	for _, api := range r.apis {
 		if api.matches(req) {
 			for _, node := range api.nodes {
-				dispathes = append(dispathes, &dispathNode{
+				dn := &dispathNode{
 					api:  api,
 					node: node,
-					dest: r.selectServer(req, r.selectClusterByRouting(req, r.clusters[node.meta.ClusterID])),
-				})
+					dest: r.selectServer(req, r.clusters[node.meta.ClusterID]),
+				}
+
+				r.routingOpt(req, dn)
+				dispathes = append(dispathes, dn)
 			}
 			break
 		}
@@ -100,17 +133,18 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) []*dispathNode {
 	return dispathes
 }
 
-func (r *dispatcher) selectClusterByRouting(req *fasthttp.Request, src *clusterRuntime) *clusterRuntime {
-	targetCluster := src
-
+func (r *dispatcher) routingOpt(req *fasthttp.Request, node *dispathNode) {
 	for _, routing := range r.routings {
 		if routing.matches(req) {
-			targetCluster = r.clusters[routing.meta.ClusterID]
+			switch routing.meta.Strategy {
+			case metapb.Split:
+				node.dest = r.selectServer(req, r.clusters[routing.meta.ClusterID])
+			case metapb.Copy:
+				node.copyTo = r.selectServer(req, r.clusters[routing.meta.ClusterID])
+			}
 			break
 		}
 	}
-
-	return targetCluster
 }
 
 func (r *dispatcher) selectServer(req *fasthttp.Request, cluster *clusterRuntime) *serverRuntime {

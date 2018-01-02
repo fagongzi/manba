@@ -8,6 +8,8 @@ import (
 
 // Option proxy option
 type Option struct {
+	LimitCountDispatchWorker   uint64
+	LimitCountCopyWorker       uint64
 	LimitCountHeathCheckWorker int
 	LimitCountConn             int
 	LimitIntervalHeathCheck    time.Duration

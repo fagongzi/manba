@@ -35,6 +35,8 @@ var (
 	addrStore                     = flag.String("addr-store", "etcd://127.0.0.1:2379", "Addr: store of meta data, support etcd")
 	addrPPROF                     = flag.String("addr-pprof", "", "Addr: pprof addr")
 	namespace                     = flag.String("namespace", "dev", "The namespace to isolation the environment.")
+	limitCountDispatchWorker      = flag.Int("limit-dispatch", 64, "Limit: Count of dispatch worker")
+	limitCountCopyWorker          = flag.Int("limit-copy", 4, "Limit: Count of copy worker")
 	limitCountHeathCheckWorker    = flag.Int("limit-heathcheck", 1, "Limit: Count of heath check worker")
 	limitIntervalHeathCheckSec    = flag.Int("limit-heathcheck-interval", 60, "Limit(sec): Interval for heath check")
 	limitCountConn                = flag.Int("limit-conn", 64, "Limit(count): Count of connection per backend server")
@@ -116,6 +118,8 @@ func getCfg() *proxy.Cfg {
 	cfg.Option.LimitBufferRead = *limitBufferRead
 	cfg.Option.LimitBufferWrite = *limitBufferWrite
 	cfg.Option.LimitCountConn = *limitCountConn
+	cfg.Option.LimitCountDispatchWorker = uint64(*limitCountDispatchWorker)
+	cfg.Option.LimitCountCopyWorker = uint64(*limitCountCopyWorker)
 	cfg.Option.LimitCountHeathCheckWorker = *limitCountHeathCheckWorker
 	cfg.Option.LimitDurationConnIdle = time.Second * time.Duration(*limitDurationConnIdleSec)
 	cfg.Option.LimitDurationConnKeepalive = time.Second * time.Duration(*limitDurationConnKeepaliveSec)

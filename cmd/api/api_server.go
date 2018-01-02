@@ -34,6 +34,14 @@ func main() {
 	log.InitLog()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
+	log.Infof("addr: %s", *addr)
+	log.Infof("addr-store: %s", *addrStore)
+	log.Infof("namespace: %s", *namespace)
+	log.Infof("discovery: %v", *discovery)
+	log.Infof("service-prefix: %s", *servicePrefix)
+	log.Infof("publish-lease: %d", *publishLease)
+	log.Infof("publish-timeout: %d", *publishTimeout)
+
 	db, err := store.GetStoreFrom(*addrStore, fmt.Sprintf("/%s", *namespace))
 	if err != nil {
 		log.Fatalf("init store failed for %s, errors:\n%+v",
@@ -57,6 +65,7 @@ func main() {
 		return services
 	}, opts...)
 
+	log.Infof("api server listen at %s", *addr)
 	go s.Start()
 
 	waitStop(s)
