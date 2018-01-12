@@ -93,7 +93,6 @@ func newServerRuntime(meta *metapb.Server, tw *goetty.TimeoutWheel) *serverRunti
 		tw:      tw,
 		status:  metapb.Down,
 		circuit: metapb.Open,
-		limiter: rate.NewLimiter(rate.Every(time.Second), int(meta.MaxQPS)),
 	}
 
 	rt.updateMeta(meta)
@@ -103,7 +102,7 @@ func newServerRuntime(meta *metapb.Server, tw *goetty.TimeoutWheel) *serverRunti
 
 func (s *serverRuntime) updateMeta(meta *metapb.Server) {
 	s.meta = meta
-	s.limiter = rate.NewLimiter(rate.Every(time.Second), int(meta.MaxQPS))
+	s.limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(meta.MaxQPS)), int(meta.MaxQPS))
 }
 
 func (s *serverRuntime) getCheckURL() string {
