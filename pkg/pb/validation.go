@@ -2,6 +2,7 @@ package pb
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 )
@@ -53,6 +54,10 @@ func ValidateAPI(value *metapb.API) error {
 
 	if value.Method == "" {
 		return fmt.Errorf("missing http method")
+	}
+
+	if _, err := regexp.Compile(value.URLPattern); err != nil {
+		return err
 	}
 
 	return nil
