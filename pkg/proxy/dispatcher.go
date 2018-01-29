@@ -111,7 +111,7 @@ func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner) *dispatcher {
 
 func (r *dispatcher) dispatch(req *fasthttp.Request) []*dispathNode {
 	r.RLock()
-
+	defer r.RUnlock()
 	var dispathes []*dispathNode
 	for _, api := range r.apis {
 		if api.matches(req) {
@@ -129,7 +129,6 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) []*dispathNode {
 		}
 	}
 
-	r.RUnlock()
 	return dispathes
 }
 
