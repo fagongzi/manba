@@ -1,6 +1,14 @@
 # Roadmap
+这个文档定义了Gateway的roadmap.
 
-这个文档定义了Gateway开的的roadmap.
+## Features
+- [x] 在线流量复制
+- [ ] 协议转换插件机制
 
-- [ ] 支持协议转换插件
-- [ ] 支持在线流量复制
+## Plugins
+- [x] JWT插件
+- [ ] 分布式限流插件
+- [ ] SpringCloud协议转换插件
+- [ ] Dubbo协议转换插件
+- [ ] Grpc协议转换插件
+
