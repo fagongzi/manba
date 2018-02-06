@@ -109,12 +109,14 @@ func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner) *dispatcher {
 	return rt
 }
 
-func (r *dispatcher) dispatch(req *fasthttp.Request) []*dispathNode {
+func (r *dispatcher) dispatch(req *fasthttp.Request) ([]*dispathNode, *metapb.RenderTemplate) {
 	r.RLock()
 
+	var template *metapb.RenderTemplate
 	var dispathes []*dispathNode
 	for _, api := range r.apis {
 		if api.matches(req) {
+			template = api.meta.RenderTemplate
 			for _, node := range api.nodes {
 				dn := &dispathNode{
 					api:  api,
@@ -130,7 +132,7 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) []*dispathNode {
 	}
 
 	r.RUnlock()
-	return dispathes
+	return dispathes, template
 }
 
 func (r *dispatcher) routingOpt(req *fasthttp.Request, node *dispathNode) {

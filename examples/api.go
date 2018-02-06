@@ -95,6 +95,17 @@ func createAPI() error {
 	sb.DispatchNodeValueAttrName(2, "account")
 	// 经过上面的设置，gateway聚合的返回值为：{"base": {1 返回的json}, "account": {2 返回的JSON}}
 
+	// 重新定义渲染结果，转为：{"base": {"feild1": xx, "feild2": xx}, "account": {"feild1": xx}}
+	sb.AddRenderObject("base", "feild1", "base.user.feild1", "field2", "base.user.field2")
+	sb.AddRenderObject("account", "feild1", "account.field1")
+
+	// 清空
+	sb.NoRenderTemplate()
+
+	// 重新定义渲染结果，转为：{"obj1": {"felid1": xxx, "filed2": xxx}, "account_field1": "xxx"}
+	sb.AddRenderObject("obj1", "felid1", "base.user.felid1", "felid2", "base.user.felid2")
+	sb.AddFlatRenderObject("account_field1", "account.felid1")
+
 	id, err := sb.Commit()
 	if err != nil {
 		return err

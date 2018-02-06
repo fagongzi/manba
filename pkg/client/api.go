@@ -267,7 +267,7 @@ func (ab *APIBuilder) DispatchNodeURLRewrite(cluster uint64, urlRewrite string) 
 }
 
 // DispatchNodeValueAttrName set dispatch node attr name of value
-func (ab *APIBuilder) DispatchNodeValueAttrName(cluster uint64, attrName string) *APIBuilder {
+func (ab *APIBuilder) DispatchNodeValueAttrName(cluster uint64, attrName string, extractAttrs ...string) *APIBuilder {
 	var node *metapb.DispatchNode
 
 	for _, n := range ab.value.Nodes {
@@ -327,6 +327,57 @@ func (ab *APIBuilder) AddDispatchNodeValidation(cluster uint64, param metapb.Par
 		RuleType:   metapb.RuleRegexp,
 		Expression: rule,
 	})
+
+	return ab
+}
+
+// NoRenderTemplate clear render template
+func (ab *APIBuilder) NoRenderTemplate() *APIBuilder {
+	ab.value.RenderTemplate = nil
+	return ab
+}
+
+// AddFlatRenderObject add the render object to the top level object
+func (ab *APIBuilder) AddFlatRenderObject(namesAndExtractExps ...string) *APIBuilder {
+	return ab.addRenderObject("", true, namesAndExtractExps...)
+}
+
+// AddRenderObject add the render object to the top level object
+func (ab *APIBuilder) AddRenderObject(nameInTemplate string, namesAndExtractExps ...string) *APIBuilder {
+	return ab.addRenderObject(nameInTemplate, false, namesAndExtractExps...)
+}
+
+func (ab *APIBuilder) addRenderObject(nameInTemplate string, flatAttrs bool, namesAndExtractExps ...string) *APIBuilder {
+	if len(namesAndExtractExps) == 0 || len(namesAndExtractExps)%2 != 0 {
+		return ab
+	}
+
+	if ab.value.RenderTemplate == nil {
+		ab.value.RenderTemplate = &metapb.RenderTemplate{}
+	}
+
+	var obj *metapb.RenderObject
+	for _, o := range ab.value.RenderTemplate.Objects {
+		if o.Name == nameInTemplate {
+			obj = o
+		}
+	}
+
+	if obj == nil {
+		obj = &metapb.RenderObject{
+			Name:      nameInTemplate,
+			FlatAttrs: flatAttrs,
+		}
+		ab.value.RenderTemplate.Objects = append(ab.value.RenderTemplate.Objects, obj)
+	}
+
+	l := len(namesAndExtractExps) / 2
+	for i := 0; i < l; i++ {
+		obj.Attrs = append(obj.Attrs, &metapb.RenderAttr{
+			Name:       namesAndExtractExps[2*i],
+			ExtractExp: namesAndExtractExps[2*i+1],
+		})
+	}
 
 	return ab
 }

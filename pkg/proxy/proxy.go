@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	"container/list"
 	"context"
 	"errors"
 	"net"
@@ -11,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
@@ -29,10 +29,10 @@ var (
 )
 
 var (
-	// MergeContentType merge operation using content-type
-	MergeContentType = "application/json; charset=utf-8"
-	// MergeRemoveHeaders merge operation need to remove headers
-	MergeRemoveHeaders = []string{
+	// MultiResultsContentType merge operation using content-type
+	MultiResultsContentType = "application/json; charset=utf-8"
+	// MultiResultsRemoveHeaders merge operation need to remove headers
+	MultiResultsRemoveHeaders = []string{
 		"Content-Length",
 		"Content-Type",
 		"Date",
@@ -48,7 +48,8 @@ type Proxy struct {
 	copies                   []chan *copyReq
 
 	cfg        *Cfg
-	filters    *list.List
+	filtersMap map[string]filter.Filter
+	filters    []filter.Filter
 	client     *util.FastHTTPClient
 	dispatcher *dispatcher
 
@@ -75,7 +76,7 @@ func NewProxy(cfg *Cfg) *Proxy {
 			MaxConns:            cfg.Option.LimitCountConn,
 		}),
 		cfg:           cfg,
-		filters:       list.New(),
+		filtersMap:    make(map[string]filter.Filter),
 		stopC:         make(chan struct{}),
 		runner:        task.NewRunner(),
 		copies:        make([]chan *copyReq, cfg.Option.LimitCountCopyWorker, cfg.Option.LimitCountCopyWorker),
@@ -190,7 +191,8 @@ func (p *Proxy) initFilters() {
 		}
 
 		log.Infof("filter added, filter=<%+v>", filter)
-		p.filters.PushBack(f)
+		p.filters = append(p.filters, f)
+		p.filtersMap[f.Name()] = f
 	}
 }
 
@@ -247,23 +249,16 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	dispatches := p.dispatcher.dispatch(&ctx.Request)
+	dispatches, template := p.dispatcher.dispatch(&ctx.Request)
 	if len(dispatches) == 0 {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		return
 	}
 
-	var wg *sync.WaitGroup
-	count := len(dispatches)
-	merge := count > 1
-
-	if merge {
-		wg := &sync.WaitGroup{}
-		wg.Add(count)
-	}
+	rd := newRender(dispatches, template)
 
 	for _, dn := range dispatches {
-		dn.wg = wg
+		dn.wg = rd.wg
 		dn.ctx = ctx
 
 		if dn.copyTo != nil {
@@ -275,60 +270,14 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 			}
 		}
 
-		if wg != nil {
+		if rd.multi {
 			p.dispatches[getIndex(&p.dispatchIndex, p.cfg.Option.LimitCountDispatchWorker)] <- dn
 		} else {
 			p.doProxy(dn)
 		}
 	}
 
-	if wg != nil {
-		wg.Wait()
-	}
-
-	for _, result := range dispatches {
-		if result.err != nil {
-			if result.api.meta.DefaultValue != nil {
-				result.api.renderDefault(ctx)
-				result.release()
-				return
-			}
-
-			ctx.SetStatusCode(result.code)
-			result.release()
-			return
-		}
-
-		if !merge {
-			p.writeResult(ctx, result.res)
-			result.release()
-			return
-		}
-
-		for _, h := range MergeRemoveHeaders {
-			result.res.Header.Del(h)
-		}
-		result.res.Header.CopyTo(&ctx.Response.Header)
-	}
-
-	ctx.Response.Header.SetContentType(MergeContentType)
-	ctx.SetStatusCode(fasthttp.StatusOK)
-
-	ctx.WriteString("{")
-
-	for index, result := range dispatches {
-		ctx.WriteString("\"")
-		ctx.WriteString(result.node.meta.AttrName)
-		ctx.WriteString("\":")
-		ctx.Write(result.res.Body())
-		if index < count-1 {
-			ctx.WriteString(",")
-		}
-
-		result.release()
-	}
-
-	ctx.WriteString("}")
+	rd.render(ctx)
 }
 
 func (p *Proxy) doCopy(req *copyReq) {
@@ -457,11 +406,6 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 		dn.code = code
 		return
 	}
-}
-
-func (p *Proxy) writeResult(ctx *fasthttp.RequestCtx, res *fasthttp.Response) {
-	ctx.SetStatusCode(res.StatusCode())
-	ctx.Write(res.Body())
 }
 
 func getIndex(opt *uint64, size uint64) int {

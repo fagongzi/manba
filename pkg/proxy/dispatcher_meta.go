@@ -9,7 +9,6 @@ import (
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/format"
-	"github.com/fagongzi/util/json"
 )
 
 var (
@@ -409,7 +408,7 @@ func (r *dispatcher) updateServer(meta *metapb.Server) error {
 
 	log.Infof("server <%s> updated, data <%s>",
 		meta.ID,
-		json.MustMarshal(meta))
+		meta.String())
 
 	return nil
 }
