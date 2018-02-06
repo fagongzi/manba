@@ -20,6 +20,19 @@ func main() {
 		return c.String(http.StatusOK, "OK")
 	})
 
+	server.GET("/v1/components/:id", func(c echo.Context) error {
+		value := make(map[string]interface{})
+		data := make(map[string]interface{})
+		user := make(map[string]interface{})
+		user["id"] = c.Param("id")
+		user["name"] = fmt.Sprintf("v1-name-%s", c.Param("id"))
+		data["user"] = user
+		data["source"] = *addr
+
+		value["code"] = "0"
+		value["data"] = data
+		return c.JSON(http.StatusOK, value)
+	})
 	server.GET("/v1/users/:id", func(c echo.Context) error {
 		user := make(map[string]interface{})
 		user["id"] = c.Param("id")

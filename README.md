@@ -22,6 +22,7 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 * API 参数校验
 * API 访问控制（黑白名单）
 * API 默认返回值
+* API 返回值可是可定制
 * 后端server的健康检查
 * 使用 [fasthttp](https://github.com/valyala/fasthttp)
 * 开放管理API

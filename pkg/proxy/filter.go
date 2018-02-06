@@ -11,8 +11,7 @@ import (
 )
 
 func (f *Proxy) doPreFilters(c filter.Context) (filterName string, statusCode int, err error) {
-	for iter := f.filters.Front(); iter != nil; iter = iter.Next() {
-		f, _ := iter.Value.(filter.Filter)
+	for _, f := range f.filters {
 		filterName = f.Name()
 
 		statusCode, err = f.Pre(c)
@@ -25,9 +24,9 @@ func (f *Proxy) doPreFilters(c filter.Context) (filterName string, statusCode in
 }
 
 func (f *Proxy) doPostFilters(c filter.Context) (filterName string, statusCode int, err error) {
-	for iter := f.filters.Back(); iter != nil; iter = iter.Prev() {
-		f, _ := iter.Value.(filter.Filter)
-
+	l := len(f.filters)
+	for i := l - 1; i >= 0; i-- {
+		f := f.filters[i]
 		statusCode, err = f.Post(c)
 		if nil != err {
 			return filterName, statusCode, err
@@ -38,9 +37,9 @@ func (f *Proxy) doPostFilters(c filter.Context) (filterName string, statusCode i
 }
 
 func (f *Proxy) doPostErrFilters(c filter.Context) {
-	for iter := f.filters.Back(); iter != nil; iter = iter.Prev() {
-		f, _ := iter.Value.(filter.Filter)
-
+	l := len(f.filters)
+	for i := l - 1; i >= 0; i-- {
+		f := f.filters[i]
 		f.PostErr(c)
 	}
 }
