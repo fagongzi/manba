@@ -41,8 +41,12 @@ API的默认返回值，当后端Cluster无可用Server的时候，Gateway将返
 
   支持一个请求被同时分发到多个后端Cluster，并且为每一个后端Cluster返回的数据设置一个属性名，并且聚合所有的返回值作为一个JSON统一返回。例如：一个前端APP的页面需要显示用户账户信息以及用户的基本信息，可以使用这个特性，定制一个API`/api/users/(\d+)`，同时配置分发到2个后端Cluster，并且配置URL的重写规则为`/users/base/$1`和`/users/account/$1`，这样聚合2个信息返回。
 
-## Perms
+## Perms（可选）
 设置访问这个API需要的权限，需要用户自己开发权限检查插件。
 
-## AuthFilter
+## AuthFilter（可选）
 指定该API所使用的Auth插件名称，Auth插件的实现可以借鉴[JWT插件](https://github.com/fagongzi/jwt-plugin)
+
+## RenderTemplate
+使用RenderTemplate可以重新定义返回的数据，包括数据的格式，字段等等。
+

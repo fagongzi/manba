@@ -149,10 +149,28 @@ message Validation {
 
 // DispatchNode is the request forward to
 message DispatchNode {
-    optional uint64     clusterID   = 1 [(gogoproto.nullable) = false];
-    optional string     urlRewrite  = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "URLRewrite"];
-    optional string     attrName    = 3 [(gogoproto.nullable) = false];
-    repeated Validation validations = 4;
+    optional uint64     clusterID    = 1 [(gogoproto.nullable) = false];
+    optional string     urlRewrite   = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "URLRewrite"];
+    optional string     attrName     = 3 [(gogoproto.nullable) = false];
+    repeated Validation validations  = 4;
+}
+
+// RenderTemplate the template that render to client 
+message RenderTemplate {
+    repeated RenderObject objects = 1;
+}
+
+// RenderObject the object in the render template
+message RenderObject {
+    optional string     name       = 1 [(gogoproto.nullable) = false];
+    repeated RenderAttr attrs      = 2;
+    optional bool       flatAttrs  = 3 [(gogoproto.nullable) = false];
+}
+
+// RenderAttr the attr in the render object
+message RenderAttr {
+    optional string name       = 1 [(gogoproto.nullable) = false];
+    optional string extractExp = 2 [(gogoproto.nullable) = false];
 }
 
 // API is the api for dispatcher
@@ -168,6 +186,7 @@ message API {
     repeated DispatchNode    nodes           = 9;
     repeated string          perms           = 10;
     optional string          authFilter      = 11 [(gogoproto.nullable) = false];
+    optional RenderTemplate  renderTemplate  = 12;
 }
 
 // Condition is a condition for routing

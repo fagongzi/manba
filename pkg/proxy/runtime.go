@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"container/list"
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/url"
@@ -16,8 +15,13 @@ import (
 	"github.com/fagongzi/goetty"
 	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/collection"
+	"github.com/json-iterator/go"
 	"github.com/valyala/fasthttp"
 	"golang.org/x/time/rate"
+)
+
+var (
+	json = jsoniter.ConfigFastest
 )
 
 type clusterRuntime struct {
@@ -521,7 +525,7 @@ func paramValue(param *metapb.Parameter, req *fasthttp.Request) string {
 	case metapb.FormData:
 		return getFormValue(param.Name, req)
 	case metapb.JSONBody:
-		return getJSONBodyValue(param.Name, req)
+		return json.Get(req.Body(), param.Name).ToString()
 	case metapb.Header:
 		return getHeaderValue(param.Name, req)
 	case metapb.Cookie:
@@ -546,33 +550,4 @@ func getQueryValue(name string, req *fasthttp.Request) string {
 
 func getFormValue(name string, req *fasthttp.Request) string {
 	return string(req.PostArgs().Peek(name))
-}
-
-func getJSONBodyValue(name string, req *fasthttp.Request) string {
-	data := make(map[string]interface{})
-	err := json.Unmarshal(req.Body(), &data)
-	if err != nil {
-		return ""
-	}
-
-	var value interface{}
-	for _, name := range strings.Split(name, ".") {
-		if value == nil {
-			value = data[name]
-			continue
-		}
-
-		if m, ok := value.(map[string]interface{}); ok {
-			value = m[name]
-		} else {
-			return ""
-		}
-	}
-
-	if ret, ok := value.(string); ok {
-		return ret
-	}
-
-	ret, _ := json.Marshal(&value)
-	return string(ret)
 }
