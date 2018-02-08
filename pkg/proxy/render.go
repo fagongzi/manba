@@ -142,7 +142,19 @@ func (rd *render) extract(src jsoniter.Any) map[string]interface{} {
 }
 
 func extractValue(attr *metapb.RenderAttr, src jsoniter.Any, obj map[string]interface{}) {
-	obj[attr.Name] = src.Get(getPaths(attr.ExtractExp)...).GetInterface()
+	exps := strings.Split(attr.ExtractExp, ",")
+
+	if len(exps) == 1 {
+		obj[attr.Name] = src.Get(getPaths(attr.ExtractExp)...).GetInterface()
+		return
+	}
+
+	sub := make(map[string]interface{})
+	obj[attr.Name] = sub
+	for _, exp := range exps {
+		paths := getPaths(exp)
+		sub[paths[len(paths)-1].(string)] = src.Get(paths...).GetInterface()
+	}
 }
 
 func getPaths(attr string) []interface{} {
