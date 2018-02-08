@@ -255,6 +255,11 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	log.Infof("api(%s): %s %s",
+		dispatches[0].api.meta.Name,
+		ctx.Method(),
+		ctx.RequestURI())
+
 	rd := newRender(dispatches, template)
 
 	for _, dn := range dispatches {
@@ -389,10 +394,10 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 	}
 
 	if log.DebugEnabled() {
-		log.Debugf("dispatch: return, target=<%s> code=<%d> body=<%d>",
+		log.Debugf("dispatch: return, target=<%s> code=<%d> body=<%s>",
 			svr.meta.Addr,
 			res.StatusCode(),
-			res.Body())
+			string(res.Body()))
 	}
 
 	// post filters
