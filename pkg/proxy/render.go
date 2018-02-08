@@ -26,7 +26,7 @@ func newRender(nodes []*dispathNode, template *metapb.RenderTemplate) *render {
 
 	rd.doRender = rd.renderSingle
 
-	if len(nodes) > 0 {
+	if len(nodes) > 1 {
 		rd.wg = &sync.WaitGroup{}
 		rd.wg.Add(len(nodes))
 		rd.doRender = rd.renderMulti
@@ -45,7 +45,11 @@ func (rd *render) render(ctx *fasthttp.RequestCtx) {
 func (rd *render) renderSingle(ctx *fasthttp.RequestCtx) {
 	dn := rd.nodes[0]
 
-	if dn.err != nil {
+	if dn.err != nil ||
+		dn.code >= fasthttp.StatusBadRequest {
+		log.Errorf("render: render failed, code=<%d>, errors:\n%+v",
+			dn.code,
+			dn.err)
 		ctx.SetStatusCode(dn.code)
 		dn.release()
 		return
@@ -61,7 +65,9 @@ func (rd *render) renderSingle(ctx *fasthttp.RequestCtx) {
 
 	v, err := json.MarshalToString(rd.extract(src))
 	if err != nil {
-		log.Errorf("render: render failed, errors:\n%+v", err)
+		log.Errorf("render: render failed, code=<%d>, errors:\n%+v",
+			dn.code,
+			err)
 		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 		return
 	}
@@ -83,7 +89,8 @@ func (rd *render) renderMulti(ctx *fasthttp.RequestCtx) {
 			continue
 		}
 
-		if result.err != nil {
+		if result.err != nil ||
+			result.code >= fasthttp.StatusBadRequest {
 			hasError = true
 			code = result.code
 			err = result.err
@@ -101,7 +108,9 @@ func (rd *render) renderMulti(ctx *fasthttp.RequestCtx) {
 	}
 
 	if hasError {
-		log.Errorf("render: render failed, errors:\n%+v", err)
+		log.Errorf("render: render failed, code=<%d>, errors:\n%+v",
+			code,
+			err)
 		ctx.SetStatusCode(code)
 		return
 	}
