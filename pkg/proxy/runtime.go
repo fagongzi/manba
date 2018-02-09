@@ -412,7 +412,11 @@ func (a *routingRuntime) init() {
 	return
 }
 
-func (a *routingRuntime) matches(req *fasthttp.Request) bool {
+func (a *routingRuntime) matches(apiID uint64, req *fasthttp.Request) bool {
+	if a.meta.API > 0 && apiID != a.meta.API {
+		return false
+	}
+
 	for _, c := range a.meta.Conditions {
 		if !conditionsMatches(&c, req) {
 			return false

@@ -65,6 +65,18 @@ func (rb *RoutingBuilder) Down() *RoutingBuilder {
 	return rb
 }
 
+// Name routing name
+func (rb *RoutingBuilder) Name(name string) *RoutingBuilder {
+	rb.value.Name = name
+	return rb
+}
+
+// API set routing API
+func (rb *RoutingBuilder) API(api uint64) *RoutingBuilder {
+	rb.value.API = api
+	return rb
+}
+
 // Commit commit
 func (rb *RoutingBuilder) Commit() (uint64, error) {
 	err := pb.ValidateRouting(&rb.value)
