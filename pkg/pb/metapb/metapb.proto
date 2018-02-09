@@ -204,4 +204,6 @@ message Routing {
     optional RoutingStrategy strategy    = 4 [(gogoproto.nullable) = false];
     optional int32           trafficRate = 5 [(gogoproto.nullable) = false];
     optional Status          status      = 6 [(gogoproto.nullable) = false];
+    optional uint64          api         = 7 [(gogoproto.nullable) = false, (gogoproto.customname) = "API"];
+    optional string          name        = 8 [(gogoproto.nullable) = false];
 }

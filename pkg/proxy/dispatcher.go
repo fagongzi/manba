@@ -124,7 +124,7 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) ([]*dispathNode, *metapb.Re
 					dest: r.selectServer(req, r.clusters[node.meta.ClusterID]),
 				}
 
-				r.routingOpt(req, dn)
+				r.routingOpt(api.meta.ID, req, dn)
 				dispathes = append(dispathes, dn)
 			}
 			break
@@ -135,9 +135,9 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) ([]*dispathNode, *metapb.Re
 	return dispathes, template
 }
 
-func (r *dispatcher) routingOpt(req *fasthttp.Request, node *dispathNode) {
+func (r *dispatcher) routingOpt(apiID uint64, req *fasthttp.Request, node *dispathNode) {
 	for _, routing := range r.routings {
-		if routing.matches(req) {
+		if routing.matches(apiID, req) {
 			switch routing.meta.Strategy {
 			case metapb.Split:
 				node.dest = r.selectServer(req, r.clusters[routing.meta.ClusterID])
