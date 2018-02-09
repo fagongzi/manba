@@ -214,7 +214,16 @@ func (ab *APIBuilder) AddBlacklist(ips ...string) *APIBuilder {
 	return ab
 }
 
-// AddDispatchNode add a dispatch node
+// AddDispatchNodeForce add a dispatch node even if the cluster added
+func (ab *APIBuilder) AddDispatchNodeForce(cluster uint64) *APIBuilder {
+	ab.value.Nodes = append(ab.value.Nodes, &metapb.DispatchNode{
+		ClusterID: cluster,
+	})
+
+	return ab
+}
+
+// AddDispatchNode add a dispatch node if the cluster not added
 func (ab *APIBuilder) AddDispatchNode(cluster uint64) *APIBuilder {
 	for _, n := range ab.value.Nodes {
 		if n.ClusterID == cluster {
@@ -231,28 +240,17 @@ func (ab *APIBuilder) AddDispatchNode(cluster uint64) *APIBuilder {
 
 // RemoveDispatchNodeURLRewrite remove dispatch node
 func (ab *APIBuilder) RemoveDispatchNodeURLRewrite(cluster uint64) *APIBuilder {
-	var nodes []*metapb.DispatchNode
-
 	for _, n := range ab.value.Nodes {
-		if n.ClusterID != cluster {
-			nodes = append(nodes, n)
+		if n.ClusterID == cluster {
+			n.URLRewrite = ""
 		}
 	}
-
-	ab.value.Nodes = nodes
 	return ab
 }
 
-// DispatchNodeURLRewrite set dispatch node url rewrite
-func (ab *APIBuilder) DispatchNodeURLRewrite(cluster uint64, urlRewrite string) *APIBuilder {
-	var node *metapb.DispatchNode
-
-	for _, n := range ab.value.Nodes {
-		if n.ClusterID == cluster {
-			node = n
-			break
-		}
-	}
+// DispatchNodeURLRewriteWithIndex set dispatch node url rewrite
+func (ab *APIBuilder) DispatchNodeURLRewriteWithIndex(cluster uint64, index int, urlRewrite string) *APIBuilder {
+	node := ab.getNode(cluster, index)
 
 	if node == nil {
 		ab.value.Nodes = append(ab.value.Nodes, &metapb.DispatchNode{
@@ -266,16 +264,14 @@ func (ab *APIBuilder) DispatchNodeURLRewrite(cluster uint64, urlRewrite string) 
 	return ab
 }
 
-// DispatchNodeValueAttrName set dispatch node attr name of value
-func (ab *APIBuilder) DispatchNodeValueAttrName(cluster uint64, attrName string, extractAttrs ...string) *APIBuilder {
-	var node *metapb.DispatchNode
+// DispatchNodeURLRewrite set dispatch node url rewrite
+func (ab *APIBuilder) DispatchNodeURLRewrite(cluster uint64, urlRewrite string) *APIBuilder {
+	return ab.DispatchNodeURLRewriteWithIndex(cluster, 0, urlRewrite)
+}
 
-	for _, n := range ab.value.Nodes {
-		if n.ClusterID == cluster {
-			node = n
-			break
-		}
-	}
+// DispatchNodeValueAttrNameWithIndex set dispatch node attr name of value
+func (ab *APIBuilder) DispatchNodeValueAttrNameWithIndex(cluster uint64, index int, attrName string) *APIBuilder {
+	node := ab.getNode(cluster, index)
 
 	if node == nil {
 		ab.value.Nodes = append(ab.value.Nodes, &metapb.DispatchNode{
@@ -289,16 +285,14 @@ func (ab *APIBuilder) DispatchNodeValueAttrName(cluster uint64, attrName string,
 	return ab
 }
 
-// AddDispatchNodeValidation add dispatch node validation
-func (ab *APIBuilder) AddDispatchNodeValidation(cluster uint64, param metapb.Parameter, rule string, required bool) *APIBuilder {
-	var node *metapb.DispatchNode
+// DispatchNodeValueAttrName set dispatch node attr name of value
+func (ab *APIBuilder) DispatchNodeValueAttrName(cluster uint64, attrName string) *APIBuilder {
+	return ab.DispatchNodeValueAttrNameWithIndex(cluster, 0, attrName)
+}
 
-	for _, n := range ab.value.Nodes {
-		if n.ClusterID == cluster {
-			node = n
-			break
-		}
-	}
+// AddDispatchNodeValidationWithIndex add dispatch node validation
+func (ab *APIBuilder) AddDispatchNodeValidationWithIndex(cluster uint64, index int, param metapb.Parameter, rule string, required bool) *APIBuilder {
+	node := ab.getNode(cluster, index)
 
 	if node == nil {
 		node = &metapb.DispatchNode{
@@ -329,6 +323,11 @@ func (ab *APIBuilder) AddDispatchNodeValidation(cluster uint64, param metapb.Par
 	})
 
 	return ab
+}
+
+// AddDispatchNodeValidation add dispatch node validation
+func (ab *APIBuilder) AddDispatchNodeValidation(cluster uint64, param metapb.Parameter, rule string, required bool) *APIBuilder {
+	return ab.AddDispatchNodeValidationWithIndex(cluster, 0, param, rule, required)
 }
 
 // NoRenderTemplate clear render template
@@ -390,4 +389,22 @@ func (ab *APIBuilder) Commit() (uint64, error) {
 	}
 
 	return ab.c.putAPI(ab.value)
+}
+
+func (ab *APIBuilder) getNode(cluster uint64, index int) *metapb.DispatchNode {
+	var node *metapb.DispatchNode
+
+	idx := 0
+	for _, n := range ab.value.Nodes {
+		if n.ClusterID == cluster && idx == index {
+			node = n
+			break
+		}
+
+		if n.ClusterID == cluster {
+			idx += 1
+		}
+	}
+
+	return node
 }
