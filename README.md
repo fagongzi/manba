@@ -92,4 +92,4 @@ Gateway以go1.8的plugin机制提供如下的扩展点
   使用go1.8的plugin的机制，编写自定义插件，扩展gateway功能。[如何编写自定义filter](./docs/plugin.md)
 
 # 交流方式-微信群
-![](./images/qr.jpg)
+![](./images/qr.png)
