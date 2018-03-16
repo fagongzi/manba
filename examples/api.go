@@ -127,7 +127,7 @@ func updateAPI(id uint64) error {
 	}
 
 	// 下线API
-	c.NewAPIBuilder().Use(*api).UP().Commit()
+	c.NewAPIBuilder().Use(*api).Down().Commit()
 	// 上线API
 	c.NewAPIBuilder().Use(*api).UP().Commit()
 
