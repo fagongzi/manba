@@ -364,7 +364,9 @@ func (r *dispatcher) refreshAllQPS() {
 }
 
 func (r *dispatcher) refreshQPS(svr *metapb.Server) {
-	svr.MaxQPS = svr.MaxQPS / int64(len(r.proxies))
+	if len(r.proxies) > 0 {
+		svr.MaxQPS = svr.MaxQPS / int64(len(r.proxies))
+	}
 }
 
 func (r *dispatcher) addServer(svr *metapb.Server) error {
