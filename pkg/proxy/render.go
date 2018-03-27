@@ -128,6 +128,7 @@ func (rd *render) renderMulti(ctx *fasthttp.RequestCtx) {
 }
 
 func (rd *render) renderRaw(ctx *fasthttp.RequestCtx, dn *dispathNode) {
+	ctx.Response.Header.SetContentTypeBytes(dn.res.Header.ContentType())
 	ctx.Write(dn.res.Body())
 	dn.release()
 }

@@ -326,6 +326,7 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 	}
 
 	forwardReq := copyRequest(&ctx.Request)
+	forwardReq.SetHost(svr.meta.Addr)
 
 	// change url
 	if dn.needRewrite() {
@@ -339,7 +340,6 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 			}
 
 			forwardReq.SetRequestURI(realPath)
-			forwardReq.SetHost(svr.meta.Addr)
 		} else {
 			log.Warnf("dispatch: rewrite not matches, origin=<%s> pattern=<%s>",
 				string(ctx.URI().FullURI()),
