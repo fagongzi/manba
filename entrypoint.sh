@@ -5,11 +5,11 @@ start_etcd() {
 }
 
 start_apiserver() {
-    ./apiserver --discovery &
+    ./apiserver --addr=:9092 --discovery &
 }
 
 start_proxy() {
-    ./proxy --log-level=$GATEWAY_LOG_LEVEL
+    ./proxy --addr=:80 --log-level=$GATEWAY_LOG_LEVEL
 }
 
 start_etcd
