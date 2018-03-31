@@ -5,6 +5,13 @@ DIST=$HOME/dist
 BIN_API=$HOME/cmd/api
 BIN_PROXY=$HOME/cmd/proxy
 
+VERSION_PATH=`echo $(realpath $HOME) | sed -e "s;${GOPATH}/src/;;g"`/pkg/util
+
+LD_GIT_COMMIT="-X '${VERSION_PATH}.GitCommit=`git rev-parse --short HEAD`'"
+LD_BUILD_TIME="-X '${VERSION_PATH}.BuildTime=`date +%FT%T%z`'"
+LD_GO_VERSION="-X '${VERSION_PATH}.GoVersion=`go version`'"
+LD_FLAGS="${LD_GIT_COMMIT} ${LD_BUILD_TIME} ${LD_GO_VERSION} -w -s"
+
 prepare() {
     echo "start prepare release"
     rm -rf $DIST
@@ -21,19 +28,19 @@ download_etcd() {
 
 build_bin() {
     echo "start build binary"
-    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o apiserver -ldflags "-w -s" $BIN_API/...
+    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o apiserver -ldflags "${LD_FLAGS}" $BIN_API/...
     mv apiserver $DIST
 
-    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o proxy -ldflags "-w -s" $BIN_PROXY/...
+    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o proxy -ldflags "${LD_FLAGS}" $BIN_PROXY/...
     mv proxy $DIST
     echo "complete build binary"
 }
 
 build_docker() {
     echo "start build docker image, version is $1"
-    docker build -t fagongzi/gateway:$1 -f Dockerfile . 
-    docker build -t fagongzi/proxy:$1 -f Dockerfile-proxy . 
-    docker build -t fagongzi/apiserver:$1 -f Dockerfile-apiserver .   
+    docker build -t fagongzi/gateway:$1 -f Dockerfile .
+    docker build -t fagongzi/proxy:$1 -f Dockerfile-proxy .
+    docker build -t fagongzi/apiserver:$1 -f Dockerfile-apiserver .
     echo "complete build docker"
 }
 
