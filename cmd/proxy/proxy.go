@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/fagongzi/gateway/pkg/proxy"
+	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
 )
 
@@ -48,6 +49,7 @@ var (
 	limitBufferWrite              = flag.Int("limit-buf-write", 1024, "Limit(bytes): Bytes for write buffer size")
 	limitBytesBodyMB              = flag.Int("limit-body", 10, "Limit(MB): MB for body size")
 	ttlProxy                      = flag.Int64("ttl-proxy", 10, "TTL(secs): proxy")
+	version                       = flag.Bool("version", false, "Show version info")
 )
 
 func init() {
@@ -65,6 +67,10 @@ func init() {
 func main() {
 	flag.Var(filters, "filter", "Plugin(Filter): format is <filter name>[:plugin file path][:plugin config file path]")
 	flag.Parse()
+
+	if *version && util.PrintVersion() {
+		os.Exit(0)
+	}
 
 	log.InitLog()
 	runtime.GOMAXPROCS(runtime.NumCPU())
