@@ -7,6 +7,8 @@
 _obj
 _test
 .vscode/*
+Library/
+dist/
 
 # Architecture specific extensions/prefixes
 *.[568vq]
