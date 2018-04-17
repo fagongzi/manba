@@ -8,7 +8,7 @@ import (
 )
 
 func TestAddTarget(t *testing.T) {
-	key := "key1"
+	key := uint64(1)
 	tw := goetty.NewTimeoutWheel(goetty.WithTickInterval(time.Millisecond * 10))
 	ans := NewAnalysis(tw)
 	ans.AddTarget(key, time.Millisecond*10)
@@ -29,7 +29,7 @@ func TestAddTarget(t *testing.T) {
 }
 
 func TestRemoveTarget(t *testing.T) {
-	key := "key1"
+	key := uint64(1)
 	tw := goetty.NewTimeoutWheel(goetty.WithTickInterval(time.Millisecond * 10))
 	ans := NewAnalysis(tw)
 	ans.AddTarget(key, time.Millisecond*10)
