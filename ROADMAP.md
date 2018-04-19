@@ -4,6 +4,8 @@
 ## Features
 - [x] 在线流量复制
 - [x] 定制化返回值
+- [x] API结果Cache
+- [x] API Server支持Restful
 - [ ] 协议转换插件机制
 
 ## Plugins

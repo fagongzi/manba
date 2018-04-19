@@ -5,7 +5,7 @@ start_etcd() {
 }
 
 start_apiserver() {
-    ./apiserver --addr=:9092 --discovery &
+    ./apiserver --addr=:9092 --addr-http=:9093 --discovery &
 }
 
 start_proxy() {
