@@ -1,6 +1,7 @@
 package bytes
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,7 +9,10 @@ import (
 
 func TestBytesFormat(t *testing.T) {
 	// B
-	b := Format(515)
+	b := Format(0)
+	assert.Equal(t, "0", b)
+	// B
+	b = Format(515)
 	assert.Equal(t, "515B", b)
 
 	// KB
@@ -30,16 +34,63 @@ func TestBytesFormat(t *testing.T) {
 	// PB
 	b = Format(9923232398434432)
 	assert.Equal(t, "8.81PB", b)
+
+	// EB
+	b = Format(math.MaxInt64)
+	assert.Equal(t, "8.00EB", b)
+}
+
+func TestBytesParseErrors(t *testing.T) {
+	_, err := Parse("B999")
+	if assert.Error(t, err) {
+		assert.EqualError(t, err, "error parsing value=B999")
+	}
+}
+
+func TestFloats(t *testing.T) {
+	// From string:
+	str := "12.25KB"
+	value, err := Parse(str)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(12544), value)
+
+	str2 := Format(value)
+	assert.Equal(t, str, str2)
+
+	// To string:
+	val := int64(13233029)
+	str = Format(val)
+	assert.Equal(t, "12.62MB", str)
+
+	val2, err := Parse(str)
+	assert.NoError(t, err)
+	assert.Equal(t, val, val2)
 }
 
 func TestBytesParse(t *testing.T) {
 	// B
-	b, err := Parse("515B")
+	b, err := Parse("999")
+	if assert.NoError(t, err) {
+		assert.Equal(t, int64(999), b)
+	}
+	b, err = Parse("-100")
+	if assert.NoError(t, err) {
+		assert.Equal(t, int64(-100), b)
+	}
+	b, err = Parse("100.1")
+	if assert.NoError(t, err) {
+		assert.Equal(t, int64(100), b)
+	}
+	b, err = Parse("515B")
 	if assert.NoError(t, err) {
 		assert.Equal(t, int64(515), b)
 	}
 
 	// KB
+	b, err = Parse("12.25KB")
+	if assert.NoError(t, err) {
+		assert.Equal(t, int64(12544), b)
+	}
 	b, err = Parse("12KB")
 	if assert.NoError(t, err) {
 		assert.Equal(t, int64(12288), b)
@@ -87,5 +138,15 @@ func TestBytesParse(t *testing.T) {
 	b, err = Parse("9P")
 	if assert.NoError(t, err) {
 		assert.Equal(t, int64(10133099161583616), b)
+	}
+
+	// EB
+	b, err = Parse("8EB")
+	if assert.NoError(t, err) {
+		assert.True(t, math.MaxInt64 == b-1)
+	}
+	b, err = Parse("8E")
+	if assert.NoError(t, err) {
+		assert.True(t, math.MaxInt64 == b-1)
 	}
 }

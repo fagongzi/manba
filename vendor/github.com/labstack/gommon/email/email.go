@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"crypto/tls"
 	"html/template"
+	"net"
 	"net/mail"
 	"net/smtp"
-
-	"net"
-
 	"time"
 
 	"github.com/labstack/gommon/random"

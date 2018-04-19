@@ -20,6 +20,7 @@ type Option struct {
 	LimitBufferRead            int
 	LimitBufferWrite           int
 	LimitBytesBody             int
+	LimitBytesCaching          uint64
 }
 
 // Cfg proxy config

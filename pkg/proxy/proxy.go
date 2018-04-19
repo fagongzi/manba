@@ -143,13 +143,13 @@ func (p *Proxy) isStopped() bool {
 }
 
 func (p *Proxy) init() {
-	p.initFilters()
-
 	err := p.initDispatcher()
 	if err != nil {
 		log.Fatalf("init route table failed, errors:\n%+v",
 			err)
 	}
+
+	p.initFilters()
 
 	err = p.dispatcher.store.RegistryProxy(&metapb.Proxy{
 		Addr:    p.cfg.Addr,
@@ -176,7 +176,7 @@ func (p *Proxy) initDispatcher() error {
 
 func (p *Proxy) initFilters() {
 	for _, filter := range p.cfg.Filers {
-		f, err := newFilter(filter)
+		f, err := p.newFilter(filter)
 		if nil != err {
 			log.Fatalf("init filter failed, filter=<%+v> errors:\n%+v",
 				filter,
@@ -311,17 +311,12 @@ func (p *Proxy) doCopy(req *copyReq) {
 
 func (p *Proxy) doProxy(dn *dispathNode) {
 	ctx := dn.ctx
-	wg := dn.wg
-
-	if nil != wg {
-		defer wg.Done()
-	}
-
 	svr := dn.dest
 
 	if nil == svr {
 		dn.err = ErrNoServer
 		dn.code = http.StatusServiceUnavailable
+		dn.maybeDone()
 		return
 	}
 
@@ -347,6 +342,7 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 
 			dn.err = ErrRewriteNotMatch
 			dn.code = http.StatusBadRequest
+			dn.maybeDone()
 			return
 		}
 	}
@@ -362,6 +358,15 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 
 		dn.err = err
 		dn.code = code
+		dn.maybeDone()
+		return
+	}
+
+	// hit cache
+	if value := c.GetAttr(cacheHit); nil != value {
+		log.Debugf("dispatch: hit cahce for %s", string(forwardReq.RequestURI()))
+		dn.cachedCT, dn.cachedBody = parseCachedValue(value.([]byte))
+		dn.maybeDone()
 		return
 	}
 
@@ -390,6 +395,7 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 
 		dn.err = err
 		dn.code = resCode
+		dn.maybeDone()
 		return
 	}
 
@@ -409,8 +415,11 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 
 		dn.err = err
 		dn.code = code
+		dn.maybeDone()
 		return
 	}
+
+	dn.maybeDone()
 }
 
 func getIndex(opt *uint64, size uint64) int {
