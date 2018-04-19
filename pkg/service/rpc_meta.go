@@ -15,8 +15,7 @@ type metaService struct {
 	db store.Store
 }
 
-// NewMetaService returns a meta service
-func NewMetaService(db store.Store) rpcpb.MetaServiceServer {
+func newMetaService(db store.Store) rpcpb.MetaServiceServer {
 	return &metaService{
 		db: db,
 	}

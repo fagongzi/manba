@@ -19,7 +19,8 @@ import (
 )
 
 var (
-	addr           = flag.String("addr", "127.0.0.1:9092", "Addr: client entrypoint")
+	addr           = flag.String("addr", "127.0.0.1:9092", "Addr: client grpc entrypoint")
+	addrHTTP       = flag.String("addr-http", "127.0.0.1:9093", "Addr: client http restful entrypoint")
 	addrStore      = flag.String("addr-store", "etcd://127.0.0.1:2379", "Addr: store address")
 	namespace      = flag.String("namespace", "dev", "The namespace to isolation the environment.")
 	discovery      = flag.Bool("discovery", false, "Publish apiserver service via discovery.")
@@ -49,19 +50,21 @@ func main() {
 			err)
 	}
 
+	service.Init(db)
+
 	var opts []grpcx.ServerOption
 	if *discovery {
 		opts = append(opts, grpcx.WithEtcdPublisher(db.Raw().(*clientv3.Client), *servicePrefix, *publishLease, time.Second*time.Duration(*publishTimeout)))
 	}
 
+	if *addrHTTP != "" {
+		opts = append(opts, grpcx.WithHTTPServer(*addrHTTP, service.InitHTTPRouter))
+	}
+
 	s := grpcx.NewGRPCServer(*addr, func(svr *grpc.Server) []grpcx.Service {
 		var services []grpcx.Service
-
-		rpcpb.RegisterMetaServiceServer(svr, service.NewMetaService(db))
-		services = append(services, grpcx.Service{
-			Name: rpcpb.ServiceMeta,
-		})
-
+		rpcpb.RegisterMetaServiceServer(svr, service.MetaService)
+		services = append(services, grpcx.NewService(rpcpb.ServiceMeta, nil))
 		return services
 	}, opts...)
 
