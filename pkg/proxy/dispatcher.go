@@ -42,13 +42,14 @@ type dispathNode struct {
 	ctx *fasthttp.RequestCtx
 	wg  *sync.WaitGroup
 
-	api    *apiRuntime
-	node   *apiNode
-	dest   *serverRuntime
-	copyTo *serverRuntime
-	res    *fasthttp.Response
-	err    error
-	code   int
+	api                  *apiRuntime
+	node                 *apiNode
+	dest                 *serverRuntime
+	copyTo               *serverRuntime
+	res                  *fasthttp.Response
+	cachedBody, cachedCT []byte
+	err                  error
+	code                 int
 }
 
 func (dn *dispathNode) release() {
@@ -63,6 +64,45 @@ func (dn *dispathNode) needRewrite() bool {
 
 func (dn *dispathNode) rewiteURL(req *fasthttp.Request) string {
 	return dn.api.rewriteURL(req, dn.node.meta.URLRewrite)
+}
+
+func (dn *dispathNode) getResponseContentType() []byte {
+	if len(dn.cachedCT) > 0 {
+		return dn.cachedCT
+	}
+
+	if nil != dn.res {
+		return dn.res.Header.ContentType()
+	}
+
+	return nil
+}
+
+func (dn *dispathNode) copyHeaderTo(ctx *fasthttp.RequestCtx) {
+	if dn.res != nil {
+		for _, h := range MultiResultsRemoveHeaders {
+			dn.res.Header.Del(h)
+		}
+		dn.res.Header.CopyTo(&ctx.Response.Header)
+	}
+}
+
+func (dn *dispathNode) getResponseBody() []byte {
+	if len(dn.cachedBody) > 0 {
+		return dn.cachedBody
+	}
+
+	if nil != dn.res {
+		return dn.res.Body()
+	}
+
+	return nil
+}
+
+func (dn *dispathNode) maybeDone() {
+	if nil != dn.wg {
+		defer dn.wg.Done()
+	}
 }
 
 type dispatcher struct {

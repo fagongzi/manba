@@ -9,28 +9,29 @@
     "clientv3/naming",
     "etcdserver/api/v3rpc/rpctypes",
     "etcdserver/etcdserverpb",
-    "mvcc/mvccpb"
+    "mvcc/mvccpb",
+    "pkg/types"
   ]
-  revision = "1e1dbb23924672c6cd72c62ee0db2b45f778da71"
-  version = "v3.2.11"
+  revision = "e348b1aedd9167360c466ae98f7343d3e22281f8"
+  version = "v3.3.3"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
-  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
-  version = "v3.1.0"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/fagongzi/goetty"
   packages = ["."]
-  revision = "be30ec1d931e852f555da1e37114deda39174ec1"
+  revision = "be9ef486eb2217eb72c2b147f007ad5c34f80fcc"
+  version = "v1.1.1"
 
 [[projects]]
   name = "github.com/fagongzi/grpcx"
   packages = ["."]
-  revision = "a3f8aaa5df1f0d2fa8d644e387f9b185dea2d55a"
-  version = "v1.0-RC.1"
+  revision = "f6b611cab691d84328fc90a3c134cf1de6d5afae"
+  version = "v1.0.1"
 
 [[projects]]
   branch = "master"
@@ -39,7 +40,6 @@
   revision = "9a647df25e0e4ba3d967bd8a16b871e8c7e7eb6c"
 
 [[projects]]
-  branch = "master"
   name = "github.com/fagongzi/util"
   packages = [
     "atomic",
@@ -48,26 +48,36 @@
     "protoc",
     "task"
   ]
-  revision = "c20791831670e4bc8e43bfda4141900875124451"
+  revision = "4acf02da76a9f2bb0a97a6c119a05caed34cd196"
+  version = "v0.1"
+
+[[projects]]
+  name = "github.com/gogo/protobuf"
+  packages = [
+    "gogoproto",
+    "proto",
+    "protoc-gen-gogo/descriptor"
+  ]
+  revision = "1adfc126b41513cc696b209667c8656ea7aac67c"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
-    "protoc-gen-go/descriptor",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
     "ptypes/timestamp"
   ]
-  revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
+  revision = "e09c5db296004fbe3f74490e84dcd62c3c5ddb1b"
 
 [[projects]]
   name = "github.com/json-iterator/go"
   packages = ["."]
-  revision = "28452fcdec4e44348d2af0d91d1e9e38da3a9e0a"
-  version = "1.0.5"
+  revision = "ca39e5af3ece67bbcda3d0f4f56a8e24d9f2dad4"
+  version = "1.1.3"
 
 [[projects]]
   name = "github.com/klauspost/compress"
@@ -97,8 +107,8 @@
     ".",
     "middleware"
   ]
-  revision = "0473c51f1dbd83487effce00702571d19033a6e5"
-  version = "3.2.5"
+  revision = "6d227dfea4d2e52cb76856120b3c17f758139b4e"
+  version = "3.3.5"
 
 [[projects]]
   name = "github.com/labstack/gommon"
@@ -108,8 +118,8 @@
     "log",
     "random"
   ]
-  revision = "57409ada9da0f2afad6664c49502f8c50fbd8476"
-  version = "0.2.3"
+  revision = "6fe1405d73ec4bd4cd8a4ac8e2a2b2bf95d03954"
+  version = "0.2.4"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
@@ -122,6 +132,18 @@
   packages = ["."]
   revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
   version = "v0.0.3"
+
+[[projects]]
+  name = "github.com/modern-go/concurrent"
+  packages = ["."]
+  revision = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94"
+  version = "1.0.3"
+
+[[projects]]
+  name = "github.com/modern-go/reflect2"
+  packages = ["."]
+  revision = "1df9eeb2bb81f327b96228865c5687bc2194af3f"
+  version = "1.0.0"
 
 [[projects]]
   branch = "master"
@@ -151,13 +173,14 @@
     "acme",
     "acme/autocert"
   ]
-  revision = "244f6ce1f09cc9f3d7bffe29b033aaa13c0cc2f3"
+  revision = "d6449816ce06963d9d136eee5a56fca5b0616e7e"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = [
     "context",
+    "http/httpguts",
     "http2",
     "http2/hpack",
     "idna",
@@ -165,16 +188,15 @@
     "lex/httplex",
     "trace"
   ]
-  revision = "d866cfc389cec985d6fda2859936a575a55a3ab6"
+  revision = "d41e8174641f662c5a2d1c7a5f9e828788eb8706"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "571f7bbbe08da2a8955aed9d4db316e78630e9a3"
+  revision = "3ccc7e5779793fd54564baf60c51bf017955e0ba"
 
 [[projects]]
-  branch = "master"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -192,33 +214,33 @@
     "unicode/norm",
     "unicode/rangetable"
   ]
-  revision = "c4d099d611ac3ded35360abf03581e13d91c828f"
+  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
+  version = "v0.3.0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/time"
   packages = ["rate"]
-  revision = "6dc17368e09b0e8634d71cac8168d853e869a0c7"
+  revision = "fbb02b2291d28baffd63558aa44b4b56f178d650"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/genproto"
-  packages = [
-    "googleapis/api/annotations",
-    "googleapis/rpc/status"
-  ]
-  revision = "a8101f21cf983e773d0c1133ebc5424792003214"
+  packages = ["googleapis/rpc/status"]
+  revision = "7fd901a49ba6a7f87732eb344f6e3c5b19d1b200"
 
 [[projects]]
   name = "google.golang.org/grpc"
   packages = [
     ".",
     "balancer",
+    "balancer/base",
     "balancer/roundrobin",
     "codes",
     "connectivity",
     "credentials",
     "encoding",
+    "encoding/proto",
     "grpclb/grpc_lb_v1/messages",
     "grpclog",
     "health/grpc_health_v1",
@@ -235,8 +257,8 @@
     "tap",
     "transport"
   ]
-  revision = "e687fa4e6424368ece6e4fe727cea2c806a0fcb4"
-  version = "v1.8.2"
+  revision = "d11072e7ca9811b1100b80ca0269ac831f06d024"
+  version = "v1.11.3"
 
 [solve-meta]
   analyzer-name = "dep"

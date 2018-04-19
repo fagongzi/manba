@@ -42,6 +42,7 @@ enum Source {
     JSONBody    = 2;
     Header      = 3;
     Cookie      = 4;
+    PathValue   = 5;
 }
 
 enum RuleType {
@@ -132,6 +133,7 @@ message HTTPResult {
 message Parameter {
     optional string name   = 1 [(gogoproto.nullable) = false];
     optional Source source = 2 [(gogoproto.nullable) = false];
+    optional int32  index  = 3 [(gogoproto.nullable) = false];
 }
 
 // ValidationRule is a validation rule
@@ -153,6 +155,14 @@ message DispatchNode {
     optional string     urlRewrite   = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "URLRewrite"];
     optional string     attrName     = 3 [(gogoproto.nullable) = false];
     repeated Validation validations  = 4;
+    optional Cache      cache        = 5;
+}
+
+// Cache is used for cache api result
+message Cache {
+    repeated Parameter keys       = 1 [(gogoproto.nullable) = false];
+    optional uint64    deadline   = 2 [(gogoproto.nullable) = false];
+    repeated Condition conditions = 3 [(gogoproto.nullable) = false];
 }
 
 // RenderTemplate the template that render to client 

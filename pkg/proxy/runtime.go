@@ -303,22 +303,6 @@ func (a *apiRuntime) allowWithWhitelist(ip string) bool {
 	return false
 }
 
-func (a *apiRuntime) renderDefault(ctx *fasthttp.RequestCtx) {
-	if a.meta.DefaultValue == nil {
-		return
-	}
-
-	for _, header := range a.meta.DefaultValue.Headers {
-		ctx.Response.Header.Add(header.Name, header.Value)
-	}
-
-	for _, ck := range a.defaultCookies {
-		ctx.Response.Header.SetCookie(ck)
-	}
-
-	ctx.Write(a.meta.DefaultValue.Body)
-}
-
 func (a *apiRuntime) rewriteURL(req *fasthttp.Request, rewrite string) string {
 	if rewrite == "" || a.meta.URLPattern == "" {
 		return ""
@@ -534,6 +518,8 @@ func paramValue(param *metapb.Parameter, req *fasthttp.Request) string {
 		return getHeaderValue(param.Name, req)
 	case metapb.Cookie:
 		return getCookieValue(param.Name, req)
+	case metapb.PathValue:
+		return getPathValue(int(param.Index), req)
 	default:
 		return ""
 	}
@@ -550,6 +536,16 @@ func getHeaderValue(name string, req *fasthttp.Request) string {
 func getQueryValue(name string, req *fasthttp.Request) string {
 	v, _ := url.QueryUnescape(string(req.URI().QueryArgs().Peek(name)))
 	return v
+}
+
+func getPathValue(idx int, req *fasthttp.Request) string {
+	path := string(req.URI().Path()[1:])
+	values := strings.Split(path, "/")
+	if len(values) <= idx {
+		return ""
+	}
+
+	return values[idx]
 }
 
 func getFormValue(name string, req *fasthttp.Request) string {

@@ -15,8 +15,10 @@ type EchoServer struct {
 // NewEchoServer create new server
 func NewEchoServer(addr string) *EchoServer {
 	return &EchoServer{
-		addr:   addr,
-		server: goetty.NewServer(addr, goetty.NewIntLengthFieldBasedDecoder(&StringDecoder{}), &StringEncoder{}, goetty.NewInt64IDGenerator()),
+		addr: addr,
+		server: goetty.NewServer(addr,
+			goetty.WithServerDecoder(goetty.NewIntLengthFieldBasedDecoder(&StringDecoder{})),
+			goetty.WithServerEncoder(&StringEncoder{})),
 	}
 }
 

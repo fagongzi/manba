@@ -15,22 +15,16 @@ type EchoClient struct {
 
 // NewEchoClient new client
 func NewEchoClient(serverAddr string) (*EchoClient, error) {
-	cnf := &goetty.Conf{
-		Addr: serverAddr,
-		TimeoutConnectToServer: time.Second * 3,
-	}
-
 	c := &EchoClient{
 		serverAddr: serverAddr,
-		conn:       goetty.NewConnector(cnf, goetty.NewIntLengthFieldBasedDecoder(&StringDecoder{}), &StringEncoder{}),
 	}
 
-	// if you want to send heartbeat to server, you can set conf as below, otherwise not set
-
-	cnf.TimeoutWrite = time.Second * 3
-	cnf.TimeWheel = goetty.NewTimeoutWheel(goetty.WithTickInterval(time.Second))
-	cnf.WriteTimeoutFn = c.writeHeartbeat
-
+	c.conn = goetty.NewConnector(serverAddr,
+		goetty.WithClientConnectTimeout(time.Second*3),
+		goetty.WithClientDecoder(&StringDecoder{}),
+		goetty.WithClientEncoder(&StringEncoder{}),
+		// if you want to send heartbeat to server, you can set conf as below, otherwise not set
+		goetty.WithClientWriteTimeoutHandler(time.Second*3, c.writeHeartbeat, goetty.NewTimeoutWheel(goetty.WithTickInterval(time.Second))))
 	_, err := c.conn.Connect()
 
 	return c, err

@@ -39,6 +39,11 @@ type Filter interface {
 // BaseFilter base filter support default implemention
 type BaseFilter struct{}
 
+// Init init filter
+func (f BaseFilter) Init(cfg string) error {
+	return nil
+}
+
 // Pre execute before proxy
 func (f BaseFilter) Pre(c Context) (statusCode int, err error) {
 	return fasthttp.StatusOK, nil

@@ -1,6 +1,8 @@
 package client
 
 import (
+	"time"
+
 	"github.com/fagongzi/gateway/pkg/pb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 )
@@ -214,8 +216,8 @@ func (ab *APIBuilder) AddBlacklist(ips ...string) *APIBuilder {
 	return ab
 }
 
-// AddDispatchNodeForce add a dispatch node even if the cluster added
-func (ab *APIBuilder) AddDispatchNodeForce(cluster uint64) *APIBuilder {
+// AppendDispatchNode append a dispatch node even if the cluster added
+func (ab *APIBuilder) AppendDispatchNode(cluster uint64) *APIBuilder {
 	ab.value.Nodes = append(ab.value.Nodes, &metapb.DispatchNode{
 		ClusterID: cluster,
 	})
@@ -246,6 +248,65 @@ func (ab *APIBuilder) RemoveDispatchNodeURLRewrite(cluster uint64) *APIBuilder {
 		}
 	}
 	return ab
+}
+
+// DispatchNodeUseCachingWithIndex set dispatch node caching
+func (ab *APIBuilder) DispatchNodeUseCachingWithIndex(cluster uint64, index int, deadline time.Duration) *APIBuilder {
+	node := ab.getNode(cluster, index)
+
+	if node == nil {
+		ab.value.Nodes = append(ab.value.Nodes, &metapb.DispatchNode{
+			ClusterID: cluster,
+			Cache: &metapb.Cache{
+				Deadline: uint64(deadline.Seconds()),
+			},
+		})
+	} else {
+		node.Cache = &metapb.Cache{
+			Deadline: uint64(deadline.Seconds()),
+		}
+	}
+
+	return ab
+}
+
+// DispatchNodeUseCaching set dispatch node caching
+func (ab *APIBuilder) DispatchNodeUseCaching(cluster uint64, deadline time.Duration) *APIBuilder {
+	return ab.DispatchNodeUseCachingWithIndex(cluster, 0, deadline)
+}
+
+// AddDispatchNodeCachingKeyWithIndex add key for caching
+func (ab *APIBuilder) AddDispatchNodeCachingKeyWithIndex(cluster uint64, index int, keys ...metapb.Parameter) *APIBuilder {
+	node := ab.getNode(cluster, index)
+	if node != nil {
+		node.Cache.Keys = append(node.Cache.Keys, keys...)
+	}
+
+	return ab
+}
+
+// AddDispatchNodeCachingKey add key for caching
+func (ab *APIBuilder) AddDispatchNodeCachingKey(cluster uint64, keys ...metapb.Parameter) *APIBuilder {
+	return ab.AddDispatchNodeCachingKeyWithIndex(cluster, 0, keys...)
+}
+
+// AddDispatchNodeCachingConditionWithIndex add condition for caching
+func (ab *APIBuilder) AddDispatchNodeCachingConditionWithIndex(cluster uint64, index int, param metapb.Parameter, op metapb.CMP, expect string) *APIBuilder {
+	node := ab.getNode(cluster, index)
+	if node != nil {
+		node.Cache.Conditions = append(node.Cache.Conditions, metapb.Condition{
+			Parameter: param,
+			Cmp:       op,
+			Expect:    expect,
+		})
+	}
+
+	return ab
+}
+
+// AddDispatchNodeCachingCondition add condition for caching
+func (ab *APIBuilder) AddDispatchNodeCachingCondition(cluster uint64, param metapb.Parameter, op metapb.CMP, expect string) *APIBuilder {
+	return ab.AddDispatchNodeCachingConditionWithIndex(cluster, 0, param, op, expect)
 }
 
 // DispatchNodeURLRewriteWithIndex set dispatch node url rewrite
@@ -402,7 +463,7 @@ func (ab *APIBuilder) getNode(cluster uint64, index int) *metapb.DispatchNode {
 		}
 
 		if n.ClusterID == cluster {
-			idx += 1
+			idx++
 		}
 	}
 

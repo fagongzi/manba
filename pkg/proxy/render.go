@@ -14,6 +14,7 @@ type render struct {
 	multi    bool
 	template *metapb.RenderTemplate
 	wg       *sync.WaitGroup
+	api      *apiRuntime
 	nodes    []*dispathNode
 	doRender func(*fasthttp.RequestCtx)
 }
@@ -22,6 +23,7 @@ func newRender(nodes []*dispathNode, template *metapb.RenderTemplate) *render {
 	rd := &render{
 		template: template,
 		nodes:    nodes,
+		api:      nodes[0].api,
 	}
 
 	rd.doRender = rd.renderSingle
@@ -50,6 +52,13 @@ func (rd *render) renderSingle(ctx *fasthttp.RequestCtx) {
 		log.Errorf("render: render failed, code=<%d>, errors:\n%+v",
 			dn.code,
 			dn.err)
+
+		if rd.api.meta.DefaultValue != nil {
+			rd.renderDefault(ctx)
+			dn.release()
+			return
+		}
+
 		ctx.SetStatusCode(dn.code)
 		dn.release()
 		return
@@ -60,7 +69,7 @@ func (rd *render) renderSingle(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	src := jsoniter.ParseBytes(json, dn.res.Body()).ReadAny()
+	src := jsoniter.ParseBytes(json, dn.getResponseBody()).ReadAny()
 	dn.release()
 
 	v, err := json.MarshalToString(rd.extract(src))
@@ -98,12 +107,8 @@ func (rd *render) renderMulti(ctx *fasthttp.RequestCtx) {
 			continue
 		}
 
-		for _, h := range MultiResultsRemoveHeaders {
-			result.res.Header.Del(h)
-		}
-		result.res.Header.CopyTo(&ctx.Response.Header)
-
-		value[result.node.meta.AttrName] = jsoniter.ParseBytes(json, result.res.Body()).ReadAny()
+		result.copyHeaderTo(ctx)
+		value[result.node.meta.AttrName] = jsoniter.ParseBytes(json, result.getResponseBody()).ReadAny()
 		result.release()
 	}
 
@@ -111,6 +116,12 @@ func (rd *render) renderMulti(ctx *fasthttp.RequestCtx) {
 		log.Errorf("render: render failed, code=<%d>, errors:\n%+v",
 			code,
 			err)
+
+		if rd.api.meta.DefaultValue != nil {
+			rd.renderDefault(ctx)
+			return
+		}
+
 		ctx.SetStatusCode(code)
 		return
 	}
@@ -128,9 +139,32 @@ func (rd *render) renderMulti(ctx *fasthttp.RequestCtx) {
 }
 
 func (rd *render) renderRaw(ctx *fasthttp.RequestCtx, dn *dispathNode) {
-	ctx.Response.Header.SetContentTypeBytes(dn.res.Header.ContentType())
-	ctx.Write(dn.res.Body())
+	ctx.Response.Header.SetContentTypeBytes(dn.getResponseContentType())
+	ctx.Write(dn.getResponseBody())
 	dn.release()
+}
+
+func (rd *render) renderDefault(ctx *fasthttp.RequestCtx) {
+	if rd.api.meta.DefaultValue == nil {
+		return
+	}
+
+	header := &ctx.Response.Header
+
+	for _, h := range rd.api.meta.DefaultValue.Headers {
+		if h.Name == "Content-Type" {
+			header.SetContentType(h.Value)
+		} else {
+			header.Add(h.Name, h.Value)
+		}
+	}
+
+	for _, ck := range rd.api.defaultCookies {
+		header.SetCookie(ck)
+	}
+
+	ctx.SetStatusCode(fasthttp.StatusOK)
+	ctx.Write(rd.api.meta.DefaultValue.Body)
 }
 
 func (rd *render) extract(src jsoniter.Any) map[string]interface{} {

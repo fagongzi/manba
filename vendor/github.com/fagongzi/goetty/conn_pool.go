@@ -201,6 +201,21 @@ func (pool *AddressBasedPool) RemoveConn(addr string) {
 	pool.Unlock()
 }
 
+// RemoveConnIfMatches close the conn, and remove from the pool if the conn in the pool is match the given
+func (pool *AddressBasedPool) RemoveConnIfMatches(addr string, target IOSession) bool {
+	removed := false
+
+	pool.Lock()
+	if conn, ok := pool.conns[addr]; ok && conn == target {
+		conn.Close()
+		delete(pool.conns, addr)
+		removed = true
+	}
+	pool.Unlock()
+
+	return removed
+}
+
 func (pool *AddressBasedPool) getConnLocked(addr string) IOSession {
 	pool.RLock()
 	conn := pool.conns[addr]
