@@ -11,7 +11,7 @@ RUN mkdir -p /var/lib/apiserver/
 # To fix this we just create /etc/nsswitch.conf and add the following line:
 RUN echo 'hosts: files mdns4_minimal [NOTFOUND=return] dns mdns4' >> /etc/nsswitch.conf
 
-EXPOSE 9092
+EXPOSE 9092 9093
 
 # Define default command.
 ENTRYPOINT ["/usr/local/bin/apiserver"]
