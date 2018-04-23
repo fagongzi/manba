@@ -249,18 +249,19 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	dispatches, template := p.dispatcher.dispatch(&ctx.Request)
-	if len(dispatches) == 0 {
+	api, dispatches := p.dispatcher.dispatch(&ctx.Request)
+	if len(dispatches) == 0 &&
+		(nil == api || api.meta.DefaultValue == nil) {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		return
 	}
 
 	log.Infof("api(%s): %s %s",
-		dispatches[0].api.meta.Name,
+		api.meta.Name,
 		ctx.Method(),
 		ctx.RequestURI())
 
-	rd := newRender(dispatches, template)
+	rd := newRender(api, dispatches)
 
 	for _, dn := range dispatches {
 		dn.wg = rd.wg
@@ -310,6 +311,11 @@ func (p *Proxy) doCopy(req *copyReq) {
 }
 
 func (p *Proxy) doProxy(dn *dispathNode) {
+	if dn.node.meta.UseDefault {
+		dn.maybeDone()
+		return
+	}
+
 	ctx := dn.ctx
 	svr := dn.dest
 

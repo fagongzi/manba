@@ -156,6 +156,8 @@ message DispatchNode {
     optional string     attrName     = 3 [(gogoproto.nullable) = false];
     repeated Validation validations  = 4;
     optional Cache      cache        = 5;
+    optional HTTPResult defaultValue = 6 [(gogoproto.nullable) = true];
+    optional bool       useDefault   = 7 [(gogoproto.nullable) = false];
 }
 
 // Cache is used for cache api result
@@ -197,6 +199,7 @@ message API {
     repeated string          perms           = 10;
     optional string          authFilter      = 11 [(gogoproto.nullable) = false];
     optional RenderTemplate  renderTemplate  = 12;
+    optional bool            useDefault      = 13 [(gogoproto.nullable) = false];
 }
 
 // Condition is a condition for routing

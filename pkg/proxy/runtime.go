@@ -41,6 +41,7 @@ func newClusterRuntime(meta *metapb.Cluster) *clusterRuntime {
 }
 
 func (c *clusterRuntime) updateMeta(meta *metapb.Cluster) {
+	*c = clusterRuntime{}
 	c.meta = meta
 	c.lb = lb.NewLoadBalance(meta.LoadBalance)
 }
@@ -105,6 +106,7 @@ func newServerRuntime(meta *metapb.Server, tw *goetty.TimeoutWheel) *serverRunti
 }
 
 func (s *serverRuntime) updateMeta(meta *metapb.Server) {
+	*s = serverRuntime{}
 	s.meta = meta
 	s.limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(meta.MaxQPS)), int(meta.MaxQPS))
 }
@@ -192,8 +194,9 @@ type apiRule struct {
 }
 
 type apiNode struct {
-	meta        *metapb.DispatchNode
-	validations []*apiValidation
+	meta           *metapb.DispatchNode
+	validations    []*apiValidation
+	defaultCookies []*fasthttp.Cookie
 }
 
 type apiRuntime struct {
@@ -215,6 +218,7 @@ func newAPIRuntime(meta *metapb.API) *apiRuntime {
 }
 
 func (a *apiRuntime) updateMeta(meta *metapb.API) {
+	*a = apiRuntime{}
 	a.meta = meta
 	a.init()
 }
@@ -231,6 +235,15 @@ func (a *apiRuntime) init() {
 		}
 		a.nodes = append(a.nodes, rn)
 
+		if nil != n.DefaultValue {
+			for _, c := range n.DefaultValue.Cookies {
+				ck := &fasthttp.Cookie{}
+				ck.SetKey(c.Name)
+				ck.SetValue(c.Value)
+				rn.defaultCookies = append(rn.defaultCookies, ck)
+			}
+		}
+
 		for _, v := range n.Validations {
 			rv := &apiValidation{
 				meta: v,
@@ -246,7 +259,6 @@ func (a *apiRuntime) init() {
 		}
 	}
 
-	a.defaultCookies = make([]*fasthttp.Cookie, 0)
 	if nil != a.meta.DefaultValue {
 		for _, c := range a.meta.DefaultValue.Cookies {
 			ck := &fasthttp.Cookie{}
@@ -388,6 +400,7 @@ func newRoutingRuntime(meta *metapb.Routing) *routingRuntime {
 }
 
 func (a *routingRuntime) updateMeta(meta *metapb.Routing) {
+	*a = routingRuntime{}
 	a.meta = meta
 	a.init()
 }
