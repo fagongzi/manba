@@ -52,6 +52,15 @@ type dispathNode struct {
 	code                 int
 }
 
+func (dn *dispathNode) hasError() bool {
+	return dn.err != nil ||
+		dn.code >= fasthttp.StatusBadRequest
+}
+
+func (dn *dispathNode) hasDefaultValue() bool {
+	return dn.node.meta.DefaultValue != nil
+}
+
 func (dn *dispathNode) release() {
 	if nil != dn.res {
 		fasthttp.ReleaseResponse(dn.res)
@@ -79,6 +88,18 @@ func (dn *dispathNode) getResponseContentType() []byte {
 }
 
 func (dn *dispathNode) copyHeaderTo(ctx *fasthttp.RequestCtx) {
+	if dn.node.meta.UseDefault ||
+		(dn.hasError() && dn.hasDefaultValue()) {
+		for _, hd := range dn.node.meta.DefaultValue.Headers {
+			(&ctx.Response.Header).Add(hd.Name, hd.Value)
+		}
+
+		for _, ck := range dn.node.defaultCookies {
+			(&ctx.Response.Header).SetCookie(ck)
+		}
+		return
+	}
+
 	if dn.res != nil {
 		for _, h := range MultiResultsRemoveHeaders {
 			dn.res.Header.Del(h)
@@ -88,6 +109,11 @@ func (dn *dispathNode) copyHeaderTo(ctx *fasthttp.RequestCtx) {
 }
 
 func (dn *dispathNode) getResponseBody() []byte {
+	if dn.node.meta.UseDefault ||
+		(dn.hasError() && dn.hasDefaultValue()) {
+		return dn.node.meta.DefaultValue.Body
+	}
+
 	if len(dn.cachedBody) > 0 {
 		return dn.cachedBody
 	}
@@ -149,14 +175,18 @@ func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner) *dispatcher {
 	return rt
 }
 
-func (r *dispatcher) dispatch(req *fasthttp.Request) ([]*dispathNode, *metapb.RenderTemplate) {
+func (r *dispatcher) dispatch(req *fasthttp.Request) (*apiRuntime, []*dispathNode) {
 	r.RLock()
 
-	var template *metapb.RenderTemplate
+	var targetAPI *apiRuntime
 	var dispathes []*dispathNode
 	for _, api := range r.apis {
 		if api.matches(req) {
-			template = api.meta.RenderTemplate
+			targetAPI = api
+			if api.meta.UseDefault {
+				break
+			}
+
 			for _, node := range api.nodes {
 				dn := &dispathNode{
 					api:  api,
@@ -172,7 +202,7 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) ([]*dispathNode, *metapb.Re
 	}
 
 	r.RUnlock()
-	return dispathes, template
+	return targetAPI, dispathes
 }
 
 func (r *dispatcher) routingOpt(apiID uint64, req *fasthttp.Request, node *dispathNode) {

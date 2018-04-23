@@ -112,6 +112,12 @@ func (ab *APIBuilder) DefaultValue(value []byte) *APIBuilder {
 	return ab
 }
 
+// UseDefaultValue use default value if force
+func (ab *APIBuilder) UseDefaultValue(force bool) *APIBuilder {
+	ab.value.UseDefault = force
+	return ab
+}
+
 // AddDefaultValueHeader add default value header
 func (ab *APIBuilder) AddDefaultValueHeader(name, value string) *APIBuilder {
 	if ab.value.DefaultValue == nil {
@@ -236,6 +242,136 @@ func (ab *APIBuilder) AddDispatchNode(cluster uint64) *APIBuilder {
 	ab.value.Nodes = append(ab.value.Nodes, &metapb.DispatchNode{
 		ClusterID: cluster,
 	})
+
+	return ab
+}
+
+// AddDispatchNodeDefaultValue add default value for dispatch
+func (ab *APIBuilder) AddDispatchNodeDefaultValue(cluster uint64, value []byte) *APIBuilder {
+	return ab.AddDispatchNodeDefaultValueWithIndex(cluster, 0, value)
+}
+
+// AddDispatchNodeDefaultValueWithIndex add default value for dispatch
+func (ab *APIBuilder) AddDispatchNodeDefaultValueWithIndex(cluster uint64, idx int, value []byte) *APIBuilder {
+	node := ab.getNode(cluster, idx)
+	if nil == node {
+		ab.value.Nodes = append(ab.value.Nodes, &metapb.DispatchNode{
+			ClusterID: cluster,
+			DefaultValue: &metapb.HTTPResult{
+				Body: value,
+			},
+		})
+	} else {
+		if node.DefaultValue == nil {
+			node.DefaultValue = &metapb.HTTPResult{
+				Body: value,
+			}
+		} else {
+			node.DefaultValue.Body = value
+		}
+	}
+
+	return ab
+}
+
+// UseDispatchNodeDefaultValue use default value if force
+func (ab *APIBuilder) UseDispatchNodeDefaultValue(cluster uint64, force bool) *APIBuilder {
+	return ab.UseDispatchNodeDefaultValueWithIndex(cluster, 0, force)
+}
+
+// UseDispatchNodeDefaultValueWithIndex use default value if force
+func (ab *APIBuilder) UseDispatchNodeDefaultValueWithIndex(cluster uint64, idx int, force bool) *APIBuilder {
+	node := ab.getNode(cluster, idx)
+	if nil == node {
+		ab.value.Nodes = append(ab.value.Nodes, &metapb.DispatchNode{
+			ClusterID:  cluster,
+			UseDefault: force,
+		})
+	} else {
+		node.UseDefault = force
+	}
+
+	return ab
+}
+
+// AddDispatchNodeDefaultValueHeader add default value header
+func (ab *APIBuilder) AddDispatchNodeDefaultValueHeader(cluster uint64, name, value string) *APIBuilder {
+	return ab.AddDispatchNodeDefaultValueHeaderWithIndex(cluster, 0, name, value)
+}
+
+// AddDispatchNodeDefaultValueHeaderWithIndex add default value header
+func (ab *APIBuilder) AddDispatchNodeDefaultValueHeaderWithIndex(cluster uint64, idx int, name, value string) *APIBuilder {
+	node := ab.getNode(cluster, idx)
+	if nil == node {
+		ab.value.Nodes = append(ab.value.Nodes, &metapb.DispatchNode{
+			ClusterID: cluster,
+			DefaultValue: &metapb.HTTPResult{
+				Headers: []*metapb.PairValue{
+					&metapb.PairValue{
+						Name:  name,
+						Value: value,
+					},
+				},
+			},
+		})
+	} else {
+		if node.DefaultValue == nil {
+			node.DefaultValue = &metapb.HTTPResult{
+				Headers: []*metapb.PairValue{
+					&metapb.PairValue{
+						Name:  name,
+						Value: value,
+					},
+				},
+			}
+		} else {
+			node.DefaultValue.Headers = append(node.DefaultValue.Headers, &metapb.PairValue{
+				Name:  name,
+				Value: value,
+			})
+		}
+	}
+
+	return ab
+}
+
+// AddDispatchNodeDefaultValueCookie add default value cookie
+func (ab *APIBuilder) AddDispatchNodeDefaultValueCookie(cluster uint64, name, value string) *APIBuilder {
+	return ab.AddDispatchNodeDefaultValueCookieWithIndex(cluster, 0, name, value)
+}
+
+// AddDispatchNodeDefaultValueCookieWithIndex add default value cookie
+func (ab *APIBuilder) AddDispatchNodeDefaultValueCookieWithIndex(cluster uint64, idx int, name, value string) *APIBuilder {
+	node := ab.getNode(cluster, idx)
+	if nil == node {
+		ab.value.Nodes = append(ab.value.Nodes, &metapb.DispatchNode{
+			ClusterID: cluster,
+			DefaultValue: &metapb.HTTPResult{
+				Cookies: []*metapb.PairValue{
+					&metapb.PairValue{
+						Name:  name,
+						Value: value,
+					},
+				},
+			},
+		})
+	} else {
+		if node.DefaultValue == nil {
+			node.DefaultValue = &metapb.HTTPResult{
+				Cookies: []*metapb.PairValue{
+					&metapb.PairValue{
+						Name:  name,
+						Value: value,
+					},
+				},
+			}
+		} else {
+			node.DefaultValue.Cookies = append(node.DefaultValue.Cookies, &metapb.PairValue{
+				Name:  name,
+				Value: value,
+			})
+		}
+	}
 
 	return ab
 }

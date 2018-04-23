@@ -12,18 +12,16 @@ import (
 
 type render struct {
 	multi    bool
-	template *metapb.RenderTemplate
 	wg       *sync.WaitGroup
 	api      *apiRuntime
 	nodes    []*dispathNode
 	doRender func(*fasthttp.RequestCtx)
 }
 
-func newRender(nodes []*dispathNode, template *metapb.RenderTemplate) *render {
+func newRender(api *apiRuntime, nodes []*dispathNode) *render {
 	rd := &render{
-		template: template,
-		nodes:    nodes,
-		api:      nodes[0].api,
+		nodes: nodes,
+		api:   api,
 	}
 
 	rd.doRender = rd.renderSingle
@@ -32,6 +30,8 @@ func newRender(nodes []*dispathNode, template *metapb.RenderTemplate) *render {
 		rd.wg = &sync.WaitGroup{}
 		rd.wg.Add(len(nodes))
 		rd.doRender = rd.renderMulti
+	} else if len(nodes) == 0 {
+		rd.doRender = rd.renderDefault
 	}
 
 	return rd
@@ -64,7 +64,7 @@ func (rd *render) renderSingle(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if rd.template == nil {
+	if rd.api.meta.RenderTemplate == nil {
 		rd.renderRaw(ctx, dn)
 		return
 	}
@@ -92,24 +92,24 @@ func (rd *render) renderMulti(ctx *fasthttp.RequestCtx) {
 	code := fasthttp.StatusInternalServerError
 	value := make(map[string]interface{})
 
-	for _, result := range rd.nodes {
+	for _, dn := range rd.nodes {
 		if hasError {
-			result.release()
+			dn.release()
 			continue
 		}
 
-		if result.err != nil ||
-			result.code >= fasthttp.StatusBadRequest {
+		if dn.hasError() &&
+			!dn.hasDefaultValue() {
 			hasError = true
-			code = result.code
-			err = result.err
-			result.release()
+			code = dn.code
+			err = dn.err
+			dn.release()
 			continue
 		}
 
-		result.copyHeaderTo(ctx)
-		value[result.node.meta.AttrName] = jsoniter.ParseBytes(json, result.getResponseBody()).ReadAny()
-		result.release()
+		dn.copyHeaderTo(ctx)
+		value[dn.node.meta.AttrName] = jsoniter.ParseBytes(json, dn.getResponseBody()).ReadAny()
+		dn.release()
 	}
 
 	if hasError {
@@ -127,7 +127,7 @@ func (rd *render) renderMulti(ctx *fasthttp.RequestCtx) {
 	}
 
 	str, _ := jsoniter.MarshalToString(value)
-	if rd.template == nil {
+	if rd.api.meta.RenderTemplate == nil {
 		ctx.WriteString(str)
 		return
 	}
@@ -169,7 +169,7 @@ func (rd *render) renderDefault(ctx *fasthttp.RequestCtx) {
 
 func (rd *render) extract(src jsoniter.Any) map[string]interface{} {
 	ret := make(map[string]interface{})
-	for _, obj := range rd.template.Objects {
+	for _, obj := range rd.api.meta.RenderTemplate.Objects {
 		dest := ret
 
 		if !obj.FlatAttrs {
