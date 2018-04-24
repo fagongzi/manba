@@ -29,14 +29,16 @@ func (f *AccessFilter) Name() string {
 func (f *AccessFilter) Post(c filter.Context) (statusCode int, err error) {
 	cost := c.EndAt().Sub(c.StartAt())
 
-	log.Infof("filter: %s %s \"%s\" %d \"%s\" %s %s",
-		GetRealClientIP(c.OriginRequest()),
-		c.OriginRequest().Method(),
-		c.ForwardRequest().RequestURI(),
-		c.Response().StatusCode(),
-		c.OriginRequest().UserAgent(),
-		c.Server().Addr,
-		cost)
+	if log.InfoEnabled() {
+		log.Infof("filter: %s %s \"%s\" %d \"%s\" %s %s",
+			GetRealClientIP(c.OriginRequest()),
+			c.OriginRequest().Method(),
+			c.ForwardRequest().RequestURI(),
+			c.Response().StatusCode(),
+			c.OriginRequest().UserAgent(),
+			c.Server().Addr,
+			cost)
+	}
 
 	return f.BaseFilter.Post(c)
 }

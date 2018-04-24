@@ -15,6 +15,7 @@ import (
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/hack"
 	"github.com/fagongzi/util/task"
 	"github.com/valyala/fasthttp"
 )
@@ -253,6 +254,7 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 	if len(dispatches) == 0 &&
 		(nil == api || api.meta.DefaultValue == nil) {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
+		p.dispatcher.dispatchCompleted()
 		return
 	}
 
@@ -261,29 +263,67 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 		ctx.Method(),
 		ctx.RequestURI())
 
-	rd := newRender(api, dispatches)
+	rd := acquireRender()
+	rd.init(api, dispatches)
 
-	for _, dn := range dispatches {
-		dn.wg = rd.wg
-		dn.ctx = ctx
+	var multiCtx *multiContext
+	var wg *sync.WaitGroup
+	lastBatch := int32(0)
+	num := len(dispatches)
 
-		if dn.copyTo != nil {
-			p.copies[getIndex(&p.copyIndex, p.cfg.Option.LimitCountCopyWorker)] <- &copyReq{
-				origin: copyRequest(&ctx.Request),
-				to:     dn.copyTo,
-				api:    dn.api,
-				node:   dn.node,
+	if num > 1 {
+		wg = &sync.WaitGroup{}
+		multiCtx = acquireMultiContext()
+		multiCtx.init()
+	}
+
+	for idx, dn := range dispatches {
+		// wait last batch complete
+		if wg != nil && lastBatch < dn.node.meta.BatchIndex {
+			wg.Wait()
+			wg = nil
+			lastBatch = dn.node.meta.BatchIndex
+			if num-idx > 1 {
+				wg = &sync.WaitGroup{}
 			}
 		}
 
-		if rd.multi {
+		if wg != nil {
+			dn.wg = wg
+			wg.Add(1)
+		}
+
+		dn.multiCtx = multiCtx
+		dn.rd = rd
+		dn.ctx = ctx
+		if dn.copyTo != nil {
+			p.copies[getIndex(&p.copyIndex, p.cfg.Option.LimitCountCopyWorker)] <- &copyReq{
+				origin: copyRequest(&ctx.Request),
+				to:     dn.copyTo.clone(),
+				api:    dn.api.clone(),
+				node:   dn.node.clone(),
+			}
+		}
+
+		if wg != nil {
 			p.dispatches[getIndex(&p.dispatchIndex, p.cfg.Option.LimitCountDispatchWorker)] <- dn
 		} else {
 			p.doProxy(dn)
 		}
 	}
 
-	rd.render(ctx)
+	// wait last batch complete
+	if wg != nil {
+		wg.Wait()
+	}
+
+	rd.render(ctx, multiCtx)
+	releaseRender(rd)
+	releaseMultiContext(multiCtx)
+	for _, dn := range dispatches {
+		releaseDispathNode(dn)
+	}
+	p.dispatcher.dispatchCompleted()
 }
 
 func (p *Proxy) doCopy(req *copyReq) {
@@ -300,6 +340,7 @@ func (p *Proxy) doCopy(req *copyReq) {
 	res, err := p.client.Do(req.origin, svr.meta.Addr, nil)
 	if err != nil {
 		log.Errorf("copy: copy to %s failed, errors:\n%+v", req.to.meta.Addr, err)
+		fasthttp.ReleaseRequest(req.origin)
 		return
 	}
 
@@ -327,7 +368,6 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 	}
 
 	forwardReq := copyRequest(&ctx.Request)
-	forwardReq.SetHost(svr.meta.Addr)
 
 	// change url
 	if dn.needRewrite() {
@@ -336,14 +376,14 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 		if "" != realPath {
 			if log.DebugEnabled() {
 				log.Debugf("dispatch: rewrite, from=<%s> to=<%s>",
-					string(ctx.URI().FullURI()),
+					hack.SliceToString(ctx.URI().FullURI()),
 					realPath)
 			}
 
 			forwardReq.SetRequestURI(realPath)
 		} else {
 			log.Warnf("dispatch: rewrite not matches, origin=<%s> pattern=<%s>",
-				string(ctx.URI().FullURI()),
+				hack.SliceToString(ctx.URI().FullURI()),
 				dn.node.meta.URLRewrite)
 
 			dn.err = ErrRewriteNotMatch
@@ -353,7 +393,8 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 		}
 	}
 
-	c := newContext(p.dispatcher, ctx, forwardReq, dn)
+	c := acquireContext()
+	c.init(p.dispatcher, ctx, forwardReq, dn)
 
 	// pre filters
 	filterName, code, err := p.doPreFilters(c)
@@ -365,32 +406,36 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 		dn.err = err
 		dn.code = code
 		dn.maybeDone()
+		releaseContext(c)
 		return
 	}
 
 	// hit cache
 	if value := c.GetAttr(cacheHit); nil != value {
-		log.Debugf("dispatch: hit cahce for %s", string(forwardReq.RequestURI()))
+		if log.DebugEnabled() {
+			log.Debugf("dispatch: hit cahce for %s", hack.SliceToString(forwardReq.RequestURI()))
+		}
 		dn.cachedCT, dn.cachedBody = parseCachedValue(value.([]byte))
 		dn.maybeDone()
+		releaseContext(c)
 		return
 	}
 
 	res, err := p.client.Do(forwardReq, svr.meta.Addr, nil)
-	c.(*proxyContext).setEndAt(time.Now())
+	c.setEndAt(time.Now())
 
 	dn.res = res
 
-	if err != nil || res.StatusCode() >= fasthttp.StatusInternalServerError {
+	if err != nil || res.StatusCode() >= fasthttp.StatusBadRequest {
 		resCode := http.StatusServiceUnavailable
 
 		if nil != err {
-			log.Warnf("dispatch: failed, target=<%s> errors:\n%+v",
+			log.Errorf("dispatch: failed, target=<%s>, errors:\n%+v",
 				svr.meta.Addr,
 				err)
 		} else {
 			resCode = res.StatusCode()
-			log.Warnf("dispatch: returns error code, target=<%s> code=<%d>",
+			log.Errorf("dispatch: returns error code, target=<%s> code=<%d>",
 				svr.meta.Addr,
 				res.StatusCode())
 		}
@@ -402,6 +447,7 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 		dn.err = err
 		dn.code = resCode
 		dn.maybeDone()
+		releaseContext(c)
 		return
 	}
 
@@ -409,7 +455,7 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 		log.Debugf("dispatch: return, target=<%s> code=<%d> body=<%s>",
 			svr.meta.Addr,
 			res.StatusCode(),
-			string(res.Body()))
+			hack.SliceToString(res.Body()))
 	}
 
 	// post filters
@@ -422,10 +468,12 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 		dn.err = err
 		dn.code = code
 		dn.maybeDone()
+		releaseContext(c)
 		return
 	}
 
 	dn.maybeDone()
+	releaseContext(c)
 }
 
 func getIndex(opt *uint64, size uint64) int {

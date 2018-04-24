@@ -9,6 +9,7 @@ import (
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/goetty"
+	"github.com/fagongzi/util/hack"
 	"github.com/valyala/fasthttp"
 )
 
@@ -103,11 +104,11 @@ func getCachingID(c filter.Context) (bool, string) {
 func getID(req *fasthttp.Request, keys []metapb.Parameter) string {
 	size := len(keys)
 	if size == 0 {
-		return string(req.RequestURI())
+		return hack.SliceToString(req.RequestURI())
 	}
 
 	ids := make([]string, size+1, size+1)
-	ids[0] = string(req.RequestURI())
+	ids[0] = hack.SliceToString(req.RequestURI())
 	for idx, param := range keys {
 		ids[idx+1] = paramValue(&param, req)
 	}
