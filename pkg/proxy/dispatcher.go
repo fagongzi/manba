@@ -35,12 +35,14 @@ func (req *copyReq) needRewrite() bool {
 }
 
 func (req *copyReq) rewiteURL() string {
-	return req.api.rewriteURL(req.origin, req.node.meta.URLRewrite)
+	return req.api.rewriteURL(req.origin, req.node, nil)
 }
 
 type dispathNode struct {
-	ctx *fasthttp.RequestCtx
-	wg  *sync.WaitGroup
+	rd       *render
+	ctx      *fasthttp.RequestCtx
+	multiCtx *multiContext
+	wg       *sync.WaitGroup
 
 	api                  *apiRuntime
 	node                 *apiNode
@@ -50,6 +52,10 @@ type dispathNode struct {
 	cachedBody, cachedCT []byte
 	err                  error
 	code                 int
+}
+
+func (dn *dispathNode) reset() {
+	*dn = emptyDispathNode
 }
 
 func (dn *dispathNode) hasError() bool {
@@ -72,7 +78,7 @@ func (dn *dispathNode) needRewrite() bool {
 }
 
 func (dn *dispathNode) rewiteURL(req *fasthttp.Request) string {
-	return dn.api.rewriteURL(req, dn.node.meta.URLRewrite)
+	return dn.api.rewriteURL(req, dn.node, dn.multiCtx)
 }
 
 func (dn *dispathNode) getResponseContentType() []byte {
@@ -127,7 +133,8 @@ func (dn *dispathNode) getResponseBody() []byte {
 
 func (dn *dispathNode) maybeDone() {
 	if nil != dn.wg {
-		defer dn.wg.Done()
+		dn.multiCtx.completePart(dn.node.meta.AttrName, dn.getResponseBody())
+		dn.wg.Done()
 	}
 }
 
@@ -175,6 +182,10 @@ func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner) *dispatcher {
 	return rt
 }
 
+func (r *dispatcher) dispatchCompleted() {
+	r.RUnlock()
+}
+
 func (r *dispatcher) dispatch(req *fasthttp.Request) (*apiRuntime, []*dispathNode) {
 	r.RLock()
 
@@ -188,11 +199,10 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) (*apiRuntime, []*dispathNod
 			}
 
 			for _, node := range api.nodes {
-				dn := &dispathNode{
-					api:  api,
-					node: node,
-					dest: r.selectServer(req, r.clusters[node.meta.ClusterID]),
-				}
+				dn := acquireDispathNode()
+				dn.api = api
+				dn.node = node
+				dn.dest = r.selectServer(req, r.clusters[node.meta.ClusterID])
 
 				r.routingOpt(api.meta.ID, req, dn)
 				dispathes = append(dispathes, dn)
@@ -201,7 +211,6 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) (*apiRuntime, []*dispathNod
 		}
 	}
 
-	r.RUnlock()
 	return targetAPI, dispathes
 }
 

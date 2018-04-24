@@ -158,6 +158,7 @@ message DispatchNode {
     optional Cache      cache        = 5;
     optional HTTPResult defaultValue = 6 [(gogoproto.nullable) = true];
     optional bool       useDefault   = 7 [(gogoproto.nullable) = false];
+    optional int32      batchIndex   = 8 [(gogoproto.nullable) = false];
 }
 
 // Cache is used for cache api result

@@ -246,6 +246,26 @@ func (ab *APIBuilder) AddDispatchNode(cluster uint64) *APIBuilder {
 	return ab
 }
 
+// DispatchNodeBatchIndex add a dispatch node batch index
+func (ab *APIBuilder) DispatchNodeBatchIndex(cluster uint64, batchIndex int) *APIBuilder {
+	return ab.DispatchNodeBatchIndexWithIndex(cluster, 0, batchIndex)
+}
+
+// DispatchNodeBatchIndexWithIndex add a dispatch node batch index
+func (ab *APIBuilder) DispatchNodeBatchIndexWithIndex(cluster uint64, idx int, batchIndex int) *APIBuilder {
+	node := ab.getNode(cluster, idx)
+	if nil == node {
+		ab.value.Nodes = append(ab.value.Nodes, &metapb.DispatchNode{
+			ClusterID:  cluster,
+			BatchIndex: int32(batchIndex),
+		})
+	} else {
+		node.BatchIndex = int32(batchIndex)
+	}
+
+	return ab
+}
+
 // AddDispatchNodeDefaultValue add default value for dispatch
 func (ab *APIBuilder) AddDispatchNodeDefaultValue(cluster uint64, value []byte) *APIBuilder {
 	return ab.AddDispatchNodeDefaultValueWithIndex(cluster, 0, value)

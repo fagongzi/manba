@@ -6,22 +6,25 @@ import (
 	"math/rand"
 	"net/url"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/fagongzi/gateway/pkg/lb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/goetty"
 	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/collection"
-	"github.com/json-iterator/go"
+	"github.com/fagongzi/util/hack"
+	pbutil "github.com/fagongzi/util/protoc"
 	"github.com/valyala/fasthttp"
 	"golang.org/x/time/rate"
 )
 
 var (
-	json = jsoniter.ConfigFastest
+	dependP = regexp.MustCompile(`\$\w+\.\w+`)
 )
 
 type clusterRuntime struct {
@@ -103,6 +106,12 @@ func newServerRuntime(meta *metapb.Server, tw *goetty.TimeoutWheel) *serverRunti
 	rt.updateMeta(meta)
 
 	return rt
+}
+
+func (s *serverRuntime) clone() *serverRuntime {
+	meta := &metapb.Server{}
+	pbutil.MustUnmarshal(meta, pbutil.MustMarshal(s.meta))
+	return newServerRuntime(meta, s.tw)
 }
 
 func (s *serverRuntime) updateMeta(meta *metapb.Server) {
@@ -194,18 +203,90 @@ type apiRule struct {
 }
 
 type apiNode struct {
-	meta           *metapb.DispatchNode
-	validations    []*apiValidation
-	defaultCookies []*fasthttp.Cookie
+	meta              *metapb.DispatchNode
+	validations       []*apiValidation
+	defaultCookies    []*fasthttp.Cookie
+	dependencies      []string
+	dependenciesPaths [][]string
+}
+
+func newAPINode(meta *metapb.DispatchNode) *apiNode {
+	rn := &apiNode{
+		meta: meta,
+	}
+
+	if meta.URLRewrite != "" {
+		matches := dependP.FindAllStringSubmatch(meta.URLRewrite, -1)
+		for _, match := range matches {
+			rn.dependencies = append(rn.dependencies, match[0])
+			rn.dependenciesPaths = append(rn.dependenciesPaths, strings.Split(match[0][1:], "."))
+		}
+	}
+
+	if nil != meta.DefaultValue {
+		for _, c := range meta.DefaultValue.Cookies {
+			ck := &fasthttp.Cookie{}
+			ck.SetKey(c.Name)
+			ck.SetValue(c.Value)
+			rn.defaultCookies = append(rn.defaultCookies, ck)
+		}
+	}
+
+	for _, v := range meta.Validations {
+		rv := &apiValidation{
+			meta: v,
+		}
+
+		for _, r := range v.Rules {
+			rv.rules = append(rv.rules, &apiRule{
+				pattern: regexp.MustCompile(r.Expression),
+			})
+		}
+
+		rn.validations = append(rn.validations, rv)
+	}
+
+	return rn
+}
+
+func (n *apiNode) clone() *apiNode {
+	meta := &metapb.DispatchNode{}
+	pbutil.MustUnmarshal(meta, pbutil.MustMarshal(n.meta))
+	return newAPINode(meta)
+}
+
+func (n *apiNode) validate(req *fasthttp.Request) bool {
+	if len(n.validations) == 0 {
+		return true
+	}
+
+	for _, v := range n.validations {
+		if !v.validate(req) {
+			return false
+		}
+	}
+
+	return true
+}
+
+type renderAttr struct {
+	meta     *metapb.RenderAttr
+	extracts [][]string
+}
+
+type renderObject struct {
+	meta  *metapb.RenderObject
+	attrs []*renderAttr
 }
 
 type apiRuntime struct {
-	meta            *metapb.API
-	nodes           []*apiNode
-	urlPattern      *regexp.Regexp
-	defaultCookies  []*fasthttp.Cookie
-	parsedWhitelist []*ipSegment
-	parsedBlacklist []*ipSegment
+	meta                *metapb.API
+	nodes               []*apiNode
+	urlPattern          *regexp.Regexp
+	defaultCookies      []*fasthttp.Cookie
+	parsedWhitelist     []*ipSegment
+	parsedBlacklist     []*ipSegment
+	parsedRenderObjects []*renderObject
 }
 
 func newAPIRuntime(meta *metapb.API) *apiRuntime {
@@ -217,10 +298,20 @@ func newAPIRuntime(meta *metapb.API) *apiRuntime {
 	return ar
 }
 
+func (a *apiRuntime) clone() *apiRuntime {
+	meta := &metapb.API{}
+	pbutil.MustUnmarshal(meta, pbutil.MustMarshal(a.meta))
+	return newAPIRuntime(meta)
+}
+
 func (a *apiRuntime) updateMeta(meta *metapb.API) {
 	*a = apiRuntime{}
 	a.meta = meta
 	a.init()
+}
+
+func (a *apiRuntime) compare(i, j int) bool {
+	return a.nodes[i].meta.BatchIndex-a.nodes[j].meta.BatchIndex < 0
 }
 
 func (a *apiRuntime) init() {
@@ -228,36 +319,11 @@ func (a *apiRuntime) init() {
 		a.urlPattern = regexp.MustCompile(a.meta.URLPattern)
 	}
 
-	a.nodes = make([]*apiNode, 0)
 	for _, n := range a.meta.Nodes {
-		rn := &apiNode{
-			meta: n,
-		}
-		a.nodes = append(a.nodes, rn)
-
-		if nil != n.DefaultValue {
-			for _, c := range n.DefaultValue.Cookies {
-				ck := &fasthttp.Cookie{}
-				ck.SetKey(c.Name)
-				ck.SetValue(c.Value)
-				rn.defaultCookies = append(rn.defaultCookies, ck)
-			}
-		}
-
-		for _, v := range n.Validations {
-			rv := &apiValidation{
-				meta: v,
-			}
-
-			for _, r := range v.Rules {
-				rv.rules = append(rv.rules, &apiRule{
-					pattern: regexp.MustCompile(r.Expression),
-				})
-			}
-
-			rn.validations = append(rn.validations, rv)
-		}
+		a.nodes = append(a.nodes, newAPINode(n))
 	}
+
+	sort.Slice(a.nodes, a.compare)
 
 	if nil != a.meta.DefaultValue {
 		for _, c := range a.meta.DefaultValue.Cookies {
@@ -284,7 +350,37 @@ func (a *apiRuntime) init() {
 		}
 	}
 
+	if nil != a.meta.RenderTemplate {
+		for _, obj := range a.meta.RenderTemplate.Objects {
+			rob := &renderObject{
+				meta: obj,
+			}
+
+			for _, attr := range obj.Attrs {
+				rattr := &renderAttr{
+					meta: attr,
+				}
+				rob.attrs = append(rob.attrs, rattr)
+
+				extracts := strings.Split(attr.ExtractExp, ",")
+				for _, extract := range extracts {
+					rattr.extracts = append(rattr.extracts, strings.Split(extract, "."))
+				}
+			}
+
+			a.parsedRenderObjects = append(a.parsedRenderObjects, rob)
+		}
+	}
+
 	return
+}
+
+func (a *apiRuntime) hasRenderTemplate() bool {
+	return a.meta.RenderTemplate != nil
+}
+
+func (a *apiRuntime) hasDefaultValue() bool {
+	return a.meta.DefaultValue != nil
 }
 
 func (a *apiRuntime) allowWithBlacklist(ip string) bool {
@@ -315,12 +411,19 @@ func (a *apiRuntime) allowWithWhitelist(ip string) bool {
 	return false
 }
 
-func (a *apiRuntime) rewriteURL(req *fasthttp.Request, rewrite string) string {
+func (a *apiRuntime) rewriteURL(req *fasthttp.Request, node *apiNode, ctx *multiContext) string {
+	rewrite := node.meta.URLRewrite
 	if rewrite == "" || a.meta.URLPattern == "" {
 		return ""
 	}
 
-	return a.urlPattern.ReplaceAllString(string(req.URI().RequestURI()), rewrite)
+	if nil != ctx && len(node.dependencies) > 0 {
+		for idx, dep := range node.dependencies {
+			rewrite = strings.Replace(rewrite, dep, ctx.getAttr(node.dependenciesPaths[idx]...), -1)
+		}
+	}
+
+	return a.urlPattern.ReplaceAllString(hack.SliceToString(req.URI().RequestURI()), rewrite)
 }
 
 func (a *apiRuntime) matches(req *fasthttp.Request) bool {
@@ -334,7 +437,7 @@ func (a *apiRuntime) isUp() bool {
 }
 
 func (a *apiRuntime) isMethodMatches(req *fasthttp.Request) bool {
-	return a.meta.Method == "*" || strings.ToUpper(string(req.Header.Method())) == a.meta.Method
+	return a.meta.Method == "*" || strings.ToUpper(hack.SliceToString(req.Header.Method())) == a.meta.Method
 }
 
 func (a *apiRuntime) isURIMatches(req *fasthttp.Request) bool {
@@ -342,21 +445,7 @@ func (a *apiRuntime) isURIMatches(req *fasthttp.Request) bool {
 }
 
 func (a *apiRuntime) isDomainMatches(req *fasthttp.Request) bool {
-	return a.meta.Domain != "" && string(req.Header.Host()) == a.meta.Domain
-}
-
-func (a *apiNode) validate(req *fasthttp.Request) bool {
-	if len(a.validations) == 0 {
-		return true
-	}
-
-	for _, v := range a.validations {
-		if !v.validate(req) {
-			return false
-		}
-	}
-
-	return true
+	return a.meta.Domain != "" && hack.SliceToString(req.Header.Host()) == a.meta.Domain
 }
 
 func (v *apiValidation) validate(req *fasthttp.Request) bool {
@@ -372,7 +461,7 @@ func (v *apiValidation) validate(req *fasthttp.Request) bool {
 	}
 
 	for _, r := range v.rules {
-		if !r.validate([]byte(value)) {
+		if !r.validate(hack.StringToSlice(value)) {
 			return false
 		}
 	}
@@ -526,7 +615,11 @@ func paramValue(param *metapb.Parameter, req *fasthttp.Request) string {
 	case metapb.FormData:
 		return getFormValue(param.Name, req)
 	case metapb.JSONBody:
-		return json.Get(req.Body(), param.Name).ToString()
+		value, _, _, err := jsonparser.Get(req.Body(), param.Name)
+		if err != nil {
+			return ""
+		}
+		return hack.SliceToString(value)
 	case metapb.Header:
 		return getHeaderValue(param.Name, req)
 	case metapb.Cookie:
@@ -539,20 +632,20 @@ func paramValue(param *metapb.Parameter, req *fasthttp.Request) string {
 }
 
 func getCookieValue(name string, req *fasthttp.Request) string {
-	return string(req.Header.Cookie(name))
+	return hack.SliceToString(req.Header.Cookie(name))
 }
 
 func getHeaderValue(name string, req *fasthttp.Request) string {
-	return string(req.Header.Peek(name))
+	return hack.SliceToString(req.Header.Peek(name))
 }
 
 func getQueryValue(name string, req *fasthttp.Request) string {
-	v, _ := url.QueryUnescape(string(req.URI().QueryArgs().Peek(name)))
+	v, _ := url.QueryUnescape(hack.SliceToString(req.URI().QueryArgs().Peek(name)))
 	return v
 }
 
 func getPathValue(idx int, req *fasthttp.Request) string {
-	path := string(req.URI().Path()[1:])
+	path := hack.SliceToString(req.URI().Path()[1:])
 	values := strings.Split(path, "/")
 	if len(values) <= idx {
 		return ""

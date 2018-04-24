@@ -36,6 +36,7 @@ var (
 	addrStore                     = flag.String("addr-store", "etcd://127.0.0.1:2379", "Addr: store of meta data, support etcd")
 	addrPPROF                     = flag.String("addr-pprof", "", "Addr: pprof addr")
 	namespace                     = flag.String("namespace", "dev", "The namespace to isolation the environment.")
+	limitCpus                     = flag.Int("limit-cpus", 0, "Limit: schedule threads count")
 	limitCountDispatchWorker      = flag.Int("limit-dispatch", 64, "Limit: Count of dispatch worker")
 	limitCountCopyWorker          = flag.Int("limit-copy", 4, "Limit: Count of copy worker")
 	limitCountHeathCheckWorker    = flag.Int("limit-heathcheck", 1, "Limit: Count of heath check worker")
@@ -75,7 +76,12 @@ func main() {
 	}
 
 	log.InitLog()
-	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	if *limitCpus == 0 {
+		runtime.GOMAXPROCS(runtime.NumCPU())
+	} else {
+		runtime.GOMAXPROCS(*limitCpus)
+	}
 
 	if *addrPPROF != "" {
 		go func() {

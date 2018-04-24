@@ -42,6 +42,7 @@ func (f *HeadersFilter) Pre(c filter.Context) (statusCode int, err error) {
 		c.ForwardRequest().Header.Del(h)
 	}
 
+	c.ForwardRequest().Header.SetHost(c.Server().Addr)
 	return f.BaseFilter.Pre(c)
 }
 

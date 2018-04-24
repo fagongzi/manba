@@ -6,6 +6,7 @@
 - [x] 定制化返回值
 - [x] API结果Cache
 - [x] API Server支持Restful
+- [x] 支持依赖聚合
 - [ ] 协议转换插件机制
 
 ## Plugins

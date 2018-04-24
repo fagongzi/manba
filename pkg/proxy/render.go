@@ -1,46 +1,49 @@
 package proxy
 
 import (
-	"strings"
-	"sync"
-
-	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/buger/jsonparser"
 	"github.com/fagongzi/log"
-	"github.com/json-iterator/go"
 	"github.com/valyala/fasthttp"
 )
 
+var (
+	emptyString = []byte{'"', '"'}
+	emptyObject = []byte("{}")
+	emptyArray  = []byte("[]")
+)
+
 type render struct {
-	multi    bool
-	wg       *sync.WaitGroup
-	api      *apiRuntime
-	nodes    []*dispathNode
-	doRender func(*fasthttp.RequestCtx)
+	multi        bool
+	multiContext []byte
+	api          *apiRuntime
+	nodes        []*dispathNode
+	doRender     func(*fasthttp.RequestCtx)
+	allocBytes   [][]byte
 }
 
-func newRender(api *apiRuntime, nodes []*dispathNode) *render {
-	rd := &render{
-		nodes: nodes,
-		api:   api,
-	}
-
+func (rd *render) init(api *apiRuntime, nodes []*dispathNode) {
+	rd.nodes = nodes
+	rd.api = api
 	rd.doRender = rd.renderSingle
 
 	if len(nodes) > 1 {
-		rd.wg = &sync.WaitGroup{}
-		rd.wg.Add(len(nodes))
 		rd.doRender = rd.renderMulti
 	} else if len(nodes) == 0 {
 		rd.doRender = rd.renderDefault
 	}
-
-	return rd
 }
 
-func (rd *render) render(ctx *fasthttp.RequestCtx) {
+func (rd *render) reset() {
+	for _, buf := range rd.allocBytes {
+		bytesPool.Free(buf)
+	}
+	*rd = emptyRender
+}
+
+func (rd *render) render(ctx *fasthttp.RequestCtx, multiCtx *multiContext) {
 	ctx.Response.Header.SetContentType(MultiResultsContentType)
 	ctx.SetStatusCode(fasthttp.StatusOK)
-
+	rd.multiContext = multiCtx.data
 	rd.doRender(ctx)
 }
 
@@ -64,33 +67,22 @@ func (rd *render) renderSingle(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	if rd.api.meta.RenderTemplate == nil {
+	if !rd.api.hasRenderTemplate() {
 		rd.renderRaw(ctx, dn)
 		return
 	}
 
-	src := jsoniter.ParseBytes(json, dn.getResponseBody()).ReadAny()
+	src := dn.getResponseBody()
 	dn.release()
 
-	v, err := json.MarshalToString(rd.extract(src))
-	if err != nil {
-		log.Errorf("render: render failed, code=<%d>, errors:\n%+v",
-			dn.code,
-			err)
-		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
-		return
-	}
-
-	ctx.WriteString(v)
+	rd.renderTemplate(ctx, src)
 }
 
 func (rd *render) renderMulti(ctx *fasthttp.RequestCtx) {
-	rd.wg.Wait()
-
 	var err error
 	var hasError bool
 	code := fasthttp.StatusInternalServerError
-	value := make(map[string]interface{})
+	hasTemplate := rd.api.hasRenderTemplate()
 
 	for _, dn := range rd.nodes {
 		if hasError {
@@ -108,7 +100,6 @@ func (rd *render) renderMulti(ctx *fasthttp.RequestCtx) {
 		}
 
 		dn.copyHeaderTo(ctx)
-		value[dn.node.meta.AttrName] = jsoniter.ParseBytes(json, dn.getResponseBody()).ReadAny()
 		dn.release()
 	}
 
@@ -117,7 +108,7 @@ func (rd *render) renderMulti(ctx *fasthttp.RequestCtx) {
 			code,
 			err)
 
-		if rd.api.meta.DefaultValue != nil {
+		if rd.api.hasDefaultValue() {
 			rd.renderDefault(ctx)
 			return
 		}
@@ -126,16 +117,12 @@ func (rd *render) renderMulti(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	str, _ := jsoniter.MarshalToString(value)
-	if rd.api.meta.RenderTemplate == nil {
-		ctx.WriteString(str)
+	if !hasTemplate {
+		ctx.Write(rd.multiContext)
 		return
 	}
 
-	any := jsoniter.ParseString(json, str).ReadAny()
-	str, _ = json.MarshalToString(rd.extract(any))
-	ctx.WriteString(str)
-	return
+	rd.renderTemplate(ctx, rd.multiContext)
 }
 
 func (rd *render) renderRaw(ctx *fasthttp.RequestCtx, dn *dispathNode) {
@@ -145,7 +132,7 @@ func (rd *render) renderRaw(ctx *fasthttp.RequestCtx, dn *dispathNode) {
 }
 
 func (rd *render) renderDefault(ctx *fasthttp.RequestCtx) {
-	if rd.api.meta.DefaultValue == nil {
+	if !rd.api.hasDefaultValue() {
 		return
 	}
 
@@ -167,46 +154,104 @@ func (rd *render) renderDefault(ctx *fasthttp.RequestCtx) {
 	ctx.Write(rd.api.meta.DefaultValue.Body)
 }
 
-func (rd *render) extract(src jsoniter.Any) map[string]interface{} {
-	ret := make(map[string]interface{})
-	for _, obj := range rd.api.meta.RenderTemplate.Objects {
-		dest := ret
-
-		if !obj.FlatAttrs {
-			dest = make(map[string]interface{})
-			ret[obj.Name] = dest
-		}
-
-		for _, attr := range obj.Attrs {
-			extractValue(attr, src, dest)
-		}
-	}
-
-	return ret
-}
-
-func extractValue(attr *metapb.RenderAttr, src jsoniter.Any, obj map[string]interface{}) {
-	exps := strings.Split(attr.ExtractExp, ",")
-
-	if len(exps) == 1 {
-		obj[attr.Name] = src.Get(getPaths(attr.ExtractExp)...).GetInterface()
+func (rd *render) renderTemplate(ctx *fasthttp.RequestCtx, context []byte) {
+	data, err := rd.extract(context)
+	if err != nil {
+		log.Errorf("render: render failed, errors:\n%+v",
+			err)
+		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 		return
 	}
 
-	sub := make(map[string]interface{})
-	obj[attr.Name] = sub
-	for _, exp := range exps {
-		paths := getPaths(exp)
-		sub[paths[len(paths)-1].(string)] = src.Get(paths...).GetInterface()
-	}
+	ctx.Write(data)
 }
 
-func getPaths(attr string) []interface{} {
-	var ret []interface{}
+func (rd *render) extract(src []byte) ([]byte, error) {
+	var err error
+	data := emptyObject
+	for _, obj := range rd.api.parsedRenderObjects {
+		isFlat := obj.meta.FlatAttrs
+		tmp := emptyObject
 
-	for _, path := range strings.Split(attr, ".") {
-		ret = append(ret, path)
+		for _, attr := range obj.attrs {
+			value, err := rd.extractValue(attr, src)
+			if err != nil {
+				return nil, err
+			}
+
+			// if is flat attr, add to data
+			// otherwise, add to tmp object, and add tmp obj to data
+			if isFlat {
+				data, err = jsonparser.Set(data, value, attr.meta.Name)
+				if err != nil {
+					return nil, err
+				}
+
+				continue
+			}
+
+			tmp, err = jsonparser.Set(tmp, value, attr.meta.Name)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if !isFlat {
+			data, err = jsonparser.Set(data, tmp, obj.meta.Name)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
-	return ret
+	return data, nil
+}
+
+func (rd *render) extractValue(attr *renderAttr, src []byte) ([]byte, error) {
+	if len(attr.extracts) == 1 {
+		return rd.extractAttrValue(src, attr.extracts[0]...)
+	}
+
+	obj := emptyObject
+	for _, exp := range attr.extracts {
+		data, err := rd.extractAttrValue(src, exp...)
+		if err != nil {
+			return nil, err
+		}
+
+		obj, err = jsonparser.Set(obj, data, exp[len(exp)-1])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return obj, nil
+}
+
+func (rd *render) extractAttrValue(src []byte, paths ...string) ([]byte, error) {
+	value, vt, _, err := jsonparser.Get(src, paths...)
+	if err != nil {
+		return nil, err
+	}
+
+	size := len(value)
+	if vt == jsonparser.String && size > 0 {
+		stringValue := bytesPool.Alloc(size + 2)
+		rd.allocBytes = append(rd.allocBytes, stringValue)
+		stringValue[0] = '"'
+		copy(stringValue[1:], value)
+		stringValue[size+1] = '"'
+		return stringValue, nil
+	} else if vt == jsonparser.String && size == 0 {
+		return emptyString, nil
+	} else if vt == jsonparser.Array && size == 0 {
+		return emptyArray, nil
+	} else if vt == jsonparser.Unknown {
+		return emptyString, nil
+	} else if vt == jsonparser.NotExist {
+		return emptyString, nil
+	} else if vt == jsonparser.Null {
+		return emptyString, nil
+	}
+
+	return value, nil
 }
