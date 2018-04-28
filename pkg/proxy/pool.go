@@ -28,8 +28,10 @@ func acquireMultiContext() *multiContext {
 }
 
 func releaseMultiContext(value *multiContext) {
-	value.reset()
-	multiContextPool.Put(value)
+	if value != nil {
+		value.reset()
+		multiContextPool.Put(value)
+	}
 }
 
 func acquireDispathNode() *dispathNode {
@@ -42,8 +44,10 @@ func acquireDispathNode() *dispathNode {
 }
 
 func releaseDispathNode(value *dispathNode) {
-	value.reset()
-	dispathNodePool.Put(value)
+	if value != nil {
+		value.reset()
+		dispathNodePool.Put(value)
+	}
 }
 
 func acquireContext() *proxyContext {
@@ -56,8 +60,10 @@ func acquireContext() *proxyContext {
 }
 
 func releaseContext(value *proxyContext) {
-	value.reset()
-	contextPool.Put(value)
+	if value != nil {
+		value.reset()
+		contextPool.Put(value)
+	}
 }
 
 func acquireRender() *render {
@@ -70,6 +76,8 @@ func acquireRender() *render {
 }
 
 func releaseRender(value *render) {
-	value.reset()
-	renderPool.Put(value)
+	if value != nil {
+		value.reset()
+		renderPool.Put(value)
+	}
 }
