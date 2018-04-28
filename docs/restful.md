@@ -1,6 +1,12 @@
 Restful
 --------------
-API Server除了支持GRPC的接口以外，还支持HTTP的Restful接口，这里给出Restful的接口定义
+API Server除了支持GRPC的接口以外，还支持HTTP的Restful接口，这里给出Restful的接口定义。
+
+注意：
+- 由于在GO中时间以纳秒为单位(`time.Duration`)，所以API需要从秒转为纳秒(1秒 = 1000000000纳秒)。
+- defaultValue中的body需要将需要返回的内容转为BASE64，否则会遇到`base64.CorruptInputError=illegal base64 data`错误，这个是因为`type HTTPResult struct {Body []byte}`，详细解释见[[]byte encodes as a base64-encoded ](https://stackoverflow.com/questions/31449610/illegal-base64-data-error-message)。
+- 在配置API的`renderTemplate`时，`flatAttrs`为true可以省略name，为false时name必须有值，这需要调用API时对数据进行校验，错误的配置会导致程序无法提供服务。
+- Nodes中使用`defaultValue`时，格式应与`renderTemplate`中定义的抽取路径相符，否则会出现`Key path not found`错误。
 
 ## 枚举值
 ### Status
@@ -70,8 +76,8 @@ API Server除了支持GRPC的接口以外，还支持HTTP的Restful接口，这�
 
 JSON Body
 ```json
-{  
-    "id":1, 
+{
+    "id":1,
     "name":"cluster name",
     "loadBalance":0
 }
@@ -106,9 +112,9 @@ Reponse
 
 Reponse
 ```json
-{  
+{
     "code":0,
-    "data":{  
+    "data":{
         "id":1,
         "name":"cluster name",
         "loadBalance":0
@@ -127,20 +133,20 @@ limit：获取多少条记录
 
 Reponse
 ```json
-{  
+{
     "code":0,
-    "data":[  
-        {  
+    "data":[
+        {
             "id":1,
             "name":"cluster name",
             "loadBalance":0
         },
-        {  
+        {
             "id":2,
             "name":"cluster name",
             "loadBalance":0
         },
-        {  
+        {
             "id":3,
             "name":"cluster name",
             "loadBalance":0
@@ -149,7 +155,7 @@ Reponse
 }
 ```
 data字段为cluster集合
-取下一批: /v1/clusters?after=3&limit=3 
+取下一批: /v1/clusters?after=3&limit=3
 
 ### 查询所有bind的server
 |URL|Method|
@@ -158,9 +164,9 @@ data字段为cluster集合
 
 Reponse
 ```json
-{  
+{
     "code":0,
-    "data":[  
+    "data":[
         1,
         2,
         3
@@ -190,21 +196,21 @@ Reponse
 
 JSON Body
 ```json
-{  
+{
     "id":1,
     "addr":"127.0.0.1:8080",
     "protocol":0,
     "maxQPS":100,
-    "heathCheck":{  
+    "heathCheck":{
         "path":"/check-heath",
         "body":"OK",
-        "checkInterval":10,
-        "timeout":30
+        "checkInterval":10000000000,
+        "timeout":30000000000
     },
-    "circuitBreaker":{  
-        "closeTimeout":10,
+    "circuitBreaker":{
+        "closeTimeout":10000000000,
         "halfTrafficRate":50,
-        "rateCheckPeriod":10,
+        "rateCheckPeriod":10000000000,
         "failureRateToClose":20,
         "succeedRateToOpen":30
     }
@@ -240,23 +246,23 @@ Reponse
 
 Reponse
 ```json
-{  
+{
     "code":0,
-    "data":{  
+    "data":{
         "id":1,
         "addr":"127.0.0.1:8080",
         "protocol":0,
         "maxQPS":100,
-        "heathCheck":{  
+        "heathCheck":{
             "path":"/check-heath",
             "body":"OK",
-            "checkInterval":10,
-            "timeout":30
+            "checkInterval":10000000000,
+            "timeout":30000000000
         },
-        "circuitBreaker":{  
-            "closeTimeout":10,
+        "circuitBreaker":{
+            "closeTimeout":10000000000,
             "halfTrafficRate":50,
-            "rateCheckPeriod":10,
+            "rateCheckPeriod":10000000000,
             "failureRateToClose":20,
             "succeedRateToOpen":30
         }
@@ -275,62 +281,62 @@ limit：获取多少条记录
 
 Reponse
 ```json
-{  
+{
     "code":0,
-    "data":[  
-        {  
+    "data":[
+        {
             "id":1,
             "addr":"127.0.0.1:8081",
             "protocol":0,
             "maxQPS":100,
-            "heathCheck":{  
+            "heathCheck":{
                 "path":"/check-heath",
                 "body":"OK",
-                "checkInterval":10,
-                "timeout":30
+                "checkInterval":10000000000,
+                "timeout":30000000000
             },
-            "circuitBreaker":{  
-                "closeTimeout":10,
+            "circuitBreaker":{
+                "closeTimeout":10000000000,
                 "halfTrafficRate":50,
-                "rateCheckPeriod":10,
+                "rateCheckPeriod":10000000000,
                 "failureRateToClose":20,
                 "succeedRateToOpen":30
             }
         },
-        {  
+        {
             "id":2,
             "addr":"127.0.0.1:8082",
             "protocol":0,
             "maxQPS":100,
-            "heathCheck":{  
+            "heathCheck":{
                 "path":"/check-heath",
                 "body":"OK",
-                "checkInterval":10,
-                "timeout":30
+                "checkInterval":10000000000,
+                "timeout":30000000000
             },
-            "circuitBreaker":{  
-                "closeTimeout":10,
+            "circuitBreaker":{
+                "closeTimeout":10000000000,
                 "halfTrafficRate":50,
-                "rateCheckPeriod":10,
+                "rateCheckPeriod":10000000000,
                 "failureRateToClose":20,
                 "succeedRateToOpen":30
             }
         },
-        {  
+        {
             "id":3,
             "addr":"127.0.0.1:8083",
             "protocol":0,
             "maxQPS":100,
-            "heathCheck":{  
+            "heathCheck":{
                 "path":"/check-heath",
                 "body":"OK",
-                "checkInterval":10,
-                "timeout":30
+                "checkInterval":10000000000,
+                "timeout":30000000000
             },
-            "circuitBreaker":{  
-                "closeTimeout":10,
+            "circuitBreaker":{
+                "closeTimeout":10000000000,
                 "halfTrafficRate":50,
-                "rateCheckPeriod":10,
+                "rateCheckPeriod":10000000000,
                 "failureRateToClose":20,
                 "succeedRateToOpen":30
             }
@@ -339,7 +345,7 @@ Reponse
 }
 ```
 data字段为server集合
-取下一批: /v1/servers?after=3&limit=3 
+取下一批: /v1/servers?after=3&limit=3
 
 ## Bind
 ### 增加
@@ -349,8 +355,8 @@ data字段为server集合
 
 JSON Body
 ```json
-{  
-    "clusterID":1, 
+{
+    "clusterID":1,
     "serverID":2
 }
 ```
@@ -370,8 +376,8 @@ Reponse
 
 JSON Body
 ```json
-{  
-    "clusterID":1, 
+{
+    "clusterID":1,
     "serverID":2
 }
 ```
@@ -392,75 +398,75 @@ Reponse
 
 JSON Body
 ```json
-{  
+{
     "id":1,
     "name":"demo-api",
     "urlPattern":"^/api/users/(\\d+)$",
     "method":"GET",
     "domain":"www.xxx.com",
     "status":1,
-    "ipAccessControl":{  
-        "whitelist":[  
+    "ipAccessControl":{
+        "whitelist":[
             "127.*",
             "192.168.*",
             "172.17.*",
             "172.17.1.1"
         ],
-        "blacklist":[  
+        "blacklist":[
             "127.*",
             "192.168.*",
             "172.17.*",
             "172.17.1.1"
         ]
     },
-    "defaultValue":{  
+    "defaultValue":{
         "body":"aGVsbG8gd29ybGQ=",
-        "headers":[  
-            {  
+        "headers":[
+            {
                 "name":"xx",
                 "value":"xx"
             }
         ],
-        "cookies":[  
-            {  
+        "cookies":[
+            {
                 "name":"xx",
                 "value":"xx"
             }
         ]
     },
-    "nodes":[  
-        {  
+    "nodes":[
+        {
             "clusterID":1,
             "urlRewrite":"/users?id=$1",
             "attrName":"user",
-            "validations":[  
-                {  
-                    "parameter":{  
+            "validations":[
+                {
+                    "parameter":{
                         "name":"id",
                         "source":0,
                         "index":0
                     },
                     "required":true,
-                    "rules":[  
-                        {  
+                    "rules":[
+                        {
                             "ruleType":0,
                             "expression":"^\\d+$"
                         }
                     ]
                 }
             ],
-            "cache":{  
-                "keys":[  
-                    {  
+            "cache":{
+                "keys":[
+                    {
                         "name":"id",
                         "source":0,
                         "index":0
                     }
                 ],
                 "deadline":100,
-                "conditions":[  
-                    {  
-                        "parameter":{  
+                "conditions":[
+                    {
+                        "parameter":{
                             "name":"id",
                             "source":0,
                             "index":0
@@ -471,39 +477,48 @@ JSON Body
                 ]
             }
         },
-        {  
+        {
             "clusterID":2,
             "urlRewrite":"/users/$1/account",
             "attrName":"account",
-            "validations":[  
-                {  
-                    "parameter":{  
+            "validations":[
+                {
+                    "parameter":{
                         "name":"",
                         "source":5,
                         "index":1
                     },
                     "required":true,
-                    "rules":[  
-                        {  
+                    "rules":[
+                        {
                             "ruleType":0,
                             "expression":"^\\d+$"
                         }
                     ]
                 }
-            ]
+            ],
+            "defaultValue":{
+                "body":"eyJjb2RlIjoxLCAiZGF0YSI6eyJtZXNzYWdlIjogIuacjeWKoeS4jeWPr+eU\nqOi/meaYr+afkOiKgueCueeahOm7mOiupOWAvO+8gSJ9fQ==",
+                "headers":[
+                    {
+                        "name":"Content-Type",
+                        "value":"application/json"
+                    }
+                ]
+            }
         }
     ],
     "authFilter":"CUSTOM_JWT",
-    "renderTemplate":{  
-        "objects":[  
-            {  
+    "renderTemplate":{
+        "objects":[
+            {
                 "name":"",
-                "attrs":[  
-                    {  
+                "attrs":[
+                    {
                         "name":"user",
                         "extractExp":"user.data"
                     },
-                    {  
+                    {
                         "name":"account",
                         "extractExp":"account.data"
                     }
@@ -544,77 +559,77 @@ Reponse
 
 Reponse
 ```json
-{  
+{
     "code":0,
-    "data":{  
+    "data":{
         "id":1,
         "name":"demo-api",
         "urlPattern":"^/api/users/(\\d+)$",
         "method":"GET",
         "domain":"www.xxx.com",
         "status":1,
-        "ipAccessControl":{  
-            "whitelist":[  
+        "ipAccessControl":{
+            "whitelist":[
                 "127.*",
                 "192.168.*",
                 "172.17.*",
                 "172.17.1.1"
             ],
-            "blacklist":[  
+            "blacklist":[
                 "127.*",
                 "192.168.*",
                 "172.17.*",
                 "172.17.1.1"
             ]
         },
-        "defaultValue":{  
+        "defaultValue":{
             "body":"aGVsbG8gd29ybGQ=",
-            "headers":[  
-                {  
+            "headers":[
+                {
                     "name":"xx",
                     "value":"xx"
                 }
             ],
-            "cookies":[  
-                {  
+            "cookies":[
+                {
                     "name":"xx",
                     "value":"xx"
                 }
             ]
         },
-        "nodes":[  
-            {  
+        "nodes":[
+            {
                 "clusterID":1,
                 "urlRewrite":"/users?id=$1",
                 "attrName":"user",
-                "validations":[  
-                    {  
-                        "parameter":{  
+                "validations":[
+                    {
+                        "parameter":{
                             "name":"id",
                             "source":0,
                             "index":0
                         },
                         "required":true,
-                        "rules":[  
-                            {  
+                        "rules":[
+                            {
                                 "ruleType":0,
                                 "expression":"^\\d+$"
                             }
                         ]
                     }
                 ],
-                "cache":{  
-                    "keys":[  
-                        {  
+                "cache":{
+                    "keys":[
+                        {
                             "name":"id",
                             "source":0,
                             "index":0
                         }
                     ],
                     "deadline":100,
-                    "conditions":[  
-                        {  
-                            "parameter":{  
+                    "conditions":[
+                        {
+                            "parameter":{
                                 "name":"id",
                                 "source":0,
                                 "index":0
@@ -625,20 +640,20 @@ Reponse
                     ]
                 }
             },
-            {  
+            {
                 "clusterID":2,
                 "urlRewrite":"/users/$1/account",
                 "attrName":"account",
-                "validations":[  
-                    {  
-                        "parameter":{  
+                "validations":[
+                    {
+                        "parameter":{
                             "name":"",
                             "source":5,
                             "index":1
                         },
                         "required":true,
-                        "rules":[  
-                            {  
+                        "rules":[
+                            {
                                 "ruleType":0,
                                 "expression":"^\\d+$"
                             }
@@ -648,16 +663,16 @@ Reponse
             }
         ],
         "authFilter":"CUSTOM_JWT",
-        "renderTemplate":{  
-            "objects":[  
-                {  
+        "renderTemplate":{
+            "objects":[
+                {
                     "name":"",
-                    "attrs":[  
-                        {  
+                    "attrs":[
+                        {
                             "name":"user",
                             "extractExp":"user.data"
                         },
-                        {  
+                        {
                             "name":"account",
                             "extractExp":"account.data"
                         }
@@ -681,78 +696,78 @@ limit：获取多少条记录
 
 Reponse
 ```json
-{  
+{
     "code":0,
-    "data":[  
-        {  
+    "data":[
+        {
             "id":1,
             "name":"demo-api",
             "urlPattern":"^/api/users/(\\d+)$",
             "method":"GET",
             "domain":"www.xxx.com",
             "status":1,
-            "ipAccessControl":{  
-                "whitelist":[  
+            "ipAccessControl":{
+                "whitelist":[
                     "127.*",
                     "192.168.*",
                     "172.17.*",
                     "172.17.1.1"
                 ],
-                "blacklist":[  
+                "blacklist":[
                     "127.*",
                     "192.168.*",
                     "172.17.*",
                     "172.17.1.1"
                 ]
             },
-            "defaultValue":{  
+            "defaultValue":{
                 "body":"aGVsbG8gd29ybGQ=",
-                "headers":[  
-                    {  
+                "headers":[
+                    {
                         "name":"xx",
                         "value":"xx"
                     }
                 ],
-                "cookies":[  
-                    {  
+                "cookies":[
+                    {
                         "name":"xx",
                         "value":"xx"
                     }
                 ]
             },
-            "nodes":[  
-                {  
+            "nodes":[
+                {
                     "clusterID":1,
                     "urlRewrite":"/users?id=$1",
                     "attrName":"user",
-                    "validations":[  
-                        {  
-                            "parameter":{  
+                    "validations":[
+                        {
+                            "parameter":{
                                 "name":"id",
                                 "source":0,
                                 "index":0
                             },
                             "required":true,
-                            "rules":[  
-                                {  
+                            "rules":[
+                                {
                                     "ruleType":0,
                                     "expression":"^\\d+$"
                                 }
                             ]
                         }
                     ],
-                    "cache":{  
-                        "keys":[  
-                            {  
+                    "cache":{
+                        "keys":[
+                            {
                                 "name":"id",
                                 "source":0,
                                 "index":0
                             }
                         ],
                         "deadline":100,
-                        "conditions":[  
-                            {  
-                                "parameter":{  
+                        "conditions":[
+                            {
+                                "parameter":{
                                     "name":"id",
                                     "source":0,
                                     "index":0
@@ -763,20 +778,20 @@ Reponse
                         ]
                     }
                 },
-                {  
+                {
                     "clusterID":2,
                     "urlRewrite":"/users/$1/account",
                     "attrName":"account",
-                    "validations":[  
-                        {  
-                            "parameter":{  
+                    "validations":[
+                        {
+                            "parameter":{
                                 "name":"",
                                 "source":5,
                                 "index":1
                             },
                             "required":true,
-                            "rules":[  
-                                {  
+                            "rules":[
+                                {
                                     "ruleType":0,
                                     "expression":"^\\d+$"
                                 }
@@ -786,16 +801,16 @@ Reponse
                 }
             ],
             "authFilter":"CUSTOM_JWT",
-            "renderTemplate":{  
-                "objects":[  
-                    {  
+            "renderTemplate":{
+                "objects":[
+                    {
                         "name":"",
-                        "attrs":[  
-                            {  
+                        "attrs":[
+                            {
                                 "name":"user",
                                 "extractExp":"user.data"
                             },
-                            {  
+                            {
                                 "name":"account",
                                 "extractExp":"account.data"
                             }
@@ -805,75 +820,75 @@ Reponse
                 ]
             }
         },
-        {  
+        {
             "id":2,
             "name":"demo-api-2",
             "urlPattern":"^/api/users/(\\d+)$",
             "method":"GET",
             "domain":"www.xxx.com",
             "status":1,
-            "ipAccessControl":{  
-                "whitelist":[  
+            "ipAccessControl":{
+                "whitelist":[
                     "127.*",
                     "192.168.*",
                     "172.17.*",
                     "172.17.1.1"
                 ],
-                "blacklist":[  
+                "blacklist":[
                     "127.*",
                     "192.168.*",
                     "172.17.*",
                     "172.17.1.1"
                 ]
             },
-            "defaultValue":{  
+            "defaultValue":{
                 "body":"aGVsbG8gd29ybGQ=",
-                "headers":[  
-                    {  
+                "headers":[
+                    {
                         "name":"xx",
                         "value":"xx"
                     }
                 ],
-                "cookies":[  
-                    {  
+                "cookies":[
+                    {
                         "name":"xx",
                         "value":"xx"
                     }
                 ]
             },
-            "nodes":[  
-                {  
+            "nodes":[
+                {
                     "clusterID":1,
                     "urlRewrite":"/users?id=$1",
                     "attrName":"user",
-                    "validations":[  
-                        {  
-                            "parameter":{  
+                    "validations":[
+                        {
+                            "parameter":{
                                 "name":"id",
                                 "source":0,
                                 "index":0
                             },
                             "required":true,
-                            "rules":[  
-                                {  
+                            "rules":[
+                                {
                                     "ruleType":0,
                                     "expression":"^\\d+$"
                                 }
                             ]
                         }
                     ],
-                    "cache":{  
-                        "keys":[  
-                            {  
+                    "cache":{
+                        "keys":[
+                            {
                                 "name":"id",
                                 "source":0,
                                 "index":0
                             }
                         ],
                         "deadline":100,
-                        "conditions":[  
-                            {  
-                                "parameter":{  
+                        "conditions":[
+                            {
+                                "parameter":{
                                     "name":"id",
                                     "source":0,
                                     "index":0
@@ -884,20 +899,20 @@ Reponse
                         ]
                     }
                 },
-                {  
+                {
                     "clusterID":2,
                     "urlRewrite":"/users/$1/account",
                     "attrName":"account",
-                    "validations":[  
-                        {  
-                            "parameter":{  
+                    "validations":[
+                        {
+                            "parameter":{
                                 "name":"",
                                 "source":5,
                                 "index":1
                             },
                             "required":true,
-                            "rules":[  
-                                {  
+                            "rules":[
+                                {
                                     "ruleType":0,
                                     "expression":"^\\d+$"
                                 }
@@ -907,16 +922,16 @@ Reponse
                 }
             ],
             "authFilter":"CUSTOM_JWT",
-            "renderTemplate":{  
-                "objects":[  
-                    {  
+            "renderTemplate":{
+                "objects":[
+                    {
                         "name":"",
-                        "attrs":[  
-                            {  
+                        "attrs":[
+                            {
                                 "name":"user",
                                 "extractExp":"user.data"
                             },
-                            {  
+                            {
                                 "name":"account",
                                 "extractExp":"account.data"
                             }
@@ -926,75 +941,75 @@ Reponse
                 ]
             }
         },
-        {  
+        {
             "id":3,
             "name":"demo-api-3",
             "urlPattern":"^/api/users/(\\d+)$",
             "method":"GET",
             "domain":"www.xxx.com",
             "status":1,
-            "ipAccessControl":{  
-                "whitelist":[  
+            "ipAccessControl":{
+                "whitelist":[
                     "127.*",
                     "192.168.*",
                     "172.17.*",
                     "172.17.1.1"
                 ],
-                "blacklist":[  
+                "blacklist":[
                     "127.*",
                     "192.168.*",
                     "172.17.*",
                     "172.17.1.1"
                 ]
             },
-            "defaultValue":{  
+            "defaultValue":{
                 "body":"aGVsbG8gd29ybGQ=",
-                "headers":[  
-                    {  
+                "headers":[
+                    {
                         "name":"xx",
                         "value":"xx"
                     }
                 ],
-                "cookies":[  
-                    {  
+                "cookies":[
+                    {
                         "name":"xx",
                         "value":"xx"
                     }
                 ]
             },
-            "nodes":[  
-                {  
+            "nodes":[
+                {
                     "clusterID":1,
                     "urlRewrite":"/users?id=$1",
                     "attrName":"user",
-                    "validations":[  
-                        {  
-                            "parameter":{  
+                    "validations":[
+                        {
+                            "parameter":{
                                 "name":"id",
                                 "source":0,
                                 "index":0
                             },
                             "required":true,
-                            "rules":[  
-                                {  
+                            "rules":[
+                                {
                                     "ruleType":0,
                                     "expression":"^\\d+$"
                                 }
                             ]
                         }
                     ],
-                    "cache":{  
-                        "keys":[  
-                            {  
+                    "cache":{
+                        "keys":[
+                            {
                                 "name":"id",
                                 "source":0,
                                 "index":0
                             }
                         ],
                         "deadline":100,
-                        "conditions":[  
-                            {  
-                                "parameter":{  
+                        "conditions":[
+                            {
+                                "parameter":{
                                     "name":"id",
                                     "source":0,
                                     "index":0
@@ -1005,20 +1020,20 @@ Reponse
                         ]
                     }
                 },
-                {  
+                {
                     "clusterID":2,
                     "urlRewrite":"/users/$1/account",
                     "attrName":"account",
-                    "validations":[  
-                        {  
-                            "parameter":{  
+                    "validations":[
+                        {
+                            "parameter":{
                                 "name":"",
                                 "source":5,
                                 "index":1
                             },
                             "required":true,
-                            "rules":[  
-                                {  
+                            "rules":[
+                                {
                                     "ruleType":0,
                                     "expression":"^\\d+$"
                                 }
@@ -1028,16 +1043,16 @@ Reponse
                 }
             ],
             "authFilter":"CUSTOM_JWT",
-            "renderTemplate":{  
-                "objects":[  
-                    {  
+            "renderTemplate":{
+                "objects":[
+                    {
                         "name":"",
-                        "attrs":[  
-                            {  
+                        "attrs":[
+                            {
                                 "name":"user",
                                 "extractExp":"user.data"
                             },
-                            {  
+                            {
                                 "name":"account",
                                 "extractExp":"account.data"
                             }
@@ -1061,12 +1076,12 @@ data字段为apis集合
 
 JSON Body
 ```json
-{  
+{
     "id":1,
     "clusterID":2,
-    "conditions":[  
-        {  
-            "parameter":{  
+    "conditions":[
+        {
+            "parameter":{
                 "name":"id",
                 "source":4,
                 "index":0
@@ -1112,14 +1127,14 @@ Reponse
 
 Reponse
 ```json
-{  
+{
     "code":0,
-    "data":{  
+    "data":{
         "id":1,
         "clusterID":2,
-        "conditions":[  
-            {  
-                "parameter":{  
+        "conditions":[
+            {
+                "parameter":{
                     "name":"id",
                     "source":4,
                     "index":0
@@ -1148,15 +1163,15 @@ limit：获取多少条记录
 
 Reponse
 ```json
-{  
+{
     "code":0,
-    "data":[  
-        {  
+    "data":[
+        {
             "id":1,
             "clusterID":2,
-            "conditions":[  
-                {  
-                    "parameter":{  
+            "conditions":[
+                {
+                    "parameter":{
                         "name":"id",
                         "source":4,
                         "index":0
@@ -1171,12 +1186,12 @@ Reponse
             "api":1,
             "name":"test-AB"
         },
-        {  
+        {
             "id":2,
             "clusterID":2,
-            "conditions":[  
-                {  
-                    "parameter":{  
+            "conditions":[
+                {
+                    "parameter":{
                         "name":"id",
                         "source":4,
                         "index":0
@@ -1191,12 +1206,12 @@ Reponse
             "api":1,
             "name":"test-AB"
         },
-        {  
+        {
             "id":3,
             "clusterID":2,
-            "conditions":[  
-                {  
-                    "parameter":{  
+            "conditions":[
+                {
+                    "parameter":{
                         "name":"id",
                         "source":4,
                         "index":0
@@ -1215,4 +1230,4 @@ Reponse
 }
 ```
 data字段为server集合
-取下一批: /v1/routings?after=3&limit=3 
+取下一批: /v1/routings?after=3&limit=3
