@@ -108,6 +108,8 @@ Usage of ./proxy:
     	The namespace to isolation the environment. (default "dev")
   -ttl-proxy int
     	TTL(secs): proxy (default 10)
+  -version
+      Show version info
 ```
 
 `namespace`参数用来隔离多个环境，这个配置需要和对应的`ApiServer`的`namespace`一致
@@ -144,4 +146,6 @@ Usage of ./proxy:
 ```
 
 ## 调用ApiServer创建元信息
-[Gateway客户端指南](./client.md)
+[Gateway Restful API](./restful.md)
+
+[Gateway grpc客户端例子](../examples)
