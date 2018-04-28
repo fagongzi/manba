@@ -184,21 +184,25 @@ func (rd *render) extract(src []byte) ([]byte, error) {
 			// if is flat attr, add to data
 			// otherwise, add to tmp object, and add tmp obj to data
 			if isFlat {
-				data, err = jsonparser.Set(data, value, attr.meta.Name)
-				if err != nil {
-					return nil, err
+				if len(value) > 0 {
+					data, err = jsonparser.Set(data, value, attr.meta.Name)
+					if err != nil {
+						return nil, err
+					}
 				}
 
 				continue
 			}
 
-			tmp, err = jsonparser.Set(tmp, value, attr.meta.Name)
-			if err != nil {
-				return nil, err
+			if len(value) > 0 {
+				tmp, err = jsonparser.Set(tmp, value, attr.meta.Name)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 
-		if !isFlat {
+		if !isFlat && len(tmp) > 0 {
 			data, err = jsonparser.Set(data, tmp, obj.meta.Name)
 			if err != nil {
 				return nil, err
@@ -221,9 +225,11 @@ func (rd *render) extractValue(attr *renderAttr, src []byte) ([]byte, error) {
 			return nil, err
 		}
 
-		obj, err = jsonparser.Set(obj, data, exp[len(exp)-1])
-		if err != nil {
-			return nil, err
+		if len(data) > 0 {
+			obj, err = jsonparser.Set(obj, data, exp[len(exp)-1])
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return obj, nil
