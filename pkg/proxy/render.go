@@ -43,7 +43,9 @@ func (rd *render) reset() {
 func (rd *render) render(ctx *fasthttp.RequestCtx, multiCtx *multiContext) {
 	ctx.Response.Header.SetContentType(MultiResultsContentType)
 	ctx.SetStatusCode(fasthttp.StatusOK)
-	rd.multiContext = multiCtx.data
+	if multiCtx != nil {
+		rd.multiContext = multiCtx.data
+	}
 	rd.doRender(ctx)
 }
 
