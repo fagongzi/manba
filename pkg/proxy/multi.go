@@ -23,7 +23,7 @@ func (c *multiContext) init() {
 
 func (c *multiContext) completePart(attr string, data []byte) {
 	c.Lock()
-	if len(data) > 0 {
+	if len(data) > 0 && attr != "" {
 		c.data, _ = jsonparser.Set(c.data, data, attr)
 	}
 	c.Unlock()
