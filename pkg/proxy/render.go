@@ -52,6 +52,10 @@ func (rd *render) render(ctx *fasthttp.RequestCtx, multiCtx *multiContext) {
 func (rd *render) renderSingle(ctx *fasthttp.RequestCtx) {
 	dn := rd.nodes[0]
 
+	if dn.res != nil {
+		ctx.SetStatusCode(dn.res.StatusCode())
+	}
+
 	if dn.err != nil ||
 		dn.code >= fasthttp.StatusBadRequest {
 		log.Errorf("render: render failed, code=<%d>, errors:\n%+v",
