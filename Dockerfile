@@ -1,6 +1,5 @@
 FROM alpine:latest
 
-RUN mkdir -p /app/gateway
 RUN mkdir -p /app/gateway/plugins
 
 ADD ./dist/proxy /app/gateway
