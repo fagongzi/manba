@@ -411,11 +411,11 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 	}
 
 	// hit cache
-	if value := c.GetAttr(cacheHit); nil != value {
+	if value := c.GetAttr(filter.UsingCachingValue); nil != value {
 		if log.DebugEnabled() {
 			log.Debugf("dispatch: hit cahce for %s", hack.SliceToString(forwardReq.RequestURI()))
 		}
-		dn.cachedCT, dn.cachedBody = parseCachedValue(value.([]byte))
+		dn.cachedCT, dn.cachedBody = filter.ParseCachedValue(value.([]byte))
 		dn.maybeDone()
 		releaseContext(c)
 		return

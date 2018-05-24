@@ -62,7 +62,7 @@ func (rd *render) renderSingle(ctx *fasthttp.RequestCtx) {
 			dn.code,
 			dn.err)
 
-		if rd.api.meta.DefaultValue != nil {
+		if rd.api.hasDefaultValue() {
 			rd.renderDefault(ctx)
 			dn.release()
 			return

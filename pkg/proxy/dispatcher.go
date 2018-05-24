@@ -93,6 +93,23 @@ func (dn *dispathNode) getResponseContentType() []byte {
 	return nil
 }
 
+func (dn *dispathNode) getResponseBody() []byte {
+	if len(dn.cachedBody) > 0 {
+		return dn.cachedBody
+	}
+
+	if dn.node.meta.UseDefault ||
+		(dn.hasError() && dn.hasDefaultValue()) {
+		return dn.node.meta.DefaultValue.Body
+	}
+
+	if nil != dn.res {
+		return dn.res.Body()
+	}
+
+	return nil
+}
+
 func (dn *dispathNode) copyHeaderTo(ctx *fasthttp.RequestCtx) {
 	if dn.node.meta.UseDefault ||
 		(dn.hasError() && dn.hasDefaultValue()) {
@@ -112,23 +129,6 @@ func (dn *dispathNode) copyHeaderTo(ctx *fasthttp.RequestCtx) {
 		}
 		dn.res.Header.CopyTo(&ctx.Response.Header)
 	}
-}
-
-func (dn *dispathNode) getResponseBody() []byte {
-	if dn.node.meta.UseDefault ||
-		(dn.hasError() && dn.hasDefaultValue()) {
-		return dn.node.meta.DefaultValue.Body
-	}
-
-	if len(dn.cachedBody) > 0 {
-		return dn.cachedBody
-	}
-
-	if nil != dn.res {
-		return dn.res.Body()
-	}
-
-	return nil
 }
 
 func (dn *dispathNode) maybeDone() {
