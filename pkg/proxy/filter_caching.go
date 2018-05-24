@@ -13,10 +13,6 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-const (
-	cacheHit = "cache_hit"
-)
-
 var (
 	cachePool sync.Pool
 )
@@ -53,7 +49,7 @@ func (f *CachingFilter) Pre(c filter.Context) (statusCode int, err error) {
 	}
 
 	if value, ok := f.cache.Get(id); ok {
-		c.SetAttr(cacheHit, value)
+		c.SetAttr(filter.UsingCachingValue, value)
 	}
 
 	return f.BaseFilter.Post(c)
@@ -119,20 +115,5 @@ func getID(req *fasthttp.Request, keys []metapb.Parameter) string {
 func genCachedValue(c filter.Context) []byte {
 	contentType := c.Response().Header.ContentType()
 	body := c.Response().Body()
-
-	size := len(contentType) + 4 + len(body)
-	data := make([]byte, size, size)
-	idx := 0
-	goetty.Int2BytesTo(len(contentType), data[0:4])
-	idx += 4
-	copy(data[idx:idx+len(contentType)], contentType)
-	idx += len(contentType)
-	copy(data[idx:], body)
-
-	return data
-}
-
-func parseCachedValue(data []byte) ([]byte, []byte) {
-	size := goetty.Byte2Int(data[0:4])
-	return data[4 : 4+size], data[4+size:]
+	return filter.NewCachedValue(body, contentType)
 }
