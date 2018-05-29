@@ -13,6 +13,7 @@ import (
 	"github.com/fagongzi/gateway/pkg/pb/rpcpb"
 	"github.com/fagongzi/gateway/pkg/service"
 	"github.com/fagongzi/gateway/pkg/store"
+	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/grpcx"
 	"github.com/fagongzi/log"
 	"google.golang.org/grpc"
@@ -27,10 +28,15 @@ var (
 	servicePrefix  = flag.String("service-prefix", "/services", "The prefix for service name.")
 	publishLease   = flag.Int64("publish-lease", 10, "Publish service lease seconds")
 	publishTimeout = flag.Int("publish-timeout", 30, "Publish service timeout seconds")
+	version        = flag.Bool("version", false, "Show version info")
 )
 
 func main() {
 	flag.Parse()
+
+	if *version && util.PrintVersion() {
+		os.Exit(0)
+	}
 
 	log.InitLog()
 	runtime.GOMAXPROCS(runtime.NumCPU())
