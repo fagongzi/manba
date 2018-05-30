@@ -132,7 +132,7 @@ func (c *proxyContext) allowWithWhitelist(ip string) bool {
 }
 
 func (c *proxyContext) circuitStatus() metapb.CircuitStatus {
-	return c.result.dest.circuit
+	return c.result.dest.getCircuitStatus()
 }
 
 func (c *proxyContext) changeCircuitStatusToClose() {

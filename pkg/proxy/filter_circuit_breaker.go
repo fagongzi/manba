@@ -54,8 +54,9 @@ func (f *CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) 
 
 	switch c.(*proxyContext).circuitStatus() {
 	case metapb.Open:
-		if f.getFailureRate(c) >= int(cb.FailureRateToClose) {
+		if c.Analysis().GetRecentlyRequestFailureRate(c.Server().ID, time.Duration(c.Server().CircuitBreaker.RateCheckPeriod)) >= int(cb.FailureRateToClose) {
 			c.(*proxyContext).changeCircuitStatusToClose()
+			c.Analysis().Reject(c.Server().ID)
 			return http.StatusServiceUnavailable, ErrCircuitClose
 		}
 
@@ -65,8 +66,10 @@ func (f *CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) 
 			return f.BaseFilter.Pre(c)
 		}
 
+		c.Analysis().Reject(c.Server().ID)
 		return http.StatusServiceUnavailable, ErrCircuitHalfLimited
 	default:
+		c.Analysis().Reject(c.Server().ID)
 		return http.StatusServiceUnavailable, ErrCircuitClose
 	}
 }
@@ -78,7 +81,8 @@ func (f *CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error)
 		return f.BaseFilter.Pre(c)
 	}
 
-	if c.(*proxyContext).circuitStatus() == metapb.Half && f.getSucceedRate(c) >= int(cb.SucceedRateToOpen) {
+	if c.(*proxyContext).circuitStatus() == metapb.Half &&
+		c.Analysis().GetRecentlyRequestSuccessedRate(c.Server().ID, time.Duration(c.Server().CircuitBreaker.RateCheckPeriod)) >= int(cb.SucceedRateToOpen) {
 		c.(*proxyContext).changeCircuitStatusToOpen()
 	}
 
@@ -87,35 +91,16 @@ func (f *CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error)
 
 // PostErr execute proxy has errors
 func (f *CircuitBreakeFilter) PostErr(c filter.Context) {
-	if c.(*proxyContext).circuitStatus() == metapb.Half {
+	cb := c.Server().CircuitBreaker
+	if cb == nil {
+		f.BaseFilter.PostErr(c)
+		return
+	}
+
+	if c.(*proxyContext).circuitStatus() == metapb.Half &&
+		c.Analysis().GetRecentlyRequestFailureRate(c.Server().ID, time.Duration(c.Server().CircuitBreaker.RateCheckPeriod)) >= int(cb.FailureRateToClose) {
 		c.(*proxyContext).changeCircuitStatusToClose()
 	}
-}
-
-func (f *CircuitBreakeFilter) getFailureRate(c filter.Context) int {
-	cb := c.Server().CircuitBreaker
-
-	failureCount := c.Analysis().GetRecentlyRequestFailureCount(c.Server().ID, time.Duration(cb.RateCheckPeriod))
-	totalCount := c.Analysis().GetRecentlyRequestCount(c.Server().ID, time.Duration(cb.RateCheckPeriod))
-
-	if totalCount == 0 {
-		return -1
-	}
-
-	return int(failureCount * 100 / totalCount)
-}
-
-func (f *CircuitBreakeFilter) getSucceedRate(c filter.Context) int {
-	cb := c.Server().CircuitBreaker
-
-	succeedCount := c.Analysis().GetRecentlyRequestSuccessedCount(c.Server().ID, time.Duration(cb.RateCheckPeriod))
-	totalCount := c.Analysis().GetRecentlyRequestCount(c.Server().ID, time.Duration(cb.RateCheckPeriod))
-
-	if totalCount == 0 {
-		return 100
-	}
-
-	return int(succeedCount * 100 / totalCount)
 }
 
 func limitAllow(rate int32) bool {

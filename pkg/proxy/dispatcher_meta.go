@@ -402,13 +402,11 @@ func (r *dispatcher) updateServer(meta *metapb.Server) error {
 	}
 
 	r.refreshQPS(meta)
-
 	rt.updateMeta(meta)
-
 	r.addAnalysis(rt)
 	r.addToCheck(rt)
 
-	log.Infof("server <%s> updated, data <%s>",
+	log.Infof("server <%d> updated, data <%s>",
 		meta.ID,
 		meta.String())
 
@@ -503,7 +501,7 @@ func (r *dispatcher) addBind(bind *metapb.Bind) error {
 
 	server, ok := r.servers[bind.ServerID]
 	if !ok {
-		log.Warnf("bind failed, server <%s> not found",
+		log.Warnf("bind failed, server <%d> not found",
 			bind.ServerID)
 		return errServerNotFound
 	}
