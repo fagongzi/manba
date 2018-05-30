@@ -50,7 +50,7 @@ type Recently struct {
 	period    time.Duration
 	prev      *point
 	current   *point
-	dumpCurr  bool
+	dumpPrev  bool
 	qps       int
 	requests  int64
 	successed int64
@@ -136,118 +136,175 @@ func (a *Analysis) AddTarget(key uint64, interval time.Duration) {
 // GetRecentlyRequestCount return the server request count in spec duration
 func (a *Analysis) GetRecentlyRequestCount(server uint64, interval time.Duration) int {
 	a.RLock()
-	defer a.RUnlock()
 
 	point := a.getPoint(server, interval)
 	if point == nil {
+		a.RUnlock()
 		return 0
 	}
 
-	return int(point.requests)
+	value := int(point.requests)
+	a.RUnlock()
+	return value
 }
 
 // GetRecentlyMax return max latency in spec secs
 func (a *Analysis) GetRecentlyMax(server uint64, interval time.Duration) int {
 	a.RLock()
-	defer a.RUnlock()
 
 	point := a.getPoint(server, interval)
 	if point == nil {
+		a.RUnlock()
 		return 0
 	}
 
-	return int(point.max)
+	value := int(point.max)
+	a.RUnlock()
+	return value
 }
 
 // GetRecentlyMin return min latency in spec duration
 func (a *Analysis) GetRecentlyMin(server uint64, interval time.Duration) int {
 	a.RLock()
-	defer a.RUnlock()
 
 	point := a.getPoint(server, interval)
 	if point == nil {
+		a.RUnlock()
 		return 0
 	}
 
-	return int(point.min)
+	value := int(point.min)
+	a.RUnlock()
+	return value
 }
 
 // GetRecentlyAvg return avg latency in spec secs
 func (a *Analysis) GetRecentlyAvg(server uint64, interval time.Duration) int {
 	a.RLock()
-	defer a.RUnlock()
 
 	point := a.getPoint(server, interval)
 	if point == nil {
 		return 0
 	}
 
-	return int(point.avg)
+	value := int(point.avg)
+	a.RUnlock()
+	return value
 }
 
 // GetQPS return qps in spec duration
 func (a *Analysis) GetQPS(server uint64, interval time.Duration) int {
 	a.RLock()
-	defer a.RUnlock()
 
 	point := a.getPoint(server, interval)
 	if point == nil {
+		a.RUnlock()
 		return 0
 	}
 
-	return int(point.qps)
+	value := int(point.qps)
+	a.RUnlock()
+	return value
 }
 
 // GetRecentlyRejectCount return reject count in spec duration
 func (a *Analysis) GetRecentlyRejectCount(server uint64, interval time.Duration) int {
 	a.RLock()
-	defer a.RUnlock()
 
 	point := a.getPoint(server, interval)
 	if point == nil {
+		a.RUnlock()
 		return 0
 	}
 
-	return int(point.rejects)
+	value := int(point.rejects)
+	a.RUnlock()
+	return value
+}
+
+// GetRecentlyRequestSuccessedRate return successed rate in spec secs
+func (a *Analysis) GetRecentlyRequestSuccessedRate(server uint64, interval time.Duration) int {
+	a.RLock()
+
+	point := a.getPoint(server, interval)
+	if point == nil {
+		a.RUnlock()
+		return 0
+	}
+
+	if point.requests-point.rejects <= 0 {
+		a.RUnlock()
+		return 100
+	}
+
+	value := int(point.successed * 100 / (point.requests - point.rejects))
+	a.RUnlock()
+	return value
+}
+
+// GetRecentlyRequestFailureRate return failure rate in spec secs
+func (a *Analysis) GetRecentlyRequestFailureRate(server uint64, interval time.Duration) int {
+	a.RLock()
+
+	point := a.getPoint(server, interval)
+	if point == nil {
+		a.RUnlock()
+		return 100
+	}
+
+	if point.requests-point.rejects <= 0 {
+		a.RUnlock()
+		return -1
+	}
+
+	value := int(point.failure * 100 / (point.requests - point.rejects))
+	a.RUnlock()
+	return value
 }
 
 // GetRecentlyRequestSuccessedCount return successed request count in spec secs
 func (a *Analysis) GetRecentlyRequestSuccessedCount(server uint64, interval time.Duration) int {
 	a.RLock()
-	defer a.RUnlock()
 
 	point := a.getPoint(server, interval)
 	if point == nil {
+		a.RUnlock()
 		return 0
 	}
 
-	return int(point.successed)
+	value := int(point.successed)
+	a.RUnlock()
+	return value
 }
 
 // GetRecentlyRequestFailureCount return failure request count in spec duration
 func (a *Analysis) GetRecentlyRequestFailureCount(server uint64, interval time.Duration) int {
 	a.RLock()
-	defer a.RUnlock()
 
 	point := a.getPoint(server, interval)
 	if point == nil {
+		a.RUnlock()
 		return 0
 	}
 
-	return int(point.failure)
+	value := int(point.failure)
+	a.RUnlock()
+	return value
 }
 
 // GetContinuousFailureCount return Continuous failure request count in spec secs
 func (a *Analysis) GetContinuousFailureCount(server uint64) int {
 	a.RLock()
-	defer a.RUnlock()
 
 	p, ok := a.points[server]
 	if !ok {
+		a.RUnlock()
 		return 0
 	}
 
-	return int(p.continuousFailure.Get())
+	value := int(p.continuousFailure.Get())
+	a.RUnlock()
+	return value
 }
 
 // Reject incr reject count
@@ -320,43 +377,42 @@ func (a *Analysis) recentlyTimeout(arg interface{}) {
 }
 
 func (r *Recently) record(p *point) {
-	if r.dumpCurr {
+	if !r.dumpPrev {
 		p.dump(r.current)
 		r.calc()
 	} else {
 		p.dump(r.prev)
 	}
 
-	r.dumpCurr = !r.dumpCurr
+	r.dumpPrev = !r.dumpPrev
 }
 
 func (r *Recently) calc() {
-	r.requests = r.current.requests.Get() - r.prev.requests.Get()
+	if r.current.requests.Get() == r.prev.requests.Get() {
+		return
+	}
 
+	r.requests = r.current.requests.Get() - r.prev.requests.Get()
 	if r.requests < 0 {
 		r.requests = 0
 	}
 
 	r.successed = r.current.successed.Get() - r.prev.successed.Get()
-
 	if r.successed < 0 {
 		r.successed = 0
 	}
 
 	r.failure = r.current.failure.Get() - r.prev.failure.Get()
-
 	if r.failure < 0 {
 		r.failure = 0
 	}
 
 	r.rejects = r.current.rejects.Get() - r.prev.rejects.Get()
-
 	if r.rejects < 0 {
 		r.rejects = 0
 	}
 
 	r.max = r.current.max.Get()
-
 	if r.max < 0 {
 		r.max = 0
 	} else {
@@ -364,7 +420,6 @@ func (r *Recently) calc() {
 	}
 
 	r.min = r.current.min.Get()
-
 	if r.min < 0 {
 		r.min = 0
 	} else {
@@ -372,7 +427,6 @@ func (r *Recently) calc() {
 	}
 
 	costs := r.current.costs.Get() - r.prev.costs.Get()
-
 	if r.requests == 0 {
 		r.avg = 0
 	} else {

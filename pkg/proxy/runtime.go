@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -34,17 +35,14 @@ type clusterRuntime struct {
 }
 
 func newClusterRuntime(meta *metapb.Cluster) *clusterRuntime {
-	rt := &clusterRuntime{
+	return &clusterRuntime{
 		meta: meta,
 		svrs: list.New(),
 		lb:   lb.NewLoadBalance(meta.LoadBalance),
 	}
-
-	return rt
 }
 
 func (c *clusterRuntime) updateMeta(meta *metapb.Cluster) {
-	*c = clusterRuntime{}
 	c.meta = meta
 	c.lb = lb.NewLoadBalance(meta.LoadBalance)
 }
@@ -86,6 +84,8 @@ func (c *clusterRuntime) selectServer(req *fasthttp.Request) uint64 {
 }
 
 type serverRuntime struct {
+	sync.RWMutex
+
 	tw               *goetty.TimeoutWheel
 	limiter          *rate.Limiter
 	meta             *metapb.Server
@@ -104,7 +104,6 @@ func newServerRuntime(meta *metapb.Server, tw *goetty.TimeoutWheel) *serverRunti
 	}
 
 	rt.updateMeta(meta)
-
 	return rt
 }
 
@@ -115,9 +114,14 @@ func (s *serverRuntime) clone() *serverRuntime {
 }
 
 func (s *serverRuntime) updateMeta(meta *metapb.Server) {
+	s.heathTimeout.Stop()
+	tw := s.tw
 	*s = serverRuntime{}
+	s.tw = tw
 	s.meta = meta
 	s.limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(meta.MaxQPS)), int(meta.MaxQPS))
+	s.status = metapb.Down
+	s.circuit = metapb.Open
 }
 
 func (s *serverRuntime) getCheckURL() string {
@@ -138,37 +142,48 @@ func (s *serverRuntime) changeTo(status metapb.Status) {
 	s.status = status
 }
 
-func (s *serverRuntime) isCircuitStatus(target metapb.CircuitStatus) bool {
-	return s.circuit == target
+func (s *serverRuntime) getCircuitStatus() metapb.CircuitStatus {
+	s.RLock()
+	value := s.circuit
+	s.RUnlock()
+	return value
 }
 
 func (s *serverRuntime) circuitToClose() {
+	s.Lock()
 	if s.meta.CircuitBreaker == nil ||
 		s.circuit == metapb.Close {
+		s.Unlock()
 		return
 	}
 
 	s.circuit = metapb.Close
-	log.Warnf("server <%s> change to close", s.meta.ID)
+	log.Warnf("server <%d> change to close", s.meta.ID)
 	s.tw.Schedule(time.Duration(s.meta.CircuitBreaker.CloseTimeout), s.circuitToHalf, nil)
+	s.Unlock()
 }
 
 func (s *serverRuntime) circuitToOpen() {
+	s.Lock()
 	if s.meta.CircuitBreaker == nil ||
 		s.circuit == metapb.Open ||
 		s.circuit != metapb.Half {
+		s.Unlock()
 		return
 	}
 
 	s.circuit = metapb.Open
-	log.Infof("server <%s> change to open", s.meta.ID)
+	log.Infof("server <%d> change to open", s.meta.ID)
+	s.Unlock()
 }
 
 func (s *serverRuntime) circuitToHalf(arg interface{}) {
+	s.Lock()
 	if s.meta.CircuitBreaker != nil {
-		s.circuit = metapb.Open
-		log.Warnf("server <%s> change to half", s.meta.ID)
+		s.circuit = metapb.Half
+		log.Warnf("server <%d> change to half", s.meta.ID)
 	}
+	s.Unlock()
 }
 
 type ipSegment struct {
@@ -479,23 +494,14 @@ type routingRuntime struct {
 }
 
 func newRoutingRuntime(meta *metapb.Routing) *routingRuntime {
-	r := &routingRuntime{
+	return &routingRuntime{
 		meta: meta,
 		rand: rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
-	r.init()
-
-	return r
 }
 
 func (a *routingRuntime) updateMeta(meta *metapb.Routing) {
-	*a = routingRuntime{}
 	a.meta = meta
-	a.init()
-}
-
-func (a *routingRuntime) init() {
-	return
 }
 
 func (a *routingRuntime) matches(apiID uint64, req *fasthttp.Request) bool {
