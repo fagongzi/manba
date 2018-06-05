@@ -64,13 +64,19 @@ enum RoutingStrategy {
     Split = 1;
 }
 
+enum MatchRule {
+    MatchDefault = 0;
+    MatchAll     = 1;
+    MatchAny     = 2;
+}
+
 // Proxy is a meta data of the gateway proxy
 message Proxy {
     optional string addr     = 1 [(gogoproto.nullable) = false];
 	optional string addrRPC  = 2 [(gogoproto.nullable) = false];
 }
 
-// Cluster is a set of server has same interface 
+// Cluster is a set of server has same interface
 message Cluster {
     optional uint64       id          = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
     optional string       name        = 2 [(gogoproto.nullable) = false];
@@ -125,7 +131,7 @@ message IPAccessControl {
 // HTTPResult is a http result
 message HTTPResult {
     optional bytes     body    = 1;
-    repeated PairValue headers = 2; 
+    repeated PairValue headers = 2;
     repeated PairValue cookies = 3;
 }
 
@@ -168,7 +174,7 @@ message Cache {
     repeated Condition conditions = 3 [(gogoproto.nullable) = false];
 }
 
-// RenderTemplate the template that render to client 
+// RenderTemplate the template that render to client
 message RenderTemplate {
     repeated RenderObject objects = 1;
 }
@@ -201,6 +207,8 @@ message API {
     optional string          authFilter      = 11 [(gogoproto.nullable) = false];
     optional RenderTemplate  renderTemplate  = 12;
     optional bool            useDefault      = 13 [(gogoproto.nullable) = false];
+    optional MatchRule       matchRule       = 14 [(gogoproto.nullable) = false];
+    optional uint32          position        = 15 [(gogoproto.nullable) = false];
 }
 
 // Condition is a condition for routing
@@ -210,7 +218,7 @@ message Condition {
     optional string    expect    = 3 [(gogoproto.nullable) = false];
 }
 
-// Routing is a routing 
+// Routing is a routing
 message Routing {
     optional uint64          id          = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
     optional uint64          clusterID   = 2 [(gogoproto.nullable) = false];
