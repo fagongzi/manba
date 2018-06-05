@@ -26,7 +26,7 @@ IP的访问控制，有黑白名单2个部门组成。
 
 ## DefaultValue（可选）
 API的默认返回值，当后端Cluster无可用Server的时候，Gateway将返回这个默认值，默认值由HTTP Body、Header、Cookie三部分组成。改值可以用来做Mock。
-  
+
 ## Nodes
 请求被转发到的后端Cluster。至少设置一个转发Cluster，一个请求可以被同时转发到多个后端Cluster（目前仅支持GET请求设置多个转发）。在转发的时候，针对每一个转发支持以下特性：
 
@@ -35,7 +35,7 @@ API的默认返回值，当后端Cluster无可用Server的时候，Gateway将返
   例如，API对外提供的URL是`/api/users/1`，后端真实server提供的URL是`/users?id=1`，类似这种情况需要对原始URL进行重写。
   对于这个重写，我们需要配置API的`URLPattern`属性为`/api/users/(\d+)`，并且配置转发的URL重写规则为：`users?id=$1`
 * 支持对原始请求的参数校验
-  
+
   支持针对`querystring`、`json body`、`cookie`、`header`、`path value`中的任意属性配置正则表达式的校验规则
 * 聚合多个后端Cluster的响应，统一返回
 
@@ -50,3 +50,18 @@ API的默认返回值，当后端Cluster无可用Server的时候，Gateway将返
 ## RenderTemplate
 使用RenderTemplate可以重新定义返回的数据，包括数据的格式，字段等等。
 
+## UseDefault（可选）
+
+当该值为True且`DefaultValue`存在时，直接使用`DefaultValue`作为返回值。
+
+## MatchRule（可选）
+
+| MatchRule | Logic |
+| - | - |
+| MatchDefault | `Domain` \|\| (`URLPattern` && `Method`) |
+| MatchAll | `Domain` && `URLPattern` && `Method` |
+| MatchAny | `Domain` \|\| `URLPattern` \|\| `Method` |
+
+## Position（可选）
+
+API匹配时按该值的升序匹配，即值越小优先级越高。默认值为0.
