@@ -442,9 +442,18 @@ func (a *apiRuntime) rewriteURL(req *fasthttp.Request, node *apiNode, ctx *multi
 }
 
 func (a *apiRuntime) matches(req *fasthttp.Request) bool {
-	return a.isUp() &&
-		(a.isDomainMatches(req) ||
-			(a.isMethodMatches(req) && a.isURIMatches(req)))
+	if !a.isUp() {
+		return false
+	}
+
+	switch a.matchRule() {
+	case metapb.MatchAll:
+		return a.isDomainMatches(req) && a.isMethodMatches(req) && a.isURIMatches(req)
+	case metapb.MatchAny:
+		return a.isDomainMatches(req) || a.isMethodMatches(req) || a.isURIMatches(req)
+	default:
+		return a.isDomainMatches(req) || (a.isMethodMatches(req) && a.isURIMatches(req))
+	}
 }
 
 func (a *apiRuntime) isUp() bool {
@@ -456,11 +465,23 @@ func (a *apiRuntime) isMethodMatches(req *fasthttp.Request) bool {
 }
 
 func (a *apiRuntime) isURIMatches(req *fasthttp.Request) bool {
+	if a.urlPattern == nil {
+		return false
+	}
+
 	return a.urlPattern.Match(req.URI().RequestURI())
 }
 
 func (a *apiRuntime) isDomainMatches(req *fasthttp.Request) bool {
 	return a.meta.Domain != "" && hack.SliceToString(req.Header.Host()) == a.meta.Domain
+}
+
+func (a *apiRuntime) position() uint32 {
+	return a.meta.GetPosition()
+}
+
+func (a *apiRuntime) matchRule() metapb.MatchRule {
+	return a.meta.GetMatchRule()
 }
 
 func (v *apiValidation) validate(req *fasthttp.Request) bool {

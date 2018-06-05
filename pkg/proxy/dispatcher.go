@@ -141,41 +141,43 @@ func (dn *dispathNode) maybeDone() {
 type dispatcher struct {
 	sync.RWMutex
 
-	cnf         *Cfg
-	routings    map[uint64]*routingRuntime
-	apis        map[uint64]*apiRuntime
-	clusters    map[uint64]*clusterRuntime
-	servers     map[uint64]*serverRuntime
-	binds       map[uint64]map[uint64]*clusterRuntime
-	proxies     map[string]*metapb.Proxy
-	checkerC    chan uint64
-	watchStopC  chan bool
-	watchEventC chan *store.Evt
-	analysiser  *util.Analysis
-	store       store.Store
-	httpClient  *util.FastHTTPClient
-	tw          *goetty.TimeoutWheel
-	runner      *task.Runner
+	cnf           *Cfg
+	routings      map[uint64]*routingRuntime
+	apis          map[uint64]*apiRuntime
+	apiSortedKeys []uint64
+	clusters      map[uint64]*clusterRuntime
+	servers       map[uint64]*serverRuntime
+	binds         map[uint64]map[uint64]*clusterRuntime
+	proxies       map[string]*metapb.Proxy
+	checkerC      chan uint64
+	watchStopC    chan bool
+	watchEventC   chan *store.Evt
+	analysiser    *util.Analysis
+	store         store.Store
+	httpClient    *util.FastHTTPClient
+	tw            *goetty.TimeoutWheel
+	runner        *task.Runner
 }
 
 func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner) *dispatcher {
 	tw := goetty.NewTimeoutWheel(goetty.WithTickInterval(time.Second))
 	rt := &dispatcher{
-		cnf:         cnf,
-		tw:          tw,
-		store:       db,
-		runner:      runner,
-		analysiser:  util.NewAnalysis(tw),
-		httpClient:  util.NewFastHTTPClient(),
-		clusters:    make(map[uint64]*clusterRuntime),
-		servers:     make(map[uint64]*serverRuntime),
-		apis:        make(map[uint64]*apiRuntime),
-		routings:    make(map[uint64]*routingRuntime),
-		binds:       make(map[uint64]map[uint64]*clusterRuntime),
-		proxies:     make(map[string]*metapb.Proxy),
-		checkerC:    make(chan uint64, 1024),
-		watchStopC:  make(chan bool),
-		watchEventC: make(chan *store.Evt),
+		cnf:           cnf,
+		tw:            tw,
+		store:         db,
+		runner:        runner,
+		analysiser:    util.NewAnalysis(tw),
+		httpClient:    util.NewFastHTTPClient(),
+		clusters:      make(map[uint64]*clusterRuntime),
+		servers:       make(map[uint64]*serverRuntime),
+		apis:          make(map[uint64]*apiRuntime),
+		apiSortedKeys: make([]uint64, 0),
+		routings:      make(map[uint64]*routingRuntime),
+		binds:         make(map[uint64]map[uint64]*clusterRuntime),
+		proxies:       make(map[string]*metapb.Proxy),
+		checkerC:      make(chan uint64, 1024),
+		watchStopC:    make(chan bool),
+		watchEventC:   make(chan *store.Evt),
 	}
 
 	rt.readyToHeathChecker()
@@ -191,7 +193,8 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) (*apiRuntime, []*dispathNod
 
 	var targetAPI *apiRuntime
 	var dispathes []*dispathNode
-	for _, api := range r.apis {
+	for _, apiKey := range r.apiSortedKeys {
+		api := r.apis[apiKey]
 		if api.matches(req) {
 			targetAPI = api
 			if api.meta.UseDefault {
