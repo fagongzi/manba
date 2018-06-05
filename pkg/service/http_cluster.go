@@ -57,7 +57,7 @@ func deleteClusterBindsHandler(value interface{}) (*grpcx.JSONResult, error) {
 func getClusterHandler(value interface{}) (*grpcx.JSONResult, error) {
 	value, err := Store.GetCluster(value.(uint64))
 	if err != nil {
-		log.Errorf("api-cluster-delete: req %+v, errors:%+v", value, err)
+		log.Errorf("api-cluster-get: req %+v, errors:%+v", value, err)
 		return nil, err
 	}
 

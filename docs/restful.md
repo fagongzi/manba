@@ -526,7 +526,10 @@ JSON Body
                 "flatAttrs":true
             }
         ]
-    }
+    },
+    "useDefault": false,
+    "matchRule": 0,
+    "position": 0
 }
 ```
 设置id字段表示更新
@@ -680,7 +683,10 @@ Reponse
                     "flatAttrs":true
                 }
             ]
-        }
+        },
+        "useDefault": false,
+        "matchRule": 0,
+        "position": 0
     }
 }
 ```
@@ -818,7 +824,10 @@ Reponse
                         "flatAttrs":true
                     }
                 ]
-            }
+            },
+            "useDefault": false,
+            "matchRule": 0,
+            "position": 0
         },
         {
             "id":2,
@@ -939,7 +948,10 @@ Reponse
                         "flatAttrs":true
                     }
                 ]
-            }
+            },
+            "useDefault": false,
+            "matchRule": 0,
+            "position": 0
         },
         {
             "id":3,
@@ -1060,7 +1072,10 @@ Reponse
                         "flatAttrs":true
                     }
                 ]
-            }
+            },
+            "useDefault": false,
+            "matchRule": 0,
+            "position": 0
         }
     ]
 }
