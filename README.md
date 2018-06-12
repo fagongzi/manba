@@ -35,6 +35,10 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 
   APIServer的对外GRPC的端口
 
+* 9093
+
+  APIServer的对外HTTP Restful的端口
+
 ## 架构
 ![](./images/arch.png)
 
