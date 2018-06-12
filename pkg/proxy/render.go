@@ -156,7 +156,11 @@ func (rd *render) renderDefault(ctx *fasthttp.RequestCtx) {
 		header.SetCookie(ck)
 	}
 
-	ctx.SetStatusCode(fasthttp.StatusOK)
+	if rd.api.meta.DefaultValue.Code > 0 {
+		ctx.SetStatusCode(int(rd.api.meta.DefaultValue.Code))
+	} else {
+		ctx.SetStatusCode(fasthttp.StatusOK)
+	}
 	ctx.Write(rd.api.meta.DefaultValue.Body)
 }
 

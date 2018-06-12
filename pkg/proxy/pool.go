@@ -11,12 +11,28 @@ var (
 	contextPool      sync.Pool
 	dispathNodePool  sync.Pool
 	multiContextPool sync.Pool
+	wgPool           sync.Pool
 	bytesPool        = goetty.NewSyncPool(2, 1024*1024*5, 2)
 
 	emptyRender      = render{}
 	emptyContext     = proxyContext{}
 	emptyDispathNode = dispathNode{}
 )
+
+func acquireWG() *sync.WaitGroup {
+	v := wgPool.Get()
+	if v == nil {
+		return &sync.WaitGroup{}
+	}
+
+	return v.(*sync.WaitGroup)
+}
+
+func releaseWG(value *sync.WaitGroup) {
+	if value != nil {
+		wgPool.Put(value)
+	}
+}
 
 func acquireMultiContext() *multiContext {
 	v := multiContextPool.Get()
