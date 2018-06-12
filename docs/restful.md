@@ -420,6 +420,7 @@ JSON Body
         ]
     },
     "defaultValue":{
+        "code": 200,
         "body":"aGVsbG8gd29ybGQ=",
         "headers":[
             {
@@ -498,6 +499,7 @@ JSON Body
                 }
             ],
             "defaultValue":{
+                "code": 200,
                 "body":"eyJjb2RlIjoxLCAiZGF0YSI6eyJtZXNzYWdlIjogIuacjeWKoeS4jeWPr+eU\nqOi/meaYr+afkOiKgueCueeahOm7mOiupOWAvO+8gSJ9fQ==",
                 "headers":[
                     {
@@ -586,6 +588,7 @@ Reponse
             ]
         },
         "defaultValue":{
+            "code": 200,
             "body":"aGVsbG8gd29ybGQ=",
             "headers":[
                 {
@@ -727,6 +730,7 @@ Reponse
                 ]
             },
             "defaultValue":{
+                "code": 200,
                 "body":"aGVsbG8gd29ybGQ=",
                 "headers":[
                     {
@@ -851,6 +855,7 @@ Reponse
                 ]
             },
             "defaultValue":{
+                "code": 200,
                 "body":"aGVsbG8gd29ybGQ=",
                 "headers":[
                     {
@@ -975,6 +980,7 @@ Reponse
                 ]
             },
             "defaultValue":{
+                "code": 200,
                 "body":"aGVsbG8gd29ybGQ=",
                 "headers":[
                     {

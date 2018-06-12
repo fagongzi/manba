@@ -25,7 +25,7 @@ API 状态枚举, 有2个值组成： `UP` 和 `Down`。只有`UP`状态才能�
 IP的访问控制，有黑白名单2个部门组成。
 
 ## DefaultValue（可选）
-API的默认返回值，当后端Cluster无可用Server的时候，Gateway将返回这个默认值，默认值由HTTP Body、Header、Cookie三部分组成。改值可以用来做Mock。
+API的默认返回值，当后端Cluster无可用Server的时候，Gateway将返回这个默认值，默认值由Code、HTTP Body、Header、Cookie组成。可以用来做Mock或者后端服务故障时候的默认返回。
 
 ## Nodes
 请求被转发到的后端Cluster。至少设置一个转发Cluster，一个请求可以被同时转发到多个后端Cluster（目前仅支持GET请求设置多个转发）。在转发的时候，针对每一个转发支持以下特性：
