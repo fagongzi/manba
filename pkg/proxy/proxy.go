@@ -272,7 +272,7 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 	num := len(dispatches)
 
 	if num > 1 {
-		wg = &sync.WaitGroup{}
+		wg = acquireWG()
 		multiCtx = acquireMultiContext()
 		multiCtx.init()
 	}
@@ -315,6 +315,7 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 	// wait last batch complete
 	if wg != nil {
 		wg.Wait()
+		releaseWG(wg)
 	}
 
 	rd.render(ctx, multiCtx)

@@ -133,6 +133,7 @@ message HTTPResult {
     optional bytes     body    = 1;
     repeated PairValue headers = 2;
     repeated PairValue cookies = 3;
+    optional int32     code    = 4  [(gogoproto.nullable) = false];
 }
 
 // Parameter is a parameter from a http request
