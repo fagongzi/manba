@@ -94,6 +94,8 @@ func NewProxy(cfg *Cfg) *Proxy {
 func (p *Proxy) Start() {
 	go p.listenToStop()
 
+	util.StartMetricsPush(p.runner, p.cfg.Metric)
+
 	p.readyToCopy()
 	p.readyToDispatch()
 

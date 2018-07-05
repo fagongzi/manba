@@ -52,6 +52,12 @@ var (
 	limitBytesCachingMB           = flag.Uint64("limit-caching", 64, "Limit(MB): MB for caching size")
 	ttlProxy                      = flag.Int64("ttl-proxy", 10, "TTL(secs): proxy")
 	version                       = flag.Bool("version", false, "Show version info")
+
+	// metric
+	metricJob          = flag.String("metric-job", "", "prometheus job name")
+	metricInstance     = flag.String("metric-instance", "", "prometheus instance name")
+	metricAddress      = flag.String("metric-address", "", "prometheus proxy address")
+	metricIntervalSync = flag.Uint64("interval-metric-sync", 0, "Interval(sec): metric sync")
 )
 
 func init() {
@@ -120,6 +126,7 @@ func waitStop(p *proxy.Proxy) {
 func getCfg() *proxy.Cfg {
 	cfg := &proxy.Cfg{
 		Option: &proxy.Option{},
+		Metric: util.NewMetricCfg(*metricJob, *metricInstance, *metricAddress, time.Second*time.Duration(*metricIntervalSync)),
 	}
 
 	cfg.Addr = *addr
