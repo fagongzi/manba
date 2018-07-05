@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/fagongzi/gateway/pkg/util"
 )
 
 // Option proxy option
@@ -34,6 +36,7 @@ type Cfg struct {
 	Filers    []*FilterSpec
 
 	Option *Option
+	Metric *util.MetricCfg
 }
 
 // AddFilter add a filter
