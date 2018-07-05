@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net"
-	"net/http"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -263,6 +262,8 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 		ctx.Method(),
 		ctx.RequestURI())
 
+	incrRequest(api.meta.Name)
+
 	rd := acquireRender()
 	rd.init(api, dispatches)
 
@@ -321,9 +322,31 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 	rd.render(ctx, multiCtx)
 	releaseRender(rd)
 	releaseMultiContext(multiCtx)
+
+	doMetrics := true
 	for _, dn := range dispatches {
+		if doMetrics &&
+			(dn.err == ErrCircuitClose || dn.err == ErrBlacklist || dn.err == ErrWhitelist) {
+			incrRequestReject(api.meta.Name)
+			doMetrics = false
+		} else if doMetrics && dn.err == ErrCircuitHalfLimited {
+			incrRequestLimit(api.meta.Name)
+			doMetrics = false
+		} else if doMetrics && dn.err != nil {
+			incrRequestFailed(api.meta.Name)
+			doMetrics = false
+		} else if doMetrics && dn.code >= fasthttp.StatusBadRequest {
+			incrRequestFailed(api.meta.Name)
+			doMetrics = false
+		}
+
 		releaseDispathNode(dn)
 	}
+
+	if doMetrics {
+		incrRequestSucceed(api.meta.Name)
+	}
+
 	p.dispatcher.dispatchCompleted()
 }
 
@@ -363,7 +386,7 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 
 	if nil == svr {
 		dn.err = ErrNoServer
-		dn.code = http.StatusServiceUnavailable
+		dn.code = fasthttp.StatusServiceUnavailable
 		dn.maybeDone()
 		return
 	}
@@ -388,7 +411,7 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 				dn.node.meta.URLRewrite)
 
 			dn.err = ErrRewriteNotMatch
-			dn.code = http.StatusBadRequest
+			dn.code = fasthttp.StatusBadRequest
 			dn.maybeDone()
 			return
 		}
@@ -428,7 +451,7 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 	dn.res = res
 
 	if err != nil || res.StatusCode() >= fasthttp.StatusBadRequest {
-		resCode := http.StatusServiceUnavailable
+		resCode := fasthttp.StatusServiceUnavailable
 
 		if nil != err {
 			log.Errorf("dispatch: failed, target=<%s>, errors:\n%+v",
