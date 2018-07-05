@@ -87,6 +87,10 @@ func ReadCommand(in *goetty.ByteBuf) (bool, Command, error) {
 			}
 
 			// 3.3  Read ( <argument data> CR LF )
+			if argBytesCount+2 > in.Readable() {
+				in.SetReaderIndex(backupReaderIndex)
+				return false, nil, nil
+			}
 			count, value, err := in.ReadBytes(argBytesCount + 2)
 			if count == 0 && err == nil {
 				in.SetReaderIndex(backupReaderIndex)

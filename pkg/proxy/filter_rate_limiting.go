@@ -1,16 +1,10 @@
 package proxy
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/fagongzi/gateway/pkg/filter"
 	"golang.org/x/net/context"
-)
-
-var (
-	// ErrTraffixLimited traffic limit
-	ErrTraffixLimited = errors.New("traffic limit")
 )
 
 // RateLimitingFilter RateLimitingFilter

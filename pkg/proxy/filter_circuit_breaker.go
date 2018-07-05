@@ -18,8 +18,6 @@ const (
 var (
 	// ErrCircuitClose server is in circuit close
 	ErrCircuitClose = errors.New("server is in circuit close")
-	// ErrCircuitHalf server is in circuit half
-	ErrCircuitHalf = errors.New("server is in circuit half")
 	// ErrCircuitHalfLimited server is in circuit half, traffic limit
 	ErrCircuitHalfLimited = errors.New("server is in circuit half, traffic limit")
 
