@@ -9,8 +9,16 @@ import (
 
 // ValidateRouting validate routing
 func ValidateRouting(value *metapb.Routing) error {
+	if value.API == 0 {
+		return fmt.Errorf("missing api")
+	}
+
 	if value.ClusterID == 0 {
 		return fmt.Errorf("missing cluster")
+	}
+
+	if value.Name == "" {
+		return fmt.Errorf("missing name")
 	}
 
 	if value.TrafficRate <= 0 || value.TrafficRate > 100 {
@@ -48,16 +56,10 @@ func ValidateAPI(value *metapb.API) error {
 		return fmt.Errorf("missing api name")
 	}
 
-	if value.URLPattern == "" {
-		return fmt.Errorf("missing url pattern")
-	}
-
-	if value.Method == "" {
-		return fmt.Errorf("missing http method")
-	}
-
-	if _, err := regexp.Compile(value.URLPattern); err != nil {
-		return err
+	if value.URLPattern != "" {
+		if _, err := regexp.Compile(value.URLPattern); err != nil {
+			return err
+		}
 	}
 
 	return nil
