@@ -17,11 +17,13 @@ import (
 )
 
 const (
-	checkMethodTokenInRedis  string = "token_in_redis"
-	checkMethodExpireByRaw   string = "expire_by_raw"
-	checkMethodExpireByRedis string = "expire_by_redis"
-	ctxRenewTokenAttr        string = "__jwt_renew_token__"
-	jwtClaimsFieldExp        string = "exp"
+	actionTokenInRedis  string = "token_in_redis"
+	actionRenewByRaw    string = "renew_by_raw"
+	actionRenewByRedis  string = "renew_by_redis"
+	actionFetchToHeader string = "fetch_to_header"
+	actionFetchToCookie string = "fetch_to_cookie"
+	ctxRenewTokenAttr   string = "__jwt_renew_token__"
+	jwtClaimsFieldExp   string = "exp"
 )
 
 var (
@@ -29,33 +31,24 @@ var (
 	errJWTInvalid = errors.New("invalid jwt token")
 )
 
-type fetcher func(jwt.MapClaims, filter.Context)
 type tokenGetter func(filter.Context) (string, error)
-type checker func(map[string]interface{}, string, jwt.MapClaims, filter.Context) (bool, error)
+type action func(map[string]interface{}, string, jwt.MapClaims, filter.Context) (bool, error)
 
 // JWTCfg cfg
 type JWTCfg struct {
-	Secret               string    `json:"secret"`
-	Method               string    `json:"method"`
-	TokenLookup          string    `json:"tokenLookup"`
-	AuthSchema           string    `json:"authSchema"`
-	RenewTokenHeaderName string    `json:"renewTokenHeaderName,omitempty"`
-	Fetch                *Fetch    `json:"fetch,omitempty"`
-	Redis                *Redis    `json:"redis,omitempty"`
-	Checkers             []Checker `json:"checkers,omitempty"`
+	Secret               string   `json:"secret"`
+	Method               string   `json:"method"`
+	TokenLookup          string   `json:"tokenLookup"`
+	AuthSchema           string   `json:"authSchema"`
+	RenewTokenHeaderName string   `json:"renewTokenHeaderName,omitempty"`
+	Redis                *Redis   `json:"redis,omitempty"`
+	Actions              []Action `json:"actions,omitempty"`
 }
 
-// Checker checker
-type Checker struct {
+// Action action
+type Action struct {
 	Method string                 `json:"method"`
 	Params map[string]interface{} `json:"params"`
-}
-
-// Fetch fetch fields int Claims
-type Fetch struct {
-	To     string   `json:"to"`
-	Prefix string   `json:"prefix"`
-	Fields []string `json:"fields"`
 }
 
 // Redis redis
@@ -76,9 +69,8 @@ type JWTFilter struct {
 	redisPool        *redis.Pool
 	leaseTTLDuration time.Duration
 	signing          *jwt.SigningMethodHMAC
-	checkers         []checker
-	checkerArgs      []map[string]interface{}
-	fetcher          fetcher
+	actions          []action
+	actionArgs       []map[string]interface{}
 }
 
 func newJWTFilter(file string) (filter.Filter, error) {
@@ -94,12 +86,7 @@ func newJWTFilter(file string) (filter.Filter, error) {
 		return nil, err
 	}
 
-	err = f.initCheckers()
-	if err != nil {
-		return nil, err
-	}
-
-	err = f.initFetcher()
+	err = f.initActions()
 	if err != nil {
 		return nil, err
 	}
@@ -130,20 +117,14 @@ func (f *JWTFilter) Pre(c filter.Context) (statusCode int, err error) {
 		return fasthttp.StatusForbidden, err
 	}
 
-	for idx, ck := range f.checkers {
-		ok, err := ck(f.checkerArgs[idx], token, claims, c)
+	for idx, act := range f.actions {
+		ok, err := act(f.actionArgs[idx], token, claims, c)
 		if err != nil {
 			return fasthttp.StatusInternalServerError, err
 		}
 
 		if !ok {
 			return fasthttp.StatusForbidden, nil
-		}
-	}
-
-	if f.cfg.Fetch != nil {
-		for _, field := range f.cfg.Fetch.Fields {
-			c.ForwardRequest().Header.Add(fmt.Sprintf("%s%s", f.cfg.Fetch.Prefix, field), fmt.Sprintf("%v", claims[field]))
 		}
 	}
 
@@ -216,36 +197,23 @@ func (f *JWTFilter) initTokenLookup() {
 	}
 }
 
-func (f *JWTFilter) initFetcher() error {
-	if f.cfg.Fetch == nil {
-		return nil
-	}
-
-	switch f.cfg.Fetch.To {
-	case "header":
-		f.fetcher = f.fetchToHeader
-		return nil
-	case "cookie":
-		f.fetcher = f.fetchToCookie
-		return nil
-	default:
-		return fmt.Errorf("not supoprt fetch: %s", f.cfg.Fetch.To)
-	}
-}
-
-func (f *JWTFilter) initCheckers() error {
-	for _, c := range f.cfg.Checkers {
-		f.checkerArgs = append(f.checkerArgs, c.Params)
+func (f *JWTFilter) initActions() error {
+	for _, c := range f.cfg.Actions {
+		f.actionArgs = append(f.actionArgs, c.Params)
 
 		switch c.Method {
-		case checkMethodTokenInRedis:
-			f.checkers = append(f.checkers, f.tokenInRedisChecker)
-		case checkMethodExpireByRaw:
-			f.checkers = append(f.checkers, f.expireByRawChecker)
-		case checkMethodExpireByRedis:
-			f.checkers = append(f.checkers, f.expireByRedisChecker)
+		case actionTokenInRedis:
+			f.actions = append(f.actions, f.tokenInRedisAction)
+		case actionRenewByRaw:
+			f.actions = append(f.actions, f.renewByRawAction)
+		case actionRenewByRedis:
+			f.actions = append(f.actions, f.renewByRedisAction)
+		case actionFetchToHeader:
+			f.actions = append(f.actions, f.fetchToHeader)
+		case actionFetchToCookie:
+			f.actions = append(f.actions, f.fetchToCookie)
 		default:
-			return fmt.Errorf("not support check method: %s", c.Method)
+			return fmt.Errorf("not support action method: %s", c.Method)
 		}
 	}
 
@@ -281,20 +249,13 @@ func (f *JWTFilter) getRedis() redis.Conn {
 	return f.redisPool.Get()
 }
 
-func (f *JWTFilter) expireByRawChecker(args map[string]interface{}, token string, claims jwt.MapClaims, c filter.Context) (bool, error) {
-	if value, ok := claims[jwtClaimsFieldExp]; ok {
-		now := time.Now()
-		exp := int64(value.(float64))
-		if exp > now.Unix() {
-			return false, nil
-		}
-
-		claims[jwtClaimsFieldExp] = now.Add(time.Second * time.Duration(args["ttl"].(float64))).Unix()
+func (f *JWTFilter) renewByRawAction(args map[string]interface{}, token string, claims jwt.MapClaims, c filter.Context) (bool, error) {
+	if _, ok := claims[jwtClaimsFieldExp]; ok {
+		claims[jwtClaimsFieldExp] = time.Now().Add(time.Second * time.Duration(args["ttl"].(float64))).Unix()
 		newToken, err := f.renewToken(claims)
 		if err != nil {
 			return false, err
 		}
-
 		c.SetAttr(ctxRenewTokenAttr, newToken)
 		return true, nil
 	}
@@ -302,7 +263,7 @@ func (f *JWTFilter) expireByRawChecker(args map[string]interface{}, token string
 	return true, nil
 }
 
-func (f *JWTFilter) expireByRedisChecker(args map[string]interface{}, token string, claims jwt.MapClaims, c filter.Context) (bool, error) {
+func (f *JWTFilter) renewByRedisAction(args map[string]interface{}, token string, claims jwt.MapClaims, c filter.Context) (bool, error) {
 	if f.cfg.Redis == nil {
 		return false, fmt.Errorf("redis not setting")
 	}
@@ -341,7 +302,7 @@ func (f *JWTFilter) expireByRedisChecker(args map[string]interface{}, token stri
 	return true, nil
 }
 
-func (f *JWTFilter) tokenInRedisChecker(args map[string]interface{}, token string, claims jwt.MapClaims, c filter.Context) (bool, error) {
+func (f *JWTFilter) tokenInRedisAction(args map[string]interface{}, token string, claims jwt.MapClaims, c filter.Context) (bool, error) {
 	if f.cfg.Redis == nil {
 		return false, fmt.Errorf("redis not setting")
 	}
@@ -357,23 +318,31 @@ func (f *JWTFilter) tokenInRedisChecker(args map[string]interface{}, token strin
 	return value, err
 }
 
-func (f *JWTFilter) fetchToHeader(claims jwt.MapClaims, c filter.Context) {
+func (f *JWTFilter) fetchToHeader(args map[string]interface{}, token string, claims jwt.MapClaims, c filter.Context) (bool, error) {
 	var buf bytes.Buffer
-	for _, field := range f.cfg.Fetch.Fields {
-		buf.WriteString(f.cfg.Fetch.Prefix)
+	prefix := args["prefix"].(string)
+	for _, fd := range args["fields"].([]interface{}) {
+		field := fd.(string)
+		buf.WriteString(prefix)
 		buf.WriteString(field)
 		c.ForwardRequest().Header.Add(buf.String(), fmt.Sprintf("%v", claims[field]))
 		buf.Reset()
 	}
+
+	return true, nil
 }
 
-func (f *JWTFilter) fetchToCookie(claims jwt.MapClaims, c filter.Context) {
+func (f *JWTFilter) fetchToCookie(args map[string]interface{}, token string, claims jwt.MapClaims, c filter.Context) (bool, error) {
 	var buf bytes.Buffer
-	for _, field := range f.cfg.Fetch.Fields {
-		buf.WriteString(f.cfg.Fetch.Prefix)
+	prefix := args["prefix"].(string)
+	for _, fd := range args["fields"].([]interface{}) {
+		field := fd.(string)
+		buf.WriteString(prefix)
 		buf.WriteString(field)
 		c.ForwardRequest().Header.SetCookie(buf.String(), fmt.Sprintf("%v", claims[field]))
 	}
+
+	return true, nil
 }
 
 func jwtFromQuery(param string) tokenGetter {
