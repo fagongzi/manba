@@ -1,0 +1,44 @@
+{
+    "secret": "jwt secret",
+    "method": "jwt signing method, [HS256|HS384|HS512]",
+    "tokenLookup": "token lookup, [header|query|cookie:Authorization]",
+    "authSchema": "jwt schema, [Bearer]",
+    "renewTokenHeaderName": "the header name for new token in the response header",
+    "fetch": {
+        "to": "[header|cookie]",
+        "prefix": "prefix add to the field in `to`",
+        "fields": [
+            "jwt claims field 1",
+            "jwt claims field 2",
+            "jwt claims field 3"
+        ]
+    },
+    "reids": {
+        "addr": "127.0.0.1:6379",
+        "maxActive": "max connections, int",
+        "maxIdle": "max idle connections, int",
+        "idleTimeout": "idle timeout seconds, int"
+    },
+    "checkers": [
+        {
+            "method": "token_in_redis",
+            "params": {
+                "prefix": "the prefix of token in the redis"
+            }
+        },
+        {
+            "method": "expire_by_redis",
+            "params": {
+                "prefix": "the prefix of token in the redis",
+                "ttl": "ttl seconds, int"
+            }
+        },
+        {
+            "method": "expire_by_raw",
+            "params": {
+                "renew": "renew the token, [true|false]",
+                "ttl": "ttl seconds, required if the renew is true, int"
+            }
+        }
+    ]
+}
