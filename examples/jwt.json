@@ -4,22 +4,13 @@
     "tokenLookup": "token lookup, [header|query|cookie:Authorization]",
     "authSchema": "jwt schema, [Bearer]",
     "renewTokenHeaderName": "the header name for new token in the response header",
-    "fetch": {
-        "to": "[header|cookie]",
-        "prefix": "prefix add to the field in `to`",
-        "fields": [
-            "jwt claims field 1",
-            "jwt claims field 2",
-            "jwt claims field 3"
-        ]
-    },
     "reids": {
         "addr": "127.0.0.1:6379",
         "maxActive": "max connections, int",
         "maxIdle": "max idle connections, int",
         "idleTimeout": "idle timeout seconds, int"
     },
-    "checkers": [
+    "actions": [
         {
             "method": "token_in_redis",
             "params": {
@@ -27,17 +18,36 @@
             }
         },
         {
-            "method": "expire_by_redis",
+            "method": "renew_by_redis",
             "params": {
                 "prefix": "the prefix of token in the redis",
                 "ttl": "ttl seconds, int"
             }
         },
         {
-            "method": "expire_by_raw",
+            "method": "renew_by_raw",
             "params": {
-                "renew": "renew the token, [true|false]",
                 "ttl": "ttl seconds, required if the renew is true, int"
+            }
+        },
+        {
+            "method": "fetch_to_header",
+            "params": {
+                "prefix": "prefix added to field set to header",
+                "fields": [
+                    "f1",
+                    "f2"
+                ]
+            }
+        },
+        {
+            "method": "fetch_to_cookie",
+            "params": {
+                "prefix": "prefix added to field set to cookie",
+                "fields": [
+                    "f1",
+                    "f2"
+                ]
             }
         }
     ]
