@@ -65,6 +65,15 @@
   version = "v0.1"
 
 [[projects]]
+  name = "github.com/garyburd/redigo"
+  packages = [
+    "internal",
+    "redis"
+  ]
+  revision = "a69d19351219b6dd56f274f96d85a7014a2ec34e"
+  version = "v1.6.0"
+
+[[projects]]
   name = "github.com/gogo/protobuf"
   packages = [
     "gogoproto",
@@ -297,6 +306,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a715849812053495f2dfc5e1d9a39831380a107daa9a923aad1cbe556485b4b7"
+  inputs-digest = "324803d7b0a72bc0372e805e0ca171116be8b5f87d4b5616ead361da2195ddb6"
   solver-name = "gps-cdcl"
   solver-version = 1
