@@ -53,6 +53,9 @@ var (
 	ttlProxy                      = flag.Int64("ttl-proxy", 10, "TTL(secs): proxy")
 	version                       = flag.Bool("version", false, "Show version info")
 
+	// internal plugin configuration file
+	jwtCfg = flag.String("jwt", "", "PLugin(JWT): jwt plugin configuration file, json format")
+
 	// metric
 	metricJob          = flag.String("metric-job", "", "prometheus job name")
 	metricInstance     = flag.String("metric-instance", "", "prometheus instance name")
@@ -148,6 +151,7 @@ func getCfg() *proxy.Cfg {
 	cfg.Option.LimitTimeoutRead = time.Second * time.Duration(*limitTimeoutReadSec)
 	cfg.Option.LimitTimeoutWrite = time.Second * time.Duration(*limitTimeoutWriteSec)
 	cfg.Option.LimitIntervalHeathCheck = time.Second * time.Duration(*limitIntervalHeathCheckSec)
+	cfg.Option.JWTCfgFile = *jwtCfg
 
 	specs := defaultFilters
 	if len(*filters) > 0 {

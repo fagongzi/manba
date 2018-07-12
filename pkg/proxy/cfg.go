@@ -23,6 +23,8 @@ type Option struct {
 	LimitBufferWrite           int
 	LimitBytesBody             int
 	LimitBytesCaching          uint64
+
+	JWTCfgFile string
 }
 
 // Cfg proxy config
