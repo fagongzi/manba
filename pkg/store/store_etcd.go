@@ -9,6 +9,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	pbutil "github.com/fagongzi/gateway/pkg/pb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/util/format"
@@ -138,6 +139,11 @@ func (e *EtcdStore) GetBindServers(id uint64) ([]uint64, error) {
 
 // PutCluster add or update the cluster
 func (e *EtcdStore) PutCluster(value *metapb.Cluster) (uint64, error) {
+	err := pbutil.ValidateCluster(value)
+	if err != nil {
+		return 0, err
+	}
+
 	return e.putPB(e.clustersDir, value, func(id uint64) {
 		value.ID = id
 	})
@@ -164,6 +170,11 @@ func (e *EtcdStore) GetCluster(id uint64) (*metapb.Cluster, error) {
 
 // PutServer add or update the server
 func (e *EtcdStore) PutServer(value *metapb.Server) (uint64, error) {
+	err := pbutil.ValidateServer(value)
+	if err != nil {
+		return 0, err
+	}
+
 	return e.putPB(e.serversDir, value, func(id uint64) {
 		value.ID = id
 	})
@@ -187,6 +198,11 @@ func (e *EtcdStore) GetServer(id uint64) (*metapb.Server, error) {
 
 // PutAPI add or update a API
 func (e *EtcdStore) PutAPI(value *metapb.API) (uint64, error) {
+	err := pbutil.ValidateAPI(value)
+	if err != nil {
+		return 0, err
+	}
+
 	return e.putPB(e.apisDir, value, func(id uint64) {
 		value.ID = id
 	})
@@ -210,6 +226,11 @@ func (e *EtcdStore) GetAPI(id uint64) (*metapb.API, error) {
 
 // PutRouting add or update routing
 func (e *EtcdStore) PutRouting(value *metapb.Routing) (uint64, error) {
+	err := pbutil.ValidateRouting(value)
+	if err != nil {
+		return 0, err
+	}
+
 	return e.putPB(e.routingsDir, value, func(id uint64) {
 		value.ID = id
 	})
