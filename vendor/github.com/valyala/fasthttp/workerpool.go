@@ -3,7 +3,6 @@ package fasthttp
 import (
 	"net"
 	"runtime"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -188,7 +187,7 @@ func (wp *workerPool) getCh() *workerChan {
 }
 
 func (wp *workerPool) release(ch *workerChan) bool {
-	ch.lastUseTime = time.Now()
+	ch.lastUseTime = CoarseTimeNow()
 	wp.lock.Lock()
 	if wp.mustStop {
 		wp.lock.Unlock()
@@ -201,19 +200,6 @@ func (wp *workerPool) release(ch *workerChan) bool {
 
 func (wp *workerPool) workerFunc(ch *workerChan) {
 	var c net.Conn
-
-	defer func() {
-		if r := recover(); r != nil {
-			wp.Logger.Printf("panic: %s\nStack trace:\n%s", r, debug.Stack())
-			if c != nil {
-				c.Close()
-			}
-		}
-
-		wp.lock.Lock()
-		wp.workersCount--
-		wp.lock.Unlock()
-	}()
 
 	var err error
 	for c = range ch.ch {
@@ -238,4 +224,8 @@ func (wp *workerPool) workerFunc(ch *workerChan) {
 			break
 		}
 	}
+
+	wp.lock.Lock()
+	wp.workersCount--
+	wp.lock.Unlock()
 }
