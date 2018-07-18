@@ -1,4 +1,4 @@
-ignored = ["github.com/coreos/etcd/cmd"]
+ignored = ["github.com/coreos/etcd/cmd", "github.com/coreos/etcd/Documentation"]
 
 [[constraint]]
   branch = "master"
