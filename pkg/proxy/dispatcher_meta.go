@@ -467,6 +467,7 @@ func (r *dispatcher) removeServer(id uint64) error {
 		return errServerNotFound
 	}
 
+	svr.heathTimeout.Stop()
 	delete(r.servers, id)
 	for _, cluster := range r.clusters {
 		cluster.remove(id)
