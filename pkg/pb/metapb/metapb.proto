@@ -210,6 +210,7 @@ message API {
     optional bool            useDefault      = 13 [(gogoproto.nullable) = false];
     optional MatchRule       matchRule       = 14 [(gogoproto.nullable) = false];
     optional uint32          position        = 15 [(gogoproto.nullable) = false];
+    repeated PairValue       tags            = 16;
 }
 
 // Condition is a condition for routing

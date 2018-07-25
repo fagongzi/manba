@@ -65,3 +65,6 @@ API的默认返回值，当后端Cluster无可用Server的时候，Gateway将返
 ## Position（可选）
 
 API匹配时按该值的升序匹配，即值越小优先级越高。默认值为0.
+
+## Tags（可选）
+给API加上Tag标签，便于维护和检索。
