@@ -598,6 +598,33 @@ func (ab *APIBuilder) addRenderObject(nameInTemplate string, flatAttrs bool, nam
 	return ab
 }
 
+// AddTag add tag for api
+func (ab *APIBuilder) AddTag(key, value string) *APIBuilder {
+	ab.value.Tags = append(ab.value.Tags, &metapb.PairValue{
+		Name:  key,
+		Value: value,
+	})
+	return ab
+}
+
+// RemoveTag remove tag for api
+func (ab *APIBuilder) RemoveTag(key string) *APIBuilder {
+	var newTags []*metapb.PairValue
+	for _, tag := range ab.value.Tags {
+		if tag.Name != key {
+			newTags = append(newTags, tag)
+		}
+	}
+	ab.value.Tags = newTags
+	return ab
+}
+
+// Position reset the position for api
+func (ab *APIBuilder) Position(value uint32) *APIBuilder {
+	ab.value.Position = value
+	return ab
+}
+
 // Commit commit
 func (ab *APIBuilder) Commit() (uint64, error) {
 	err := pb.ValidateAPI(&ab.value)

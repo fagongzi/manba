@@ -39,6 +39,11 @@ func createAPI() error {
 	sb.RemoveBlacklist("192.168.0.1") // 剩余："192.168.1.*", "192.168.*"
 	sb.RemoveWhitelist("192.168.3.1") // 剩余："192.168.3.*", "192.168.*"
 
+	// 增加Tag
+	sb.AddTag("tag1", "value1")
+	sb.AddTag("tag2", "")
+	sb.RemoveTag("tag1")
+
 	// 增加默认值
 	sb.DefaultValue([]byte("{\"value\", \"default\"}"))
 	// 为默认值增加header

@@ -531,7 +531,13 @@ JSON Body
     },
     "useDefault": false,
     "matchRule": 0,
-    "position": 0
+    "position": 0,
+    "tags": [
+        {
+            "name": "tag3",
+            "value": "value3"
+        }
+    ]
 }
 ```
 设置id字段表示更新
@@ -689,7 +695,13 @@ Reponse
         },
         "useDefault": false,
         "matchRule": 0,
-        "position": 0
+        "position": 0,
+        "tags": [
+            {
+                "name": "tag3",
+                "value": "value3"
+            }
+        ]
     }
 }
 ```
@@ -831,7 +843,13 @@ Reponse
             },
             "useDefault": false,
             "matchRule": 0,
-            "position": 0
+            "position": 0,
+            "tags": [
+                {
+                    "name": "tag1",
+                    "value": "value1"
+                }
+            ]
         },
         {
             "id":2,
@@ -956,7 +974,13 @@ Reponse
             },
             "useDefault": false,
             "matchRule": 0,
-            "position": 0
+            "position": 0,
+            "tags": [
+                {
+                    "name": "tag2",
+                    "value": ""
+                }
+            ]
         },
         {
             "id":3,
@@ -1081,7 +1105,13 @@ Reponse
             },
             "useDefault": false,
             "matchRule": 0,
-            "position": 0
+            "position": 0,
+            "tags": [
+                {
+                    "name": "tag3",
+                    "value": "value3"
+                }
+            ]
         }
     ]
 }
