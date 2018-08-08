@@ -45,7 +45,11 @@ go build -o apiserver ./...
   - 打包为docker镜像
 
   ```bash
+  # 使用默认的docker image tag，即当前编译时间
   make docker
+
+  # 自定义docker image tag
+  make docker tag='this_is_my_tag'
   ```
 
   - 更多使用说明
