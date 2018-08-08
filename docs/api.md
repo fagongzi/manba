@@ -43,6 +43,9 @@ API的默认返回值，当后端Cluster无可用Server的时候，Gateway将返
 * 支持失败重试
 
   可以设置`retryStrategy`指定根据http返回码重试请求，可以设置重试最大次数以及重试间隔。 
+* 支持API级别的超时时间覆盖全局设置
+
+  可以设置`ReadTimeout`和`WriteTimeout`来指定请求的读写超时时间，不设置默认使用全局设置。
 
 ## Perms（可选）
 设置访问这个API需要的权限，需要用户自己开发权限检查插件。

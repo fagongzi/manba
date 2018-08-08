@@ -15,6 +15,7 @@ import (
 	"github.com/buger/jsonparser"
 	"github.com/fagongzi/gateway/pkg/lb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/goetty"
 	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/collection"
@@ -217,6 +218,7 @@ type apiRule struct {
 }
 
 type apiNode struct {
+	httpOption        util.HTTPOption
 	meta              *metapb.DispatchNode
 	validations       []*apiValidation
 	defaultCookies    []*fasthttp.Cookie
@@ -258,6 +260,14 @@ func newAPINode(meta *metapb.DispatchNode) *apiNode {
 		}
 
 		rn.validations = append(rn.validations, rv)
+	}
+
+	rn.httpOption = *globalHTTPOptions
+	if meta.ReadTimeout > 0 {
+		rn.httpOption.ReadTimeout = time.Second * time.Duration(meta.ReadTimeout)
+	}
+	if meta.WriteTimeout > 0 {
+		rn.httpOption.WriteTimeout = time.Second * time.Duration(meta.WriteTimeout)
 	}
 
 	return rn
