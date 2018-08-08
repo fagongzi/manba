@@ -53,7 +53,6 @@ dist_dir: ; $(info ======== prepare distribute dir:)
 .PHONY: clean
 clean: ; $(info ======== clean all:)
 	rm -rf $(DIST_DIR)*
-	rm -rf $(ROOT_DIR)Library
 
 .PHONY: help
 help:
