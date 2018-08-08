@@ -11,7 +11,8 @@ Gateway目前支持Etcd作为元数据区的存储，所以需要一个Etcd环�
 如果你希望从源码编译Gateway，你需要一个[golang 环境](https://github.com/golang/go)，必须使用`1.8`以上的版本。
 
 # 从源码编译
-执行如下命令：
+
+- 手动编译
 
 ```bash
 cd $GOPATH/src/github.com/fagongzi/gateway/cmd/proxy
@@ -20,6 +21,38 @@ go build -o proxy ./...
 cd $GOPATH/src/github.com/fagongzi/gateway/cmd/api
 go build -o apiserver ./...
 ```
+
+- 使用Makefile脚本
+
+  以下命令默认在项目根目录（即`$GOPATH/src/github.com/fagongzi/gateway`）目录下执行。
+
+  - 编译适合当前系统的二进制文件
+
+  ```bash
+  make
+  ```
+
+  - 指定编译的二进制文件类型
+
+  ```bash
+  # Linux
+  make release
+
+  # Darwin(mac osx)
+  make release_darwin
+  ```
+
+  - 打包为docker镜像
+
+  ```bash
+  make docker
+  ```
+
+  - 更多使用说明
+
+  ```bash
+  make help
+  ```
 
 # Gateway组件
 Gateway运行环境包含2个组件：`ApiServer` 和 `Proxy`
