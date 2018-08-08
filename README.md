@@ -56,7 +56,7 @@ Gateway由`proxy`, `apiserver`组成
 ### Proxy
 Proxy是Gateway对终端用户提供服务的组件，Proxy是一个无状态的节点，可以部署多个来支撑更大的流量，[更多](./docs/proxy.md)。
 
-### ApiServer 
+### ApiServer
 ApiServer对外提供GRPC的接口，用来管理元信息，[更多](./docs/apiserver.md)。
 
 ## Gateway中的概念
@@ -71,6 +71,9 @@ API是Gateway的核心概念，我们可以在Gateway的中维护对外的API，
 
 ### Routing
 Routing是一个路由策略，根据HTTP Request中的Cookie，Querystring、Header、Path中的一些信息把流量分发到或者复制到指定的Cluster，通过这个功能，我们可以实现AB Test和线上引流，[更多](./docs/routing.md)。
-  
+
+### 参与开发
+[更多](./docs/build.md)
+
 # 交流方式-微信
 ![](./images/qr.jpg)
