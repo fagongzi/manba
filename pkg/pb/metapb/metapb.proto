@@ -156,16 +156,24 @@ message Validation {
     repeated ValidationRule rules     = 3 [(gogoproto.nullable) = false];
 }
 
+// RetryStrategy retry strategy
+message RetryStrategy {
+    optional int32 interval = 1 [(gogoproto.nullable) = false];
+    optional int32 maxTimes = 2 [(gogoproto.nullable) = false];
+    repeated int32 codes    = 3;
+}
+
 // DispatchNode is the request forward to
 message DispatchNode {
-    optional uint64     clusterID    = 1 [(gogoproto.nullable) = false];
-    optional string     urlRewrite   = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "URLRewrite"];
-    optional string     attrName     = 3 [(gogoproto.nullable) = false];
-    repeated Validation validations  = 4;
-    optional Cache      cache        = 5;
-    optional HTTPResult defaultValue = 6 [(gogoproto.nullable) = true];
-    optional bool       useDefault   = 7 [(gogoproto.nullable) = false];
-    optional int32      batchIndex   = 8 [(gogoproto.nullable) = false];
+    optional uint64        clusterID     = 1 [(gogoproto.nullable) = false];
+    optional string        urlRewrite    = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "URLRewrite"];
+    optional string        attrName      = 3 [(gogoproto.nullable) = false];
+    repeated Validation    validations   = 4;
+    optional Cache         cache         = 5;
+    optional HTTPResult    defaultValue  = 6 [(gogoproto.nullable) = true];
+    optional bool          useDefault    = 7 [(gogoproto.nullable) = false];
+    optional int32         batchIndex    = 8 [(gogoproto.nullable) = false];
+    optional RetryStrategy retryStrategy = 9;
 }
 
 // Cache is used for cache api result
