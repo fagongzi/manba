@@ -58,6 +58,24 @@ func (dn *dispathNode) reset() {
 	*dn = emptyDispathNode
 }
 
+func (dn *dispathNode) hasRetryStrategy() bool {
+	return dn.retryStrategy() != nil
+}
+
+func (dn *dispathNode) matchRetryStrategy(target int32) bool {
+	for _, code := range dn.retryStrategy().Codes {
+		if code == target {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (dn *dispathNode) retryStrategy() *metapb.RetryStrategy {
+	return dn.node.meta.RetryStrategy
+}
+
 func (dn *dispathNode) hasError() bool {
 	return dn.err != nil ||
 		dn.code >= fasthttp.StatusBadRequest
@@ -205,9 +223,7 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) (*apiRuntime, []*dispathNod
 				dn := acquireDispathNode()
 				dn.api = api
 				dn.node = node
-				dn.dest = r.selectServer(req, r.clusters[node.meta.ClusterID])
-
-				r.routingOpt(api.meta.ID, req, dn)
+				r.selectServer(req, dn)
 				dispathes = append(dispathes, dn)
 			}
 			break
@@ -217,22 +233,33 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) (*apiRuntime, []*dispathNod
 	return targetAPI, dispathes
 }
 
-func (r *dispatcher) routingOpt(apiID uint64, req *fasthttp.Request, node *dispathNode) {
+func (r *dispatcher) selectServer(req *fasthttp.Request, dn *dispathNode) {
+	dn.dest = r.selectServerFromCluster(req, dn.node.meta.ClusterID)
+	r.adjustByRouting(dn.api.meta.ID, req, dn)
+}
+
+func (r *dispatcher) adjustByRouting(apiID uint64, req *fasthttp.Request, dn *dispathNode) {
 	for _, routing := range r.routings {
 		if routing.matches(apiID, req) {
+			svr := r.selectServerFromCluster(req, routing.meta.ClusterID)
+
 			switch routing.meta.Strategy {
 			case metapb.Split:
-				node.dest = r.selectServer(req, r.clusters[routing.meta.ClusterID])
+				dn.dest = svr
 			case metapb.Copy:
-				node.copyTo = r.selectServer(req, r.clusters[routing.meta.ClusterID])
+				dn.copyTo = svr
 			}
 			break
 		}
 	}
 }
 
-func (r *dispatcher) selectServer(req *fasthttp.Request, cluster *clusterRuntime) *serverRuntime {
-	id := cluster.selectServer(req)
-	svr, _ := r.servers[id]
-	return svr
+func (r *dispatcher) selectServerFromCluster(req *fasthttp.Request, id uint64) *serverRuntime {
+	cluster, ok := r.clusters[id]
+	if !ok {
+		return nil
+	}
+
+	sid := cluster.selectServer(req)
+	return r.servers[sid]
 }

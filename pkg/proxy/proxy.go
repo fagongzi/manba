@@ -385,7 +385,6 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 
 	ctx := dn.ctx
 	svr := dn.dest
-
 	if nil == svr {
 		dn.err = ErrNoServer
 		dn.code = fasthttp.StatusServiceUnavailable
@@ -447,13 +446,45 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 		return
 	}
 
-	res, err := p.client.Do(forwardReq, svr.meta.Addr, nil)
-	c.setEndAt(time.Now())
+	var res *fasthttp.Response
+	times := int32(0)
+	for {
+		res, err = p.client.Do(forwardReq, svr.meta.Addr, nil)
+		c.setEndAt(time.Now())
+
+		// succ or has none retry strategy or not match the retry code
+		if (err == nil && res.StatusCode() < fasthttp.StatusBadRequest) ||
+			!dn.hasRetryStrategy() ||
+			!dn.matchRetryStrategy(int32(res.StatusCode())) {
+			break
+		}
+
+		// retry with strategiess
+		retry := dn.retryStrategy()
+		times++
+
+		if times > retry.MaxTimes {
+			break
+		}
+
+		if retry.Interval > 0 {
+			time.Sleep(time.Millisecond * time.Duration(retry.Interval))
+		}
+
+		fasthttp.ReleaseResponse(res)
+		p.dispatcher.selectServer(&ctx.Request, dn)
+		svr = dn.dest
+		if nil == svr {
+			dn.err = ErrNoServer
+			dn.code = fasthttp.StatusServiceUnavailable
+			dn.maybeDone()
+			return
+		}
+	}
 
 	dn.res = res
-
 	if err != nil || res.StatusCode() >= fasthttp.StatusBadRequest {
-		resCode := fasthttp.StatusServiceUnavailable
+		resCode := fasthttp.StatusInternalServerError
 
 		if nil != err {
 			log.Errorf("dispatch: failed, target=<%s>, errors:\n%+v",

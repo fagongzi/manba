@@ -23,6 +23,7 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 * API 结果Cache
 * JWT Authorization
 * API Metric导入Prometheus
+* API 失败重试
 * 后端server的健康检查
 * 开放管理API(GRPC、Restful)
 

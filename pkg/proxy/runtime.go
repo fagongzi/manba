@@ -79,8 +79,7 @@ func (c *clusterRuntime) selectServer(req *fasthttp.Request) uint64 {
 		return 0
 	}
 
-	id, _ := e.Value.(uint64)
-	return id
+	return e.Value.(uint64)
 }
 
 type serverRuntime struct {
