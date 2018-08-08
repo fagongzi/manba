@@ -39,6 +39,10 @@ var (
 	}
 )
 
+var (
+	globalHTTPOptions *util.HTTPOption
+)
+
 // Proxy Proxy
 type Proxy struct {
 	sync.RWMutex
@@ -64,17 +68,19 @@ type Proxy struct {
 
 // NewProxy create a new proxy
 func NewProxy(cfg *Cfg) *Proxy {
+	globalHTTPOptions := &util.HTTPOption{
+		MaxConnDuration:     cfg.Option.LimitDurationConnKeepalive,
+		MaxIdleConnDuration: cfg.Option.LimitDurationConnIdle,
+		ReadTimeout:         cfg.Option.LimitTimeoutRead,
+		WriteTimeout:        cfg.Option.LimitTimeoutWrite,
+		MaxResponseBodySize: cfg.Option.LimitBytesBody,
+		WriteBufferSize:     cfg.Option.LimitBufferWrite,
+		ReadBufferSize:      cfg.Option.LimitBufferRead,
+		MaxConns:            cfg.Option.LimitCountConn,
+	}
+
 	p := &Proxy{
-		client: util.NewFastHTTPClientOption(&util.HTTPOption{
-			MaxConnDuration:     cfg.Option.LimitDurationConnKeepalive,
-			MaxIdleConnDuration: cfg.Option.LimitDurationConnIdle,
-			ReadTimeout:         cfg.Option.LimitTimeoutRead,
-			WriteTimeout:        cfg.Option.LimitTimeoutWrite,
-			MaxResponseBodySize: cfg.Option.LimitBytesBody,
-			WriteBufferSize:     cfg.Option.LimitBufferWrite,
-			ReadBufferSize:      cfg.Option.LimitBufferRead,
-			MaxConns:            cfg.Option.LimitCountConn,
-		}),
+		client:        util.NewFastHTTPClientOption(globalHTTPOptions),
 		cfg:           cfg,
 		filtersMap:    make(map[string]filter.Filter),
 		stopC:         make(chan struct{}),
@@ -449,7 +455,7 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 	var res *fasthttp.Response
 	times := int32(0)
 	for {
-		res, err = p.client.Do(forwardReq, svr.meta.Addr, nil)
+		res, err = p.client.Do(forwardReq, svr.meta.Addr, dn.httpOption())
 		c.setEndAt(time.Now())
 
 		// succ or has none retry strategy or not match the retry code

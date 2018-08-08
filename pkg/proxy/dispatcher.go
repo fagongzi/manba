@@ -72,6 +72,10 @@ func (dn *dispathNode) matchRetryStrategy(target int32) bool {
 	return false
 }
 
+func (dn *dispathNode) httpOption() *util.HTTPOption {
+	return &dn.node.httpOption
+}
+
 func (dn *dispathNode) retryStrategy() *metapb.RetryStrategy {
 	return dn.node.meta.RetryStrategy
 }
