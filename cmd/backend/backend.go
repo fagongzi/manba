@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo"
+	md "github.com/labstack/echo/middleware"
 )
 
 var (
@@ -16,8 +17,14 @@ func main() {
 	flag.Parse()
 
 	server := echo.New()
+	server.Use(md.Logger())
+
 	server.GET("/check", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK")
+	})
+
+	server.GET("/error", func(c echo.Context) error {
+		return c.NoContent(http.StatusBadRequest)
 	})
 
 	server.GET("/v1/components/:id", func(c echo.Context) error {

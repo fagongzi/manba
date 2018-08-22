@@ -485,6 +485,8 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 		}
 		c.setEndAt(time.Now())
 
+		times++
+
 		// skip succeed
 		if err == nil && res.StatusCode() < fasthttp.StatusBadRequest {
 			break
@@ -496,16 +498,14 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 		}
 
 		// skip not match
-		if !dn.matchAllRetryStrategy() ||
+		if !dn.matchAllRetryStrategy() &&
 			!dn.matchRetryStrategy(int32(res.StatusCode())) {
 			break
 		}
 
 		// retry with strategiess
 		retry := dn.retryStrategy()
-		times++
-
-		if times > retry.MaxTimes {
+		if times >= retry.MaxTimes {
 			break
 		}
 
@@ -529,12 +529,14 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 		resCode := fasthttp.StatusInternalServerError
 
 		if nil != err {
-			log.Errorf("dispatch: failed, target=<%s>, errors:\n%+v",
+			log.Errorf("dispatch: try %d times failed, target=<%s>, errors:\n%+v",
+				times,
 				svr.meta.Addr,
 				err)
 		} else {
 			resCode = res.StatusCode()
-			log.Errorf("dispatch: returns error code, target=<%s> code=<%d>",
+			log.Errorf("dispatch: try %d times returns error code, target=<%s> code=<%d>",
+				times,
 				svr.meta.Addr,
 				res.StatusCode())
 		}
