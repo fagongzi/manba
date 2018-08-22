@@ -26,6 +26,7 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 * API 失败重试
 * 后端server的健康检查
 * 开放管理API(GRPC、Restful)
+* 支持websocket
 
 ## Docker
 使用 `docker pull fagongzi/gateway` 命令下载Docker镜像, 使用 `docker run -d fagongzi/gateway` 运行镜像. 镜像启动后export 3个端口:
