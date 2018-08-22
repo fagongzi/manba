@@ -70,7 +70,10 @@ API的默认返回值，当后端Cluster无可用Server的时候，Gateway将返
 
 ## Position（可选）
 
-API匹配时按该值的升序匹配，即值越小优先级越高。默认值为0.
+API匹配时按该值的升序匹配，即值越小优先级越高。默认值为0。
 
 ## Tags（可选）
 给API加上Tag标签，便于维护和检索。
+
+## WebSocketOptions（可选）
+websocket选项，设置该API为`websocket`，注意：`websocket特性还处于试验阶段，默认关闭，可以使用--websocket启用特性`。网关转发websocket的时候，`Origin`默认使用后端Server的地址，如果需要设置特殊值，可以指定`Origin`参数。
