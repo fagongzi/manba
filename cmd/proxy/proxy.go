@@ -61,6 +61,9 @@ var (
 	metricInstance     = flag.String("metric-instance", "", "prometheus instance name")
 	metricAddress      = flag.String("metric-address", "", "prometheus proxy address")
 	metricIntervalSync = flag.Uint64("interval-metric-sync", 0, "Interval(sec): metric sync")
+
+	// enable features
+	enableWebSocket = flag.Bool("websocket", false, "enable websocket")
 )
 
 func init() {
@@ -152,6 +155,7 @@ func getCfg() *proxy.Cfg {
 	cfg.Option.LimitTimeoutWrite = time.Second * time.Duration(*limitTimeoutWriteSec)
 	cfg.Option.LimitIntervalHeathCheck = time.Second * time.Duration(*limitIntervalHeathCheckSec)
 	cfg.Option.JWTCfgFile = *jwtCfg
+	cfg.Option.EnableWebSocket = *enableWebSocket
 
 	specs := defaultFilters
 	if len(*filters) > 0 {

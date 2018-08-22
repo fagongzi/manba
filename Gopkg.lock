@@ -18,7 +18,7 @@
   revision = "2cac668e8456b4284edb0715e17e2af02d3ec993"
 
 [[projects]]
-  digest = "1:16724c391e5cbc8e74aecfc3e3d26c6b280e10c064ef8feee80fc05dcfdaf2ab"
+  digest = "1:ddaf87260bdfb5f689441bc8cc967456bac595329e4db5936104972ee25a7933"
   name = "github.com/coreos/etcd"
   packages = [
     "auth/authpb",
@@ -66,7 +66,7 @@
   revision = "9a647df25e0e4ba3d967bd8a16b871e8c7e7eb6c"
 
 [[projects]]
-  digest = "1:37b5062711f39251b93ed95b70fffb19ec17cc2e52c7686be65f4be3d1daa700"
+  digest = "1:90c64a6ce0da95cf7009f370afae6a17853b8fabc2315863068bdebf1aea13a4"
   name = "github.com/fagongzi/util"
   packages = [
     "atomic",
@@ -81,7 +81,7 @@
   version = "v0.1"
 
 [[projects]]
-  digest = "1:f26133af0db0007ccbd4830a033f7124c38cbab8afecd06452f17c6b7fd4c3a9"
+  digest = "1:0594af97b2f4cec6554086eeace6597e20a4b69466eb4ada25adf9f4300dddd2"
   name = "github.com/garyburd/redigo"
   packages = [
     "internal",
@@ -92,7 +92,7 @@
   version = "v1.6.0"
 
 [[projects]]
-  digest = "1:2949684c4d8bfe3c5aba1c60d6d64f02061c0db3057791cbab4b2c2c2b912fb4"
+  digest = "1:3d3a3d38b5ba4934a07e047b3d7397841d8bb69eafdf482260db415290796b19"
   name = "github.com/gogo/protobuf"
   packages = [
     "gogoproto",
@@ -104,7 +104,7 @@
   version = "v0.5"
 
 [[projects]]
-  digest = "1:cb22af0ed7c72d495d8be1106233ee553898950f15fd3f5404406d44c2e86888"
+  digest = "1:17fe264ee908afc795734e8c4e63db2accabaf57326dbf21763a7d6b86096260"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -118,7 +118,15 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:67b6517e77b512d530c59f817dc2c8e46131805ce6168eeef2793ab515422aeb"
+  digest = "1:cee8e8ac80df6373e7daa11baf1f98c1b6f7242c49ccae7e1ec34a971dc408d9"
+  name = "github.com/gorilla/websocket"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3ff3320c2a1756a3691521efc290b4701575147c"
+  version = "v1.3.0"
+
+[[projects]]
+  digest = "1:cdbed6a7b574b13bbabcd8c36c5be56d6444789bab21fcd37d39655eab0b2141"
   name = "github.com/klauspost/compress"
   packages = [
     "flate",
@@ -138,7 +146,15 @@
   version = "v1.1"
 
 [[projects]]
-  digest = "1:ed322f61bf6c6a69a378a856f60773e2d12285e8725fa47d1effa51076e5aef3"
+  branch = "master"
+  digest = "1:73405a734b6495d7ff09ff24a86633b56bc13917ea9adef16f3d8cccaea176c2"
+  name = "github.com/koding/websocketproxy"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0fa3f994f6e724d94f7299587cee4ba089152c9d"
+
+[[projects]]
+  digest = "1:87f801436ec4799e0e043ab348ff9f3e95b1b3761138158f0950ac67695cc272"
   name = "github.com/labstack/echo"
   packages = [
     ".",
@@ -149,7 +165,7 @@
   version = "3.3.5"
 
 [[projects]]
-  digest = "1:8a96690ad5450df849cfd664c761cb10fe9a5d5de1effaf6a85cd884e93400c9"
+  digest = "1:568171fc14a3d819b112c3e219d351ea7b05e8dad7935c4168c6b3373244a686"
   name = "github.com/labstack/gommon"
   packages = [
     "bytes",
@@ -195,7 +211,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0f37e09b3e92aaeda5991581311f8dbf38944b36a3edec61cc2d1991f527554a"
+  digest = "1:2d5cd61daa5565187e1d96bae64dbbc6080dacf741448e9629c64fd93203b0d4"
   name = "github.com/prometheus/client_model"
   packages = ["go"]
   pruneopts = "UT"
@@ -203,7 +219,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4d291d51042ed9de40eef61a3c1b56e969d6e0f8aa5fd3da5e958ec66bee68e4"
+  digest = "1:e469cd65badf7694aeb44874518606d93c1d59e7735d3754ad442782437d3cc3"
   name = "github.com/prometheus/common"
   packages = [
     "expfmt",
@@ -215,7 +231,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:55d7449d6987dabf272b4e81b2f9c449f05b17415c939b68d1e82f57e3374b7f"
+  digest = "1:20d9bb50dbee172242f9bcd6ec24a917dd7a5bb17421bf16a79c33111dea7db1"
   name = "github.com/prometheus/procfs"
   packages = [
     ".",
@@ -227,6 +243,14 @@
   revision = "ae68e2d4c00fed4943b5f6698d504a5fe083da8a"
 
 [[projects]]
+  digest = "1:30e06e6d62a1d694e3cdbff29d8a9a96022e05a487d0c6eaf0ef898965ef28fb"
+  name = "github.com/soheilhy/cmux"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e09e9389d85d8492d313d73d1469c029e710623f"
+  version = "v0.1.4"
+
+[[projects]]
   branch = "master"
   digest = "1:c468422f334a6b46a19448ad59aaffdfc0a36b08fdcc1c749a0b29b6453d7e59"
   name = "github.com/valyala/bytebufferpool"
@@ -235,7 +259,7 @@
   revision = "e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7"
 
 [[projects]]
-  digest = "1:8b0a3c76e095c6dd2ef1bebd723ad4bd13af74755d3410ede4f10b48e926545a"
+  digest = "1:15ad8a80098fcc7a194b9db6b26d74072a852e4faa957848c8118193d3c69230"
   name = "github.com/valyala/fasthttp"
   packages = [
     ".",
@@ -256,7 +280,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:efe0afae2aa44f3983a82c99ebd8548a8c0cc5085f1759958c3862d41e738d14"
+  digest = "1:44f085b3392feb6a54d3d5e4a25a6f7f9d0cb898fb02c1baf384ff4287ec33ad"
   name = "golang.org/x/crypto"
   packages = [
     "acme",
@@ -267,7 +291,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2ecf3b54e00300787e7499605a787d616b2b22fda16fa8a125c692aa2c6962c2"
+  digest = "1:523ecaefc9f3a6f0d84baaeee490ec8e804c9f9e2c88433288f16502969ef50a"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -290,7 +314,7 @@
   revision = "ac767d655b305d4e9612f5f6e33120b9176c4ad4"
 
 [[projects]]
-  digest = "1:7509ba4347d1f8de6ae9be8818b0cd1abc3deeffe28aeaf4be6d4b6b5178d9ca"
+  digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -329,7 +353,7 @@
   revision = "2731d4fa720b67f9fe38e9051a2a9b38e4609260"
 
 [[projects]]
-  digest = "1:fbd63905f816b0726070ce7c69a39c264a304d38dd0b01b2da5772536b28d9fd"
+  digest = "1:3a98314fd2e43bbd905b33125dad80b10111ba6e5e541db8ed2a953fe01fbb31"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -382,10 +406,13 @@
     "github.com/fagongzi/util/task",
     "github.com/garyburd/redigo/redis",
     "github.com/golang/protobuf/proto",
+    "github.com/gorilla/websocket",
+    "github.com/koding/websocketproxy",
     "github.com/labstack/echo",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/common/expfmt",
     "github.com/prometheus/common/model",
+    "github.com/soheilhy/cmux",
     "github.com/valyala/fasthttp",
     "golang.org/x/net/context",
     "golang.org/x/time/rate",

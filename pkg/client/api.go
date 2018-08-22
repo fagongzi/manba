@@ -62,6 +62,12 @@ func (ab *APIBuilder) RemovePerm(perm string) *APIBuilder {
 	return ab
 }
 
+// WebSocketOptions set websocket options
+func (ab *APIBuilder) WebSocketOptions(options *metapb.WebSocketOptions) *APIBuilder {
+	ab.value.WebSocketOptions = options
+	return ab
+}
+
 // MatchURLPattern set a match path
 func (ab *APIBuilder) MatchURLPattern(urlPattern string) *APIBuilder {
 	ab.value.URLPattern = urlPattern

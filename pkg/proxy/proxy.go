@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"net/http"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -16,6 +17,7 @@ import (
 	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/hack"
 	"github.com/fagongzi/util/task"
+	"github.com/soheilhy/cmux"
 	"github.com/valyala/fasthttp"
 )
 
@@ -68,7 +70,7 @@ type Proxy struct {
 
 // NewProxy create a new proxy
 func NewProxy(cfg *Cfg) *Proxy {
-	globalHTTPOptions := &util.HTTPOption{
+	globalHTTPOptions = &util.HTTPOption{
 		MaxConnDuration:     cfg.Option.LimitDurationConnKeepalive,
 		MaxIdleConnDuration: cfg.Option.LimitDurationConnIdle,
 		ReadTimeout:         cfg.Option.LimitTimeoutRead,
@@ -106,11 +108,52 @@ func (p *Proxy) Start() {
 	p.readyToDispatch()
 
 	log.Infof("gateway proxy started at <%s>", p.cfg.Addr)
-	err := fasthttp.ListenAndServe(p.cfg.Addr, p.ReverseProxyHandler)
+
+	if !p.cfg.Option.EnableWebSocket {
+		err := fasthttp.ListenAndServe(p.cfg.Addr, p.ServeFastHTTP)
+		if err != nil {
+			log.Fatalf("gateway proxy start failed, errors:\n%+v",
+				err)
+		}
+		return
+	}
+
+	l, err := net.Listen("tcp", p.cfg.Addr)
 	if err != nil {
 		log.Fatalf("gateway proxy start failed, errors:\n%+v",
 			err)
-		return
+	}
+
+	m := cmux.New(l)
+	webSocketL := m.Match(cmux.HTTP1HeaderField("Upgrade", "websocket"))
+	httpL := m.Match(cmux.Any())
+
+	go func() {
+		httpS := fasthttp.Server{
+			Handler: p.ServeFastHTTP,
+		}
+		err = httpS.Serve(httpL)
+		if err != nil {
+			log.Fatalf("gateway proxy start failed, errors:\n%+v",
+				err)
+		}
+	}()
+
+	go func() {
+		webSocketS := &http.Server{
+			Handler: p,
+		}
+		err = webSocketS.Serve(webSocketL)
+		if err != nil {
+			log.Fatalf("gateway proxy start failed, errors:\n%+v",
+				err)
+		}
+	}()
+
+	err = m.Serve()
+	if err != nil {
+		log.Fatalf("gateway proxy start failed, errors:\n%+v",
+			err)
 	}
 }
 
@@ -216,7 +259,7 @@ func (p *Proxy) readyToDispatch() {
 					return
 				case dn := <-c:
 					if dn != nil {
-						p.doProxy(dn)
+						p.doProxy(dn, nil)
 					}
 				}
 			}
@@ -250,8 +293,8 @@ func (p *Proxy) readyToCopy() {
 	}
 }
 
-// ReverseProxyHandler http reverse handler
-func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
+// ServeFastHTTP http reverse handler by fasthttp
+func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	if p.isStopped() {
 		ctx.SetStatusCode(fasthttp.StatusServiceUnavailable)
 		return
@@ -317,7 +360,7 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 		if wg != nil {
 			p.dispatches[getIndex(&p.dispatchIndex, p.cfg.Option.LimitCountDispatchWorker)] <- dn
 		} else {
-			p.doProxy(dn)
+			p.doProxy(dn, nil)
 		}
 	}
 
@@ -331,30 +374,7 @@ func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 	releaseRender(rd)
 	releaseMultiContext(multiCtx)
 
-	doMetrics := true
-	for _, dn := range dispatches {
-		if doMetrics &&
-			(dn.err == ErrCircuitClose || dn.err == ErrBlacklist || dn.err == ErrWhitelist) {
-			incrRequestReject(api.meta.Name)
-			doMetrics = false
-		} else if doMetrics && dn.err == ErrCircuitHalfLimited {
-			incrRequestLimit(api.meta.Name)
-			doMetrics = false
-		} else if doMetrics && dn.err != nil {
-			incrRequestFailed(api.meta.Name)
-			doMetrics = false
-		} else if doMetrics && dn.code >= fasthttp.StatusBadRequest {
-			incrRequestFailed(api.meta.Name)
-			doMetrics = false
-		}
-
-		releaseDispathNode(dn)
-	}
-
-	if doMetrics {
-		incrRequestSucceed(api.meta.Name)
-	}
-
+	p.postRequest(api, dispatches)
 	p.dispatcher.dispatchCompleted()
 }
 
@@ -383,7 +403,7 @@ func (p *Proxy) doCopy(req *copyReq) {
 	fasthttp.ReleaseRequest(req.origin)
 }
 
-func (p *Proxy) doProxy(dn *dispathNode) {
+func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 	if dn.node.meta.UseDefault {
 		dn.maybeDone()
 		return
@@ -426,6 +446,9 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 
 	c := acquireContext()
 	c.init(p.dispatcher, ctx, forwardReq, dn)
+	if adjustH != nil {
+		adjustH(c)
+	}
 
 	// pre filters
 	filterName, code, err := p.doPreFilters(c)
@@ -455,12 +478,25 @@ func (p *Proxy) doProxy(dn *dispathNode) {
 	var res *fasthttp.Response
 	times := int32(0)
 	for {
-		res, err = p.client.Do(forwardReq, svr.meta.Addr, dn.httpOption())
+		if !dn.api.isWebSocket() {
+			res, err = p.client.Do(forwardReq, svr.meta.Addr, dn.httpOption())
+		} else {
+			res, err = p.onWebsocket(c, svr.meta.Addr)
+		}
 		c.setEndAt(time.Now())
 
-		// succ or has none retry strategy or not match the retry code
-		if (err == nil && res.StatusCode() < fasthttp.StatusBadRequest) ||
-			!dn.hasRetryStrategy() ||
+		// skip succeed
+		if err == nil && res.StatusCode() < fasthttp.StatusBadRequest {
+			break
+		}
+
+		// skip no retry strategy
+		if !dn.hasRetryStrategy() {
+			break
+		}
+
+		// skip not match
+		if !dn.matchAllRetryStrategy() ||
 			!dn.matchRetryStrategy(int32(res.StatusCode())) {
 			break
 		}
