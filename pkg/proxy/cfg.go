@@ -25,6 +25,8 @@ type Option struct {
 	LimitBytesCaching          uint64
 
 	JWTCfgFile string
+
+	EnableWebSocket bool
 }
 
 // Cfg proxy config

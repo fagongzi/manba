@@ -56,8 +56,7 @@ func (rd *render) renderSingle(ctx *fasthttp.RequestCtx) {
 		ctx.SetStatusCode(dn.res.StatusCode())
 	}
 
-	if dn.err != nil ||
-		dn.code >= fasthttp.StatusBadRequest {
+	if dn.hasError() {
 		log.Errorf("render: render failed, code=<%d>, errors:\n%+v",
 			dn.code,
 			dn.err)

@@ -399,6 +399,14 @@ func (a *apiRuntime) init() {
 	return
 }
 
+func (a *apiRuntime) isWebSocket() bool {
+	return a.meta.WebSocketOptions != nil
+}
+
+func (a *apiRuntime) webSocketOptions() *metapb.WebSocketOptions {
+	return a.meta.WebSocketOptions
+}
+
 func (a *apiRuntime) hasRenderTemplate() bool {
 	return a.meta.RenderTemplate != nil
 }

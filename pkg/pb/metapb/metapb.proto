@@ -205,22 +205,23 @@ message RenderAttr {
 
 // API is the api for dispatcher
 message API {
-    optional uint64          id              = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
-    optional string          name            = 2 [(gogoproto.nullable) = false];
-    optional string          urlPattern      = 3 [(gogoproto.nullable) = false, (gogoproto.customname) = "URLPattern"];
-    optional string          method          = 4 [(gogoproto.nullable) = false];
-    optional string          domain          = 5 [(gogoproto.nullable) = false];
-    optional Status          status          = 6 [(gogoproto.nullable) = false];
-    optional IPAccessControl ipAccessControl = 7 [(gogoproto.nullable) = true, (gogoproto.customname) = "IPAccessControl"];
-    optional HTTPResult      defaultValue    = 8 [(gogoproto.nullable) = true];
-    repeated DispatchNode    nodes           = 9;
-    repeated string          perms           = 10;
-    optional string          authFilter      = 11 [(gogoproto.nullable) = false];
-    optional RenderTemplate  renderTemplate  = 12;
-    optional bool            useDefault      = 13 [(gogoproto.nullable) = false];
-    optional MatchRule       matchRule       = 14 [(gogoproto.nullable) = false];
-    optional uint32          position        = 15 [(gogoproto.nullable) = false];
-    repeated PairValue       tags            = 16;
+    optional uint64           id               = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+    optional string           name             = 2 [(gogoproto.nullable) = false];
+    optional string           urlPattern       = 3 [(gogoproto.nullable) = false, (gogoproto.customname) = "URLPattern"];
+    optional string           method           = 4 [(gogoproto.nullable) = false];
+    optional string           domain           = 5 [(gogoproto.nullable) = false];
+    optional Status           status           = 6 [(gogoproto.nullable) = false];
+    optional IPAccessControl  ipAccessControl  = 7 [(gogoproto.nullable) = true, (gogoproto.customname) = "IPAccessControl"];
+    optional HTTPResult       defaultValue     = 8 [(gogoproto.nullable) = true];
+    repeated DispatchNode     nodes            = 9;
+    repeated string           perms            = 10;
+    optional string           authFilter       = 11 [(gogoproto.nullable) = false];
+    optional RenderTemplate   renderTemplate   = 12;
+    optional bool             useDefault       = 13 [(gogoproto.nullable) = false];
+    optional MatchRule        matchRule        = 14 [(gogoproto.nullable) = false];
+    optional uint32           position         = 15 [(gogoproto.nullable) = false];
+    repeated PairValue        tags             = 16;
+    optional WebSocketOptions webSocketOptions = 17;
 }
 
 // Condition is a condition for routing
@@ -240,4 +241,9 @@ message Routing {
     optional Status          status      = 6 [(gogoproto.nullable) = false];
     optional uint64          api         = 7 [(gogoproto.nullable) = false, (gogoproto.customname) = "API"];
     optional string          name        = 8 [(gogoproto.nullable) = false];
+}
+
+// WebSocketOptions websocket options
+message WebSocketOptions {
+    optional string origin = 1 [(gogoproto.nullable) = false];
 }

@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/valyala/fasthttp"
 )
 
 const (
@@ -24,6 +25,32 @@ var (
 
 func init() {
 	prometheus.Register(apiRequestCounterVec)
+}
+
+func (p *Proxy) postRequest(api *apiRuntime, dispatches []*dispathNode) {
+	doMetrics := true
+	for _, dn := range dispatches {
+		if doMetrics &&
+			(dn.err == ErrCircuitClose || dn.err == ErrBlacklist || dn.err == ErrWhitelist) {
+			incrRequestReject(api.meta.Name)
+			doMetrics = false
+		} else if doMetrics && dn.err == ErrCircuitHalfLimited {
+			incrRequestLimit(api.meta.Name)
+			doMetrics = false
+		} else if doMetrics && dn.err != nil {
+			incrRequestFailed(api.meta.Name)
+			doMetrics = false
+		} else if doMetrics && dn.code >= fasthttp.StatusBadRequest {
+			incrRequestFailed(api.meta.Name)
+			doMetrics = false
+		}
+
+		releaseDispathNode(dn)
+	}
+
+	if doMetrics {
+		incrRequestSucceed(api.meta.Name)
+	}
 }
 
 func incrRequest(name string) {
