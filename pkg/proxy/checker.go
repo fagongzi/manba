@@ -48,8 +48,8 @@ func (r *dispatcher) heathCheckTimeout(arg interface{}) {
 }
 
 func (r *dispatcher) check(id uint64) {
-	r.Lock()
-	defer r.Unlock()
+	r.RLock()
+	defer r.RUnlock()
 
 	svr, ok := r.servers[id]
 	if !ok {

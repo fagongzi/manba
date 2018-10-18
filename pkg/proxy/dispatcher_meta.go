@@ -554,7 +554,7 @@ func (r *dispatcher) addBind(bind *metapb.Bind) error {
 
 	cluster, ok := r.clusters[bind.ClusterID]
 	if !ok {
-		log.Warnf("add bind failed, cluster <%s> not found",
+		log.Warnf("add bind failed, cluster <%d> not found",
 			bind.ClusterID)
 		return errClusterNotFound
 	}
