@@ -221,7 +221,7 @@ curl -X PUT -H "Content-Type: application/json" -d '{"name":"Mock接口","urlPat
 返回Body数据：`hello world`，HTTP Header中包含API中设置的header和cookie设置的值
 
 ### Cache结果
-对于不经常变化的查询结果，可以在网关缓存，换件后端压力。
+对于不经常变化的查询结果，可以在网关缓存，缓解后端压力。
 
 ```json
 curl -X PUT -H "Content-Type: application/json" -d '{"name":"需要缓存的接口","urlPattern":"^/api/cache$","method":"GET","status":1,"nodes":[{"clusterID":"业务对应的ID","cache":{"deadline":100}}]}' http://192.168.0.11:9093/v1/apis
