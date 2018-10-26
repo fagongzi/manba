@@ -65,7 +65,7 @@
 以下是网关的核心概念，请务必理解了再继续阅读
 * [Cluster](./cluster.md)
 * [Server](./server.md)
-* [api](./api.md)
+* [API](./api.md)
 
 ### 创建业务A和B对应的Cluster
 ```bash
@@ -163,7 +163,7 @@ curl http://192.168.0.12/v1/aggregation/100
 ```
 
 ### 使用路由
-加入一个接口使用新的技术重新实现了，上线后，需要分10%的流量到新的实现，可以这样做
+假如一个接口使用新的技术重新实现了，上线后，需要分10%的流量到新的实现，可以这样做
 
 创建新版本的Cluster
 ```bash
@@ -223,7 +223,7 @@ curl -X PUT -H "Content-Type: application/json" -d '{"name":"Mock接口","urlPat
 ### Cache结果
 对于不经常变化的查询结果，可以在网关缓存，缓解后端压力。
 
-```json
+```bash
 curl -X PUT -H "Content-Type: application/json" -d '{"name":"需要缓存的接口","urlPattern":"^/api/cache$","method":"GET","status":1,"nodes":[{"clusterID":"业务对应的ID","cache":{"deadline":100}}]}' http://192.168.0.11:9093/v1/apis
 ```
 
