@@ -403,15 +403,18 @@ func (r *dispatcher) sortAPIs() {
 
 func (r *dispatcher) refreshAllQPS() {
 	for _, svr := range r.servers {
-		r.refreshQPS(svr.meta)
+		qps := r.refreshQPS(svr.meta)
 		svr.updateMeta(svr.meta)
+		svr.meta.MaxQPS = qps
 	}
 }
 
-func (r *dispatcher) refreshQPS(svr *metapb.Server) {
+func (r *dispatcher) refreshQPS(svr *metapb.Server) (originQPS int64) {
+	originQPS = svr.MaxQPS
 	if len(r.proxies) > 0 {
 		svr.MaxQPS = svr.MaxQPS / int64(len(r.proxies))
 	}
+	return
 }
 
 func (r *dispatcher) addServer(svr *metapb.Server) error {
@@ -422,9 +425,10 @@ func (r *dispatcher) addServer(svr *metapb.Server) error {
 		return errServerExists
 	}
 
-	r.refreshQPS(svr)
+	qps := r.refreshQPS(svr)
 
 	rt := newServerRuntime(svr, r.tw)
+	svr.MaxQPS = qps
 	r.servers[svr.ID] = rt
 
 	r.addAnalysis(rt)
@@ -446,8 +450,9 @@ func (r *dispatcher) updateServer(meta *metapb.Server) error {
 		return errServerNotFound
 	}
 
-	r.refreshQPS(meta)
+	qps := r.refreshQPS(meta)
 	rt.updateMeta(meta)
+	meta.MaxQPS = qps
 	r.addAnalysis(rt)
 	r.addToCheck(rt)
 
