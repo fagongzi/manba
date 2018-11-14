@@ -4,13 +4,16 @@ Routing
 
 # Routing属性
 ## ID
-Routing ID，唯一标识。
+Routing ID，唯一标识
+
+## Name
+Routing Name，路由名称
 
 ## clusterID
-流量路由到哪一个Cluster。
+流量路由到哪一个Cluster
 
 ## apiID
-针对哪一个API
+针对哪一个API设置路由
 
 ## Condition（可选）
 路由条件，当满足这些条件，则Gateway执行这个路由。路由条件可以设置`cookie`、`querystring`、`header`、`json body`,`path value`中的参数的表达式。不配置，匹配所有流量。
