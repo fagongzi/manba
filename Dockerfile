@@ -2,6 +2,7 @@ FROM alpine:latest
 
 RUN mkdir -p /app/gateway/plugins
 
+ADD ./dist/ui/dist /app/gateway/ui
 ADD ./dist/proxy /app/gateway
 ADD ./dist/apiserver /app/gateway
 ADD ./dist/etcd /app/gateway

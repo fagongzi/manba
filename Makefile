@@ -25,11 +25,15 @@ release: dist_dir apiserver proxy;
 release_darwin: darwin dist_dir apiserver proxy;
 
 .PHONY: docker
-docker: release download_etcd;
+docker: release download_etcd ui;
 	@echo ========== current docker tag is: $(DOCKER_TAG) ==========
 	docker build -t fagongzi/gateway:$(DOCKER_TAG) -f Dockerfile .
 	docker build -t fagongzi/proxy:$(DOCKER_TAG) -f Dockerfile-proxy .
 	docker build -t fagongzi/apiserver:$(DOCKER_TAG) -f Dockerfile-apiserver .
+
+.PHONY: ui
+ui: ; $(info ======== compile ui:)
+	git clone https://github.com/fagongzi/gateway-ui-vue.git $(DIST_DIR)ui
 
 .PHONY: darwin
 darwin:
@@ -67,7 +71,6 @@ help:
 
 UNAME_S := $(shell uname -s)
 
-# 设置默认编译目标
 ifeq ($(UNAME_S),Darwin)
 	.DEFAULT_GOAL := release_darwin
 else
