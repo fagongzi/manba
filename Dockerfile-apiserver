@@ -1,5 +1,6 @@
 FROM alpine:latest
 
+ADD ./dist/ui/dist /app/gateway/ui
 ADD ./dist/apiserver /usr/local/bin/
 
 RUN mkdir -p /var/apiserver/
