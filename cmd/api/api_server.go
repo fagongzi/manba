@@ -16,6 +16,7 @@ import (
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/grpcx"
 	"github.com/fagongzi/log"
+	"github.com/labstack/echo"
 	"google.golang.org/grpc"
 )
 
@@ -28,6 +29,8 @@ var (
 	servicePrefix  = flag.String("service-prefix", "/services", "The prefix for service name.")
 	publishLease   = flag.Int64("publish-lease", 10, "Publish service lease seconds")
 	publishTimeout = flag.Int("publish-timeout", 30, "Publish service timeout seconds")
+	ui             = flag.String("ui", "/app/gateway-ui", "The gateway ui dist dir.")
+	uiPrefix       = flag.String("ui-prefix", "/ui", "The gateway ui prefix path.")
 	version        = flag.Bool("version", false, "Show version info")
 )
 
@@ -64,7 +67,9 @@ func main() {
 	}
 
 	if *addrHTTP != "" {
-		opts = append(opts, grpcx.WithHTTPServer(*addrHTTP, service.InitHTTPRouter))
+		opts = append(opts, grpcx.WithHTTPServer(*addrHTTP, func(server *echo.Echo) {
+			service.InitHTTPRouter(server, *ui, *uiPrefix)
+		}))
 	}
 
 	s := grpcx.NewGRPCServer(*addr, func(svr *grpc.Server) []grpcx.Service {
