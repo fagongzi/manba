@@ -12,12 +12,13 @@ const (
 )
 
 // InitHTTPRouter init http router
-func InitHTTPRouter(server *echo.Echo) {
+func InitHTTPRouter(server *echo.Echo, ui, uiPrefix string) {
 	initClusterRouter(server)
 	initServerRouter(server)
 	initBindRouter(server)
 	initRoutingRouter(server)
 	initAPIRouter(server)
+	initStatic(server, ui, uiPrefix)
 }
 
 type limitQuery struct {
