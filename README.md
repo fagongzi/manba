@@ -29,6 +29,7 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 * 支持websocket
 
 ## Docker
+### 快速开始
 使用 `docker pull fagongzi/gateway` 命令下载Docker镜像, 使用 `docker run -d -p 9093:9093 -p 80:80 -p 9092:9092 fagongzi/gateway` 运行镜像. 镜像启动后export 3个端口:
 
 * 80
@@ -43,10 +44,20 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 
   APIServer的对外HTTP Restful的端口，访问 `http://127.0.0.1:9093/ui/index.html`访问WEBUI
 
-`fagongzi/gateway`镜像是一个quickstart镜像，包含了3个组件：etcd,proxy,apiserver。Note: `仅限于快速体验，不能使用在生产`
 
-`fagongzi/proxy` proxy的docker镜像
-`fagongzi/apiserver` apiserver的docker镜像
+### 可用的docker镜像
+
+* `fagongzi/gateway` 
+
+   镜像是一个quickstart镜像，包含了3个组件：etcd,proxy,apiserver， `仅限于快速体验，不能使用在生产`
+
+* `fagongzi/proxy` 
+
+   proxy组件，`生产可用`
+
+* `fagongzi/apiserver` 
+
+   apiserver组件，`生产可用`
 
 ## 架构
 ![](./images/arch.png)
