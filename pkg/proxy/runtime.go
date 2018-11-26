@@ -557,6 +557,10 @@ func (a *routingRuntime) matches(apiID uint64, req *fasthttp.Request) bool {
 	return n < int(a.meta.TrafficRate)
 }
 
+func (a *routingRuntime) isUp() bool {
+	return a.meta.Status == metapb.Up
+}
+
 func conditionsMatches(cond *metapb.Condition, req *fasthttp.Request) bool {
 	attrValue := paramValue(&cond.Parameter, req)
 	if attrValue == "" {
