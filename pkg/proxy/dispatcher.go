@@ -248,7 +248,7 @@ func (r *dispatcher) selectServer(req *fasthttp.Request, dn *dispathNode) {
 
 func (r *dispatcher) adjustByRouting(apiID uint64, req *fasthttp.Request, dn *dispathNode) {
 	for _, routing := range r.routings {
-		if routing.matches(apiID, req) {
+		if routing.isUp() && routing.matches(apiID, req) {
 			svr := r.selectServerFromCluster(req, routing.meta.ClusterID)
 
 			switch routing.meta.Strategy {
