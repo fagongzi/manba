@@ -38,6 +38,10 @@ type Client interface {
 	RemoveBind(cluster, server uint64) error
 	RemoveClusterBind(cluster uint64) error
 	GetBindServers(cluster uint64) ([]uint64, error)
+
+	Clean() error
+	SetID(id uint64) error
+	Batch(batch *rpcpb.BatchReq) (*rpcpb.BatchRsp, error)
 }
 
 // NewClient returns a gateway client, using direct address
@@ -451,4 +455,35 @@ func (c *client) GetBindServers(cluster uint64) ([]uint64, error) {
 	}
 
 	return rsp.Servers, nil
+}
+
+func (c *client) Clean() error {
+	meta, err := c.getMetaClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = meta.Clean(context.Background(), &rpcpb.CleanReq{})
+	return err
+}
+
+func (c *client) SetID(id uint64) error {
+	meta, err := c.getMetaClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = meta.SetID(context.Background(), &rpcpb.SetIDReq{
+		ID: id,
+	})
+	return err
+}
+
+func (c *client) Batch(batch *rpcpb.BatchReq) (*rpcpb.BatchRsp, error) {
+	meta, err := c.getMetaClient()
+	if err != nil {
+		return nil, err
+	}
+
+	return meta.Batch(context.Background(), batch, grpc.FailFast(true))
 }

@@ -18,6 +18,7 @@ func InitHTTPRouter(server *echo.Echo, ui, uiPrefix string) {
 	initBindRouter(server)
 	initRoutingRouter(server)
 	initAPIRouter(server)
+	initBackupRouter(server)
 	initStatic(server, ui, uiPrefix)
 }
 

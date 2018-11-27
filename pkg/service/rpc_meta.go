@@ -298,6 +298,15 @@ func (s *metaService) AddBind(ctx context.Context, req *rpcpb.AddBindReq) (*rpcp
 	}
 }
 
+func (s *metaService) Batch(ctx context.Context, req *rpcpb.BatchReq) (*rpcpb.BatchRsp, error) {
+	select {
+	case <-ctx.Done():
+		return nil, errRPCCancel
+	default:
+		return s.db.Batch(req)
+	}
+}
+
 func (s *metaService) RemoveBind(ctx context.Context, req *rpcpb.RemoveBindReq) (*rpcpb.RemoveBindRsp, error) {
 	select {
 	case <-ctx.Done():
@@ -342,5 +351,33 @@ func (s *metaService) GetBindServers(ctx context.Context, req *rpcpb.GetBindServ
 		return &rpcpb.GetBindServersRsp{
 			Servers: servers,
 		}, nil
+	}
+}
+
+func (s *metaService) Clean(ctx context.Context, req *rpcpb.CleanReq) (*rpcpb.CleanRsp, error) {
+	select {
+	case <-ctx.Done():
+		return nil, errRPCCancel
+	default:
+		err := s.db.Clean()
+		if err != nil {
+			return nil, err
+		}
+
+		return &rpcpb.CleanRsp{}, nil
+	}
+}
+
+func (s *metaService) SetID(ctx context.Context, req *rpcpb.SetIDReq) (*rpcpb.SetIDRsp, error) {
+	select {
+	case <-ctx.Done():
+		return nil, errRPCCancel
+	default:
+		err := s.db.SetID(req.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		return &rpcpb.SetIDRsp{}, nil
 	}
 }

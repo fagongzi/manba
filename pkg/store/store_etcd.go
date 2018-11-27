@@ -9,8 +9,10 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
+	"github.com/fagongzi/gateway/pkg/client"
 	pbutil "github.com/fagongzi/gateway/pkg/pb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/pb/rpcpb"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/util/format"
 	"golang.org/x/net/context"
@@ -37,6 +39,8 @@ const (
 
 // EtcdStore etcd store impl
 type EtcdStore struct {
+	sync.RWMutex
+
 	prefix      string
 	clustersDir string
 	serversDir  string
@@ -94,6 +98,9 @@ func (e *EtcdStore) Raw() interface{} {
 
 // AddBind bind a server to a cluster
 func (e *EtcdStore) AddBind(bind *metapb.Bind) error {
+	e.Lock()
+	defer e.Unlock()
+
 	data, err := bind.Marshal()
 	if err != nil {
 		return err
@@ -102,18 +109,161 @@ func (e *EtcdStore) AddBind(bind *metapb.Bind) error {
 	return e.put(e.getBindKey(bind), string(data))
 }
 
+// Batch batch update
+func (e *EtcdStore) Batch(batch *rpcpb.BatchReq) (*rpcpb.BatchRsp, error) {
+	e.Lock()
+	defer e.Unlock()
+
+	rsp := &rpcpb.BatchRsp{}
+	ops := make([]clientv3.Op, 0, len(batch.PutServers))
+	for _, req := range batch.PutServers {
+		value := &req.Server
+		err := pbutil.ValidateServer(value)
+		if err != nil {
+			return nil, err
+		}
+
+		op, err := e.putPBWithOp(e.serversDir, value, func(id uint64) {
+			value.ID = id
+			rsp.PutServers = append(rsp.PutServers, &rpcpb.PutServerRsp{
+				ID: id,
+			})
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		ops = append(ops, op)
+	}
+	err := e.putBatch(ops...)
+	if err != nil {
+		return nil, err
+	}
+
+	ops = make([]clientv3.Op, 0, len(batch.PutClusters))
+	for _, req := range batch.PutClusters {
+		value := &req.Cluster
+		err := pbutil.ValidateCluster(value)
+		if err != nil {
+			return nil, err
+		}
+
+		op, err := e.putPBWithOp(e.clustersDir, value, func(id uint64) {
+			value.ID = id
+			rsp.PutClusters = append(rsp.PutClusters, &rpcpb.PutClusterRsp{
+				ID: id,
+			})
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		ops = append(ops, op)
+	}
+	err = e.putBatch(ops...)
+	if err != nil {
+		return nil, err
+	}
+
+	ops = make([]clientv3.Op, 0, len(batch.AddBinds))
+	for _, req := range batch.AddBinds {
+		value := &metapb.Bind{
+			ClusterID: req.Cluster,
+			ServerID:  req.Server,
+		}
+
+		data, err := value.Marshal()
+		if err != nil {
+			return nil, err
+		}
+
+		ops = append(ops, e.op(e.getBindKey(value), string(data)))
+		rsp.AddBinds = append(rsp.AddBinds, &rpcpb.AddBindRsp{})
+	}
+
+	err = e.putBatch(ops...)
+	if err != nil {
+		return nil, err
+	}
+
+	ops = make([]clientv3.Op, 0, len(batch.PutAPIs))
+	for _, req := range batch.PutAPIs {
+		value := &req.API
+		err := pbutil.ValidateAPI(value)
+		if err != nil {
+			return nil, err
+		}
+
+		op, err := e.putPBWithOp(e.apisDir, value, func(id uint64) {
+			value.ID = id
+			rsp.PutAPIs = append(rsp.PutAPIs, &rpcpb.PutAPIRsp{
+				ID: id,
+			})
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		ops = append(ops, op)
+	}
+	err = e.putBatch(ops...)
+	if err != nil {
+		return nil, err
+	}
+
+	ops = make([]clientv3.Op, 0, len(batch.PutRoutings))
+	for _, req := range batch.PutRoutings {
+		value := &req.Routing
+		err := pbutil.ValidateRouting(value)
+		if err != nil {
+			return nil, err
+		}
+
+		op, err := e.putPBWithOp(e.routingsDir, value, func(id uint64) {
+			value.ID = id
+			rsp.PutRoutings = append(rsp.PutRoutings, &rpcpb.PutRoutingRsp{
+				ID: id,
+			})
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		ops = append(ops, op)
+	}
+	err = e.putBatch(ops...)
+	if err != nil {
+		return nil, err
+	}
+
+	return rsp, nil
+}
+
 // RemoveBind remove bind
 func (e *EtcdStore) RemoveBind(bind *metapb.Bind) error {
+	e.Lock()
+	defer e.Unlock()
+
 	return e.delete(e.getBindKey(bind))
 }
 
 // RemoveClusterBind remove cluster all bind servers
 func (e *EtcdStore) RemoveClusterBind(id uint64) error {
+	e.Lock()
+	defer e.Unlock()
+
 	return e.delete(e.getClusterBindPrefix(id), clientv3.WithPrefix())
 }
 
 // GetBindServers return cluster binds servers
 func (e *EtcdStore) GetBindServers(id uint64) ([]uint64, error) {
+	e.RLock()
+	defer e.RUnlock()
+
+	return e.doGetBindServers(id)
+}
+
+func (e *EtcdStore) doGetBindServers(id uint64) ([]uint64, error) {
 	rsp, err := e.get(e.getClusterBindPrefix(id), clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
@@ -139,6 +289,9 @@ func (e *EtcdStore) GetBindServers(id uint64) ([]uint64, error) {
 
 // PutCluster add or update the cluster
 func (e *EtcdStore) PutCluster(value *metapb.Cluster) (uint64, error) {
+	e.Lock()
+	defer e.Unlock()
+
 	err := pbutil.ValidateCluster(value)
 	if err != nil {
 		return 0, err
@@ -151,6 +304,9 @@ func (e *EtcdStore) PutCluster(value *metapb.Cluster) (uint64, error) {
 
 // RemoveCluster remove the cluster and it's binds
 func (e *EtcdStore) RemoveCluster(id uint64) error {
+	e.Lock()
+	defer e.Unlock()
+
 	opCluster := clientv3.OpDelete(getKey(e.clustersDir, id))
 	opBind := clientv3.OpDelete(e.getClusterBindPrefix(id), clientv3.WithPrefix())
 	_, err := e.txn().Then(opCluster, opBind).Commit()
@@ -159,17 +315,26 @@ func (e *EtcdStore) RemoveCluster(id uint64) error {
 
 // GetClusters returns all clusters
 func (e *EtcdStore) GetClusters(limit int64, fn func(interface{}) error) error {
+	e.RLock()
+	defer e.RUnlock()
+
 	return e.getValues(e.clustersDir, limit, func() pb { return &metapb.Cluster{} }, fn)
 }
 
 // GetCluster returns the cluster
 func (e *EtcdStore) GetCluster(id uint64) (*metapb.Cluster, error) {
+	e.RLock()
+	defer e.RUnlock()
+
 	value := &metapb.Cluster{}
 	return value, e.getPB(e.clustersDir, id, value)
 }
 
 // PutServer add or update the server
 func (e *EtcdStore) PutServer(value *metapb.Server) (uint64, error) {
+	e.Lock()
+	defer e.Unlock()
+
 	err := pbutil.ValidateServer(value)
 	if err != nil {
 		return 0, err
@@ -182,22 +347,34 @@ func (e *EtcdStore) PutServer(value *metapb.Server) (uint64, error) {
 
 // RemoveServer remove the server
 func (e *EtcdStore) RemoveServer(id uint64) error {
+	e.Lock()
+	defer e.Unlock()
+
 	return e.delete(getKey(e.serversDir, id))
 }
 
 // GetServers returns all server
 func (e *EtcdStore) GetServers(limit int64, fn func(interface{}) error) error {
+	e.RLock()
+	defer e.RUnlock()
+
 	return e.getValues(e.serversDir, limit, func() pb { return &metapb.Server{} }, fn)
 }
 
 // GetServer returns the server
 func (e *EtcdStore) GetServer(id uint64) (*metapb.Server, error) {
+	e.RLock()
+	defer e.RUnlock()
+
 	value := &metapb.Server{}
 	return value, e.getPB(e.serversDir, id, value)
 }
 
 // PutAPI add or update a API
 func (e *EtcdStore) PutAPI(value *metapb.API) (uint64, error) {
+	e.Lock()
+	defer e.Unlock()
+
 	err := pbutil.ValidateAPI(value)
 	if err != nil {
 		return 0, err
@@ -210,22 +387,34 @@ func (e *EtcdStore) PutAPI(value *metapb.API) (uint64, error) {
 
 // RemoveAPI remove a api from store
 func (e *EtcdStore) RemoveAPI(id uint64) error {
+	e.Lock()
+	defer e.Unlock()
+
 	return e.delete(getKey(e.apisDir, id))
 }
 
 // GetAPIs returns all api
 func (e *EtcdStore) GetAPIs(limit int64, fn func(interface{}) error) error {
+	e.RLock()
+	defer e.RUnlock()
+
 	return e.getValues(e.apisDir, limit, func() pb { return &metapb.API{} }, fn)
 }
 
 // GetAPI returns the api
 func (e *EtcdStore) GetAPI(id uint64) (*metapb.API, error) {
+	e.RLock()
+	defer e.RUnlock()
+
 	value := &metapb.API{}
 	return value, e.getPB(e.apisDir, id, value)
 }
 
 // PutRouting add or update routing
 func (e *EtcdStore) PutRouting(value *metapb.Routing) (uint64, error) {
+	e.Lock()
+	defer e.Unlock()
+
 	err := pbutil.ValidateRouting(value)
 	if err != nil {
 		return 0, err
@@ -238,16 +427,25 @@ func (e *EtcdStore) PutRouting(value *metapb.Routing) (uint64, error) {
 
 // RemoveRouting remove routing
 func (e *EtcdStore) RemoveRouting(id uint64) error {
+	e.Lock()
+	defer e.Unlock()
+
 	return e.delete(getKey(e.routingsDir, id))
 }
 
 // GetRoutings returns routes in store
 func (e *EtcdStore) GetRoutings(limit int64, fn func(interface{}) error) error {
+	e.RLock()
+	defer e.RUnlock()
+
 	return e.getValues(e.routingsDir, limit, func() pb { return &metapb.Routing{} }, fn)
 }
 
 // GetRouting returns a routing
 func (e *EtcdStore) GetRouting(id uint64) (*metapb.Routing, error) {
+	e.RLock()
+	defer e.RUnlock()
+
 	value := &metapb.Routing{}
 	return value, e.getPB(e.routingsDir, id, value)
 }
@@ -314,11 +512,230 @@ func (e *EtcdStore) GetProxies(limit int64, fn func(*metapb.Proxy) error) error 
 
 // Clean clean data in store
 func (e *EtcdStore) Clean() error {
+	e.Lock()
+	defer e.Unlock()
+
 	return e.delete(e.prefix, clientv3.WithPrefix())
+}
+
+// SetID set id
+func (e *EtcdStore) SetID(id uint64) error {
+	e.Lock()
+	defer e.Unlock()
+
+	op := clientv3.OpPut(e.idPath, string(format.Uint64ToBytes(id)))
+	rsp, err := e.txn().Then(op).Commit()
+	if err != nil {
+		return err
+	}
+
+	if !rsp.Succeeded {
+		return ErrStaleOP
+	}
+
+	e.end = 0
+	e.base = 0
+	return nil
+}
+
+// BackupTo backup to other gateway
+func (e *EtcdStore) BackupTo(to string) error {
+	e.Lock()
+	defer e.Unlock()
+
+	targetC, err := client.NewClient(time.Second*10, to)
+	if err != nil {
+		return err
+	}
+
+	// Clean
+	err = targetC.Clean()
+	if err != nil {
+		return err
+	}
+
+	limit := int64(96)
+	batch := &rpcpb.BatchReq{}
+
+	// backup server
+	err = e.getValues(e.serversDir, limit, func() pb { return &metapb.Server{} }, func(value interface{}) error {
+		batch.PutServers = append(batch.PutServers, &rpcpb.PutServerReq{
+			Server: *value.(*metapb.Server),
+		})
+
+		if int64(len(batch.PutServers)) == limit {
+			_, err := targetC.Batch(batch)
+			if err != nil {
+				return err
+			}
+
+			batch = &rpcpb.BatchReq{}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if int64(len(batch.PutServers)) > 0 {
+		_, err := targetC.Batch(batch)
+		if err != nil {
+			return err
+		}
+	}
+
+	// backup cluster
+	batch = &rpcpb.BatchReq{}
+	err = e.getValues(e.clustersDir, limit, func() pb { return &metapb.Cluster{} }, func(value interface{}) error {
+		batch.PutClusters = append(batch.PutClusters, &rpcpb.PutClusterReq{
+			Cluster: *value.(*metapb.Cluster),
+		})
+
+		if int64(len(batch.PutClusters)) == limit {
+			_, err := targetC.Batch(batch)
+			if err != nil {
+				return err
+			}
+
+			batch = &rpcpb.BatchReq{}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if int64(len(batch.PutClusters)) > 0 {
+		_, err := targetC.Batch(batch)
+		if err != nil {
+			return err
+		}
+	}
+
+	// backup binds
+	batch = &rpcpb.BatchReq{}
+	err = e.getValues(e.clustersDir, limit, func() pb { return &metapb.Cluster{} }, func(value interface{}) error {
+		cid := value.(*metapb.Cluster).ID
+		servers, err := e.doGetBindServers(cid)
+		if err != nil {
+			return err
+		}
+
+		for _, sid := range servers {
+			batch.AddBinds = append(batch.AddBinds, &rpcpb.AddBindReq{
+				Cluster: cid,
+				Server:  sid,
+			})
+
+			if int64(len(batch.AddBinds)) == limit {
+				_, err := targetC.Batch(batch)
+				if err != nil {
+					return err
+				}
+
+				batch = &rpcpb.BatchReq{}
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if int64(len(batch.AddBinds)) == limit {
+		_, err := targetC.Batch(batch)
+		if err != nil {
+			return err
+		}
+
+		batch = &rpcpb.BatchReq{}
+	}
+
+	// backup apis
+	batch = &rpcpb.BatchReq{}
+	err = e.getValues(e.apisDir, limit, func() pb { return &metapb.API{} }, func(value interface{}) error {
+		batch.PutAPIs = append(batch.PutAPIs, &rpcpb.PutAPIReq{
+			API: *value.(*metapb.API),
+		})
+
+		if int64(len(batch.PutAPIs)) == limit {
+			_, err := targetC.Batch(batch)
+			if err != nil {
+				return err
+			}
+
+			batch = &rpcpb.BatchReq{}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if int64(len(batch.PutAPIs)) > 0 {
+		_, err := targetC.Batch(batch)
+		if err != nil {
+			return err
+		}
+	}
+
+	// backup routings
+	batch = &rpcpb.BatchReq{}
+	err = e.getValues(e.routingsDir, limit, func() pb { return &metapb.Routing{} }, func(value interface{}) error {
+		batch.PutRoutings = append(batch.PutRoutings, &rpcpb.PutRoutingReq{
+			Routing: *value.(*metapb.Routing),
+		})
+
+		if int64(len(batch.PutRoutings)) == limit {
+			_, err := targetC.Batch(batch)
+			if err != nil {
+				return err
+			}
+
+			batch = &rpcpb.BatchReq{}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if int64(len(batch.PutRoutings)) > 0 {
+		_, err := targetC.Batch(batch)
+		if err != nil {
+			return err
+		}
+	}
+
+	// backup id
+	currID, err := e.getID()
+	if err != nil {
+		return err
+	}
+
+	return targetC.SetID(currID)
 }
 
 func (e *EtcdStore) put(key, value string, opts ...clientv3.OpOption) error {
 	_, err := e.txn().Then(clientv3.OpPut(key, value, opts...)).Commit()
+	return err
+}
+
+func (e *EtcdStore) op(key, value string, opts ...clientv3.OpOption) clientv3.Op {
+	return clientv3.OpPut(key, value, opts...)
+}
+
+func (e *EtcdStore) putBatch(ops ...clientv3.Op) error {
+	if len(ops) == 0 {
+		return nil
+	}
+
+	_, err := e.txn().Then(ops...).Commit()
 	return err
 }
 
@@ -365,6 +782,24 @@ func (e *EtcdStore) putPB(prefix string, value pb, do func(uint64)) (uint64, err
 	}
 
 	return value.GetID(), e.put(getKey(prefix, value.GetID()), string(data))
+}
+
+func (e *EtcdStore) putPBWithOp(prefix string, value pb, do func(uint64)) (clientv3.Op, error) {
+	if value.GetID() == 0 {
+		id, err := e.allocID()
+		if err != nil {
+			return clientv3.Op{}, err
+		}
+
+		do(id)
+	}
+
+	data, err := value.Marshal()
+	if err != nil {
+		return clientv3.Op{}, err
+	}
+
+	return e.op(getKey(prefix, value.GetID()), string(data)), nil
 }
 
 func (e *EtcdStore) getValues(prefix string, limit int64, factory func() pb, fn func(interface{}) error) error {
