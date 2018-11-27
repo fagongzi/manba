@@ -300,6 +300,7 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	startAt := time.Now()
 	api, dispatches := p.dispatcher.dispatch(&ctx.Request)
 	if len(dispatches) == 0 &&
 		(nil == api || api.meta.DefaultValue == nil) {
@@ -374,7 +375,7 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	releaseRender(rd)
 	releaseMultiContext(multiCtx)
 
-	p.postRequest(api, dispatches)
+	p.postRequest(api, dispatches, startAt)
 	p.dispatcher.dispatchCompleted()
 }
 

@@ -1,6 +1,8 @@
 package proxy
 
 import (
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/valyala/fasthttp"
 )
@@ -21,13 +23,23 @@ var (
 			Name:      "api_request_total",
 			Help:      "Total number of request made.",
 		}, []string{"name", "type"})
+
+	apiResponseHistogramVec = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "gateway",
+			Subsystem: "proxy",
+			Name:      "api_response_duration_seconds",
+			Help:      "Bucketed histogram of api response time duration",
+			Buckets:   prometheus.ExponentialBuckets(0.0005, 2.0, 20),
+		}, []string{"name"})
 )
 
 func init() {
 	prometheus.Register(apiRequestCounterVec)
+	prometheus.Register(apiResponseHistogramVec)
 }
 
-func (p *Proxy) postRequest(api *apiRuntime, dispatches []*dispathNode) {
+func (p *Proxy) postRequest(api *apiRuntime, dispatches []*dispathNode, startAt time.Time) {
 	doMetrics := true
 	for _, dn := range dispatches {
 		if doMetrics &&
@@ -50,6 +62,7 @@ func (p *Proxy) postRequest(api *apiRuntime, dispatches []*dispathNode) {
 
 	if doMetrics {
 		incrRequestSucceed(api.meta.Name)
+		observeAPIResponse(api.meta.Name, startAt)
 	}
 }
 
@@ -71,4 +84,9 @@ func incrRequestLimit(name string) {
 
 func incrRequestReject(name string) {
 	apiRequestCounterVec.WithLabelValues(name, typeRequestReject).Inc()
+}
+
+func observeAPIResponse(name string, startAt time.Time) {
+	now := time.Now()
+	apiResponseHistogramVec.WithLabelValues(name).Observe(now.Sub(startAt).Seconds())
 }
