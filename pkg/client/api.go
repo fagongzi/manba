@@ -5,6 +5,7 @@ import (
 
 	"github.com/fagongzi/gateway/pkg/pb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/pb/rpcpb"
 )
 
 // APIBuilder api builder
@@ -681,6 +682,18 @@ func (ab *APIBuilder) Commit() (uint64, error) {
 	}
 
 	return ab.c.putAPI(ab.value)
+}
+
+// Build build
+func (ab *APIBuilder) Build() (*rpcpb.PutAPIReq, error) {
+	err := pb.ValidateAPI(&ab.value)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rpcpb.PutAPIReq{
+		API: ab.value,
+	}, nil
 }
 
 func (ab *APIBuilder) getNode(cluster uint64, index int) *metapb.DispatchNode {

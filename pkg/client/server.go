@@ -5,6 +5,7 @@ import (
 
 	"github.com/fagongzi/gateway/pkg/pb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/pb/rpcpb"
 )
 
 // ServerBuilder server builder
@@ -143,4 +144,16 @@ func (sb *ServerBuilder) Commit() (uint64, error) {
 	}
 
 	return sb.c.putServer(sb.value)
+}
+
+// Build build
+func (sb *ServerBuilder) Build() (*rpcpb.PutServerReq, error) {
+	err := pb.ValidateServer(&sb.value)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rpcpb.PutServerReq{
+		Server: sb.value,
+	}, nil
 }

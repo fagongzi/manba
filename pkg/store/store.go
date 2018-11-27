@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/pb/rpcpb"
 	"github.com/fagongzi/gateway/pkg/util"
 )
 
@@ -125,6 +126,9 @@ type Store interface {
 	Watch(evtCh chan *Evt, stopCh chan bool) error
 
 	Clean() error
+	SetID(id uint64) error
+	BackupTo(to string) error
+	Batch(batch *rpcpb.BatchReq) (*rpcpb.BatchRsp, error)
 }
 
 func getKey(prefix string, id uint64) string {

@@ -40,6 +40,10 @@ service MetaService {
     rpc RemoveBind        (RemoveBindReq)        returns (RemoveBindRsp)         {}
     rpc RemoveClusterBind (RemoveClusterBindReq) returns (RemoveClusterBindRsp)  {}
     rpc GetBindServers    (GetBindServersReq)    returns (GetBindServersRsp)     {}
+
+    rpc Clean             (CleanReq)             returns (CleanRsp)              {}
+    rpc SetID             (SetIDReq)             returns (SetIDRsp)              {}
+    rpc Batch             (BatchReq)             returns (BatchRsp)              {}
 }
 
 message PutClusterReq {
@@ -211,4 +215,49 @@ message GetBindServersReq {
 message GetBindServersRsp {
     optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
     repeated uint64     servers = 2 [(gogoproto.nullable) = true];
+}
+
+message CleanReq {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+}
+
+message CleanRsp {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+}
+
+message SetIDReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message SetIDRsp {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+}
+
+message BatchReq {
+    optional RpcHeader        header         = 1 [(gogoproto.nullable) = false];
+    repeated PutClusterReq    putClusters    = 2;
+    repeated RemoveClusterReq removeClusters = 3;
+    repeated PutServerReq     putServers     = 4;
+    repeated RemoveServerReq  removeServers  = 5;
+    repeated PutAPIReq        putAPIs        = 6;
+    repeated RemoveAPIReq     removeAPIs     = 7;
+    repeated PutRoutingReq    putRoutings    = 8;
+    repeated RemoveRoutingReq removeRoutings = 9;
+    repeated AddBindReq       addBinds       = 10;
+    repeated RemoveBindReq    removeBinds    = 11;
+}
+
+message BatchRsp {
+    optional RpcHeader        header         = 1 [(gogoproto.nullable) = false];
+    repeated PutClusterRsp    putClusters    = 2;
+    repeated RemoveClusterRsp removeClusters = 3;
+    repeated PutServerRsp     putServers     = 4;
+    repeated RemoveServerRsp  removeServers  = 5;
+    repeated PutAPIRsp        putAPIs        = 6;
+    repeated RemoveAPIRsp     removeAPIs     = 7;
+    repeated PutRoutingRsp    putRoutings    = 8;
+    repeated RemoveRoutingRsp removeRoutings = 9;
+    repeated AddBindRsp       addBinds       = 10;
+    repeated RemoveBindRsp    removeBinds    = 11;
 }

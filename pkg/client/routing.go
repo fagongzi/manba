@@ -3,6 +3,7 @@ package client
 import (
 	"github.com/fagongzi/gateway/pkg/pb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/pb/rpcpb"
 )
 
 // RoutingBuilder routing builder
@@ -85,4 +86,16 @@ func (rb *RoutingBuilder) Commit() (uint64, error) {
 	}
 
 	return rb.c.putRouting(rb.value)
+}
+
+// Build build
+func (rb *RoutingBuilder) Build() (*rpcpb.PutRoutingReq, error) {
+	err := pb.ValidateRouting(&rb.value)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rpcpb.PutRoutingReq{
+		Routing: rb.value,
+	}, nil
 }

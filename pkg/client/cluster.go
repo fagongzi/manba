@@ -3,6 +3,7 @@ package client
 import (
 	"github.com/fagongzi/gateway/pkg/pb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/pb/rpcpb"
 )
 
 // ClusterBuilder cluster builder
@@ -45,4 +46,16 @@ func (cb *ClusterBuilder) Commit() (uint64, error) {
 	}
 
 	return cb.c.putCluster(cb.value)
+}
+
+// Build build
+func (cb *ClusterBuilder) Build() (*rpcpb.PutClusterReq, error) {
+	err := pb.ValidateCluster(&cb.value)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rpcpb.PutClusterReq{
+		Cluster: cb.value,
+	}, nil
 }
