@@ -247,3 +247,15 @@ message Routing {
 message WebSocketOptions {
     optional string origin = 1 [(gogoproto.nullable) = false];
 }
+
+// System system
+message System {
+    optional CountMetric count = 1 [(gogoproto.nullable) = false];
+}
+
+message CountMetric {
+    optional int64 cluster = 1 [(gogoproto.nullable) = false];
+    optional int64 server  = 2 [(gogoproto.nullable) = false];
+    optional int64 api     = 3 [(gogoproto.nullable) = false, (gogoproto.customname) = "API"];
+    optional int64 Routing = 4 [(gogoproto.nullable) = false];
+}

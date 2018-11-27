@@ -129,6 +129,7 @@ type Store interface {
 	SetID(id uint64) error
 	BackupTo(to string) error
 	Batch(batch *rpcpb.BatchReq) (*rpcpb.BatchRsp, error)
+	System() (*metapb.System, error)
 }
 
 func getKey(prefix string, id uint64) string {
