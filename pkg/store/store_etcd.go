@@ -721,6 +721,39 @@ func (e *EtcdStore) BackupTo(to string) error {
 	return targetC.SetID(currID)
 }
 
+// System returns system info
+func (e *EtcdStore) System() (*metapb.System, error) {
+	e.RLock()
+	defer e.RUnlock()
+
+	value := &metapb.System{}
+	rsp, err := e.get(e.apisDir, clientv3.WithPrefix(), clientv3.WithCountOnly())
+	if err != nil {
+		return nil, err
+	}
+	value.Count.API = rsp.Count
+
+	rsp, err = e.get(e.clustersDir, clientv3.WithPrefix(), clientv3.WithCountOnly())
+	if err != nil {
+		return nil, err
+	}
+	value.Count.Cluster = rsp.Count
+
+	rsp, err = e.get(e.serversDir, clientv3.WithPrefix(), clientv3.WithCountOnly())
+	if err != nil {
+		return nil, err
+	}
+	value.Count.Server = rsp.Count
+
+	rsp, err = e.get(e.routingsDir, clientv3.WithPrefix(), clientv3.WithCountOnly())
+	if err != nil {
+		return nil, err
+	}
+	value.Count.Routing = rsp.Count
+
+	return value, nil
+}
+
 func (e *EtcdStore) put(key, value string, opts ...clientv3.OpOption) error {
 	_, err := e.txn().Then(clientv3.OpPut(key, value, opts...)).Commit()
 	return err

@@ -12,15 +12,28 @@ type backup struct {
 	ToAddr string `json:"toAddr"`
 }
 
-func initBackupRouter(server *echo.Echo) {
+func initSystemRouter(server *echo.Echo) {
+	server.GET(fmt.Sprintf("/%s%s", apiVersion, "/system"),
+		grpcx.NewGetHTTPHandle(emptyParamFactory, getSystemHandler))
+
 	server.POST(fmt.Sprintf("/%s%s", apiVersion, "/system/backup"),
 		grpcx.NewJSONBodyHTTPHandle(backupFactory, postBackupHandler))
+}
+
+func getSystemHandler(value interface{}) (*grpcx.JSONResult, error) {
+	info, err := Store.System()
+	if err != nil {
+		log.Errorf("api-system-get: errors:%+v", err)
+		return nil, err
+	}
+
+	return &grpcx.JSONResult{Data: info}, nil
 }
 
 func postBackupHandler(value interface{}) (*grpcx.JSONResult, error) {
 	err := Store.BackupTo(value.(*backup).ToAddr)
 	if err != nil {
-		log.Errorf("api-backup-post: errors:%+v", err)
+		log.Errorf("api-system-backup: errors:%+v", err)
 		return nil, err
 	}
 

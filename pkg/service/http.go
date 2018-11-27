@@ -18,7 +18,7 @@ func InitHTTPRouter(server *echo.Echo, ui, uiPrefix string) {
 	initBindRouter(server)
 	initRoutingRouter(server)
 	initAPIRouter(server)
-	initBackupRouter(server)
+	initSystemRouter(server)
 	initStatic(server, ui, uiPrefix)
 }
 
@@ -65,4 +65,8 @@ func limitQueryFactory(ctx echo.Context) (interface{}, error) {
 	}
 
 	return query, nil
+}
+
+func emptyParamFactory(ctx echo.Context) (interface{}, error) {
+	return nil, nil
 }
