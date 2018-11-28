@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/bcicen/grmon/agent"
 	"github.com/coreos/etcd/clientv3"
 	"github.com/fagongzi/gateway/pkg/pb/rpcpb"
 	"github.com/fagongzi/gateway/pkg/service"
@@ -33,7 +32,6 @@ var (
 	ui             = flag.String("ui", "/app/gateway/ui", "The gateway ui dist dir.")
 	uiPrefix       = flag.String("ui-prefix", "/ui", "The gateway ui prefix path.")
 	version        = flag.Bool("version", false, "Show version info")
-	m              = flag.Bool("m", false, "Show version info")
 )
 
 func main() {
@@ -41,10 +39,6 @@ func main() {
 
 	if *version && util.PrintVersion() {
 		os.Exit(0)
-	}
-
-	if *m {
-		grmon.Start()
 	}
 
 	log.InitLog()
