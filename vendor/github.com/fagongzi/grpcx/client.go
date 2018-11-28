@@ -17,6 +17,7 @@ type GRPCClient struct {
 	creator ClientCreator
 	opts    *clientOptions
 	clients map[string]interface{}
+	conns   map[string]*grpc.ClientConn
 }
 
 // NewGRPCClient returns a GRPC Client
@@ -31,6 +32,19 @@ func NewGRPCClient(creator ClientCreator, opts ...ClientOption) *GRPCClient {
 		creator: creator,
 		clients: make(map[string]interface{}),
 	}
+}
+
+// Close close
+func (c *GRPCClient) Close() error {
+	c.RLock()
+	defer c.RUnlock()
+
+	var err error
+	for _, conn := range c.conns {
+		err = conn.Close()
+	}
+
+	return err
 }
 
 // GetServiceClient returns a grpc client

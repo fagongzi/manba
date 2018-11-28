@@ -27,6 +27,7 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 * 后端server的健康检查
 * 开放管理API(GRPC、Restful)
 * 支持websocket
+* 支持在线迁移数据
 
 ## Docker
 ### 快速开始
@@ -75,7 +76,7 @@ Gateway由`proxy`, `apiserver`组成
 Proxy是Gateway对终端用户提供服务的组件，Proxy是一个无状态的节点，可以部署多个来支撑更大的流量，[更多](./docs/proxy.md)。
 
 ### ApiServer
-ApiServer对外提供GRPC的接口，用来管理元信息，[更多](./docs/apiserver.md)。
+ApiServer对外提供GRPC和Restful来管理元信息，ApiServer同时集成了官方的WebUI，[更多](./docs/apiserver.md)。
 
 ## Gateway中的概念
 ### Server

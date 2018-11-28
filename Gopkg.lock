@@ -54,7 +54,7 @@
   name = "github.com/fagongzi/grpcx"
   packages = ["."]
   pruneopts = "UT"
-  revision = "f6b611cab691d84328fc90a3c134cf1de6d5afae"
+  revision = "0ebb88400ec944d45756a246a1f2823ce035994b"
   version = "v1.0.1"
 
 [[projects]]
