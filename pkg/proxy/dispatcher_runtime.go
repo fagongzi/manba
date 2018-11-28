@@ -83,26 +83,73 @@ func (c *clusterRuntime) selectServer(req *fasthttp.Request) uint64 {
 	return e.Value.(uint64)
 }
 
-type serverRuntime struct {
+type abstractSupportProtectedRuntime struct {
 	sync.RWMutex
 
-	tw               *goetty.TimeoutWheel
-	limiter          *rate.Limiter
+	id      uint64
+	tw      *goetty.TimeoutWheel
+	limiter *rate.Limiter
+	circuit metapb.CircuitStatus
+	cb      *metapb.CircuitBreaker
+}
+
+func (s *abstractSupportProtectedRuntime) getCircuitStatus() metapb.CircuitStatus {
+	s.RLock()
+	value := s.circuit
+	s.RUnlock()
+	return value
+}
+
+func (s *abstractSupportProtectedRuntime) circuitToClose() {
+	s.Lock()
+	if s.cb == nil ||
+		s.circuit == metapb.Close {
+		s.Unlock()
+		return
+	}
+
+	s.circuit = metapb.Close
+	log.Warnf("protected resource <%d> change to close", s.id)
+	s.tw.Schedule(time.Duration(s.cb.CloseTimeout), s.circuitToHalf, nil)
+	s.Unlock()
+}
+
+func (s *abstractSupportProtectedRuntime) circuitToOpen() {
+	s.Lock()
+	if s.cb == nil ||
+		s.circuit == metapb.Open ||
+		s.circuit != metapb.Half {
+		s.Unlock()
+		return
+	}
+
+	s.circuit = metapb.Open
+	log.Infof("protected resource <%d> change to open", s.id)
+	s.Unlock()
+}
+
+func (s *abstractSupportProtectedRuntime) circuitToHalf(arg interface{}) {
+	s.Lock()
+	if s.cb != nil {
+		s.circuit = metapb.Half
+		log.Warnf("protected resource <%d> change to half", s.id)
+	}
+	s.Unlock()
+}
+
+type serverRuntime struct {
+	abstractSupportProtectedRuntime
+
 	meta             *metapb.Server
 	status           metapb.Status
 	heathTimeout     goetty.Timeout
 	checkFailCount   int
 	useCheckDuration time.Duration
-	circuit          metapb.CircuitStatus
 }
 
 func newServerRuntime(meta *metapb.Server, tw *goetty.TimeoutWheel) *serverRuntime {
-	rt := &serverRuntime{
-		tw:      tw,
-		status:  metapb.Down,
-		circuit: metapb.Open,
-	}
-
+	rt := &serverRuntime{}
+	rt.tw = tw
 	rt.updateMeta(meta)
 	return rt
 }
@@ -119,6 +166,8 @@ func (s *serverRuntime) updateMeta(meta *metapb.Server) {
 	*s = serverRuntime{}
 	s.tw = tw
 	s.meta = meta
+	s.id = meta.ID
+	s.cb = meta.CircuitBreaker
 	s.limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(meta.MaxQPS)), int(meta.MaxQPS))
 	s.status = metapb.Down
 	s.circuit = metapb.Open
@@ -140,50 +189,6 @@ func (s *serverRuntime) reset() {
 
 func (s *serverRuntime) changeTo(status metapb.Status) {
 	s.status = status
-}
-
-func (s *serverRuntime) getCircuitStatus() metapb.CircuitStatus {
-	s.RLock()
-	value := s.circuit
-	s.RUnlock()
-	return value
-}
-
-func (s *serverRuntime) circuitToClose() {
-	s.Lock()
-	if s.meta.CircuitBreaker == nil ||
-		s.circuit == metapb.Close {
-		s.Unlock()
-		return
-	}
-
-	s.circuit = metapb.Close
-	log.Warnf("server <%d> change to close", s.meta.ID)
-	s.tw.Schedule(time.Duration(s.meta.CircuitBreaker.CloseTimeout), s.circuitToHalf, nil)
-	s.Unlock()
-}
-
-func (s *serverRuntime) circuitToOpen() {
-	s.Lock()
-	if s.meta.CircuitBreaker == nil ||
-		s.circuit == metapb.Open ||
-		s.circuit != metapb.Half {
-		s.Unlock()
-		return
-	}
-
-	s.circuit = metapb.Open
-	log.Infof("server <%d> change to open", s.meta.ID)
-	s.Unlock()
-}
-
-func (s *serverRuntime) circuitToHalf(arg interface{}) {
-	s.Lock()
-	if s.meta.CircuitBreaker != nil {
-		s.circuit = metapb.Half
-		log.Warnf("server <%d> change to half", s.meta.ID)
-	}
-	s.Unlock()
 }
 
 type ipSegment struct {
@@ -304,6 +309,8 @@ type renderObject struct {
 }
 
 type apiRuntime struct {
+	abstractSupportProtectedRuntime
+
 	meta                *metapb.API
 	nodes               []*apiNode
 	urlPattern          *regexp.Regexp
@@ -313,10 +320,11 @@ type apiRuntime struct {
 	parsedRenderObjects []*renderObject
 }
 
-func newAPIRuntime(meta *metapb.API) *apiRuntime {
+func newAPIRuntime(meta *metapb.API, tw *goetty.TimeoutWheel) *apiRuntime {
 	ar := &apiRuntime{
 		meta: meta,
 	}
+	ar.tw = tw
 	ar.init()
 
 	return ar
@@ -325,7 +333,7 @@ func newAPIRuntime(meta *metapb.API) *apiRuntime {
 func (a *apiRuntime) clone() *apiRuntime {
 	meta := &metapb.API{}
 	pbutil.MustUnmarshal(meta, pbutil.MustMarshal(a.meta))
-	return newAPIRuntime(meta)
+	return newAPIRuntime(meta, a.tw)
 }
 
 func (a *apiRuntime) updateMeta(meta *metapb.API) {
@@ -394,6 +402,13 @@ func (a *apiRuntime) init() {
 
 			a.parsedRenderObjects = append(a.parsedRenderObjects, rob)
 		}
+	}
+
+	a.id = a.meta.ID
+	a.cb = a.meta.CircuitBreaker
+	a.circuit = metapb.Open
+	if a.meta.MaxQPS > 0 {
+		a.limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(a.meta.MaxQPS)), int(a.meta.MaxQPS))
 	}
 
 	return

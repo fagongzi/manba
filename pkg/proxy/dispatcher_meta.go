@@ -322,7 +322,7 @@ func (r *dispatcher) addAPI(api *metapb.API) error {
 		return errAPIExists
 	}
 
-	r.apis[api.ID] = newAPIRuntime(api)
+	r.apis[api.ID] = newAPIRuntime(api, r.tw)
 	r.sortAPIs()
 
 	log.Infof("api <%d> added, data <%s>",
@@ -431,7 +431,7 @@ func (r *dispatcher) addServer(svr *metapb.Server) error {
 	svr.MaxQPS = qps
 	r.servers[svr.ID] = rt
 
-	r.addAnalysis(rt)
+	r.addAnalysis(rt.meta.ID, rt.meta.CircuitBreaker)
 	r.addToCheck(rt)
 
 	log.Infof("server <%d> added, data <%s>",
@@ -453,7 +453,7 @@ func (r *dispatcher) updateServer(meta *metapb.Server) error {
 	qps := r.refreshQPS(meta)
 	rt.updateMeta(meta)
 	meta.MaxQPS = qps
-	r.addAnalysis(rt)
+	r.addAnalysis(rt.meta.ID, rt.meta.CircuitBreaker)
 	r.addToCheck(rt)
 
 	log.Infof("server <%d> updated, data <%s>",
@@ -483,12 +483,11 @@ func (r *dispatcher) removeServer(id uint64) error {
 	return nil
 }
 
-func (r *dispatcher) addAnalysis(svr *serverRuntime) {
-	r.analysiser.RemoveTarget(svr.meta.ID)
-	r.analysiser.AddTarget(svr.meta.ID, time.Second)
-	cb := svr.meta.CircuitBreaker
+func (r *dispatcher) addAnalysis(id uint64, cb *metapb.CircuitBreaker) {
+	r.analysiser.RemoveTarget(id)
+	r.analysiser.AddTarget(id, time.Second)
 	if cb != nil {
-		r.analysiser.AddTarget(svr.meta.ID, time.Duration(cb.RateCheckPeriod))
+		r.analysiser.AddTarget(id, time.Duration(cb.RateCheckPeriod))
 	}
 }
 
