@@ -548,6 +548,8 @@ func (e *EtcdStore) BackupTo(to string) error {
 		return err
 	}
 
+	defer targetC.Close()
+
 	// Clean
 	err = targetC.Clean()
 	if err != nil {
@@ -645,7 +647,7 @@ func (e *EtcdStore) BackupTo(to string) error {
 		return err
 	}
 
-	if int64(len(batch.AddBinds)) == limit {
+	if int64(len(batch.AddBinds)) > 0 {
 		_, err := targetC.Batch(batch)
 		if err != nil {
 			return err

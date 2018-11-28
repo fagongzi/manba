@@ -55,5 +55,6 @@ func (lr *localResolver) firstNext() ([]*naming.Update, error) {
 			Addr: addr,
 		})
 	}
+	lr.firstCalled = true
 	return values, nil
 }
