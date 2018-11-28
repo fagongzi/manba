@@ -131,14 +131,42 @@ func (c *proxyContext) allowWithWhitelist(ip string) bool {
 	return c.result.api.allowWithWhitelist(ip)
 }
 
+func (c *proxyContext) circuitResourceID() uint64 {
+	if c.result.dest != nil {
+		return c.result.dest.id
+	}
+
+	return c.result.api.id
+}
+
+func (c *proxyContext) circuitBreaker() *metapb.CircuitBreaker {
+	if c.result.dest != nil {
+		return c.result.dest.cb
+	}
+
+	return c.result.api.cb
+}
+
 func (c *proxyContext) circuitStatus() metapb.CircuitStatus {
-	return c.result.dest.getCircuitStatus()
+	if c.result.dest != nil {
+		return c.result.dest.getCircuitStatus()
+	}
+
+	return c.result.api.getCircuitStatus()
 }
 
 func (c *proxyContext) changeCircuitStatusToClose() {
-	c.result.dest.circuitToClose()
+	if c.result.dest != nil {
+		c.result.dest.circuitToClose()
+	}
+
+	c.result.api.circuitToClose()
 }
 
 func (c *proxyContext) changeCircuitStatusToOpen() {
-	c.result.dest.circuitToOpen()
+	if c.result.dest != nil {
+		c.result.dest.circuitToOpen()
+	}
+
+	c.result.api.circuitToOpen()
 }

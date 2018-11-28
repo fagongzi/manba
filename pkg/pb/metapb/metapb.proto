@@ -222,6 +222,8 @@ message API {
     optional uint32           position         = 15 [(gogoproto.nullable) = false];
     repeated PairValue        tags             = 16;
     optional WebSocketOptions webSocketOptions = 17;
+    optional int64            maxQPS           = 18 [(gogoproto.nullable) = false];
+    optional CircuitBreaker   circuitBreaker   = 19;
 }
 
 // Condition is a condition for routing
@@ -253,6 +255,7 @@ message System {
     optional CountMetric count = 1 [(gogoproto.nullable) = false];
 }
 
+// CountMetric count metric
 message CountMetric {
     optional int64 cluster = 1 [(gogoproto.nullable) = false];
     optional int64 server  = 2 [(gogoproto.nullable) = false];
