@@ -1,9 +1,16 @@
-ROOT_DIR 		= $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))/
-VERSION_PATH	= $(shell echo $(ROOT_DIR) | sed -e "s;${GOPATH}/src/;;g")pkg/util
-LD_GIT_COMMIT   = -X '$(VERSION_PATH).GitCommit=`git rev-parse --short HEAD`'
-LD_BUILD_TIME   = -X '$(VERSION_PATH).BuildTime=`date +%FT%T%z`'
-LD_GO_VERSION   = -X '$(VERSION_PATH).GoVersion=`go version`'
-LD_FLAGS        = -ldflags "$(LD_GIT_COMMIT) $(LD_BUILD_TIME) $(LD_GO_VERSION) -w -s"
+RELEASE_VERSION    = $(release_version)
+
+ifeq ("$(RELEASE_VERSION)","")
+	RELEASE_VERSION		:= "unknown"
+endif
+
+ROOT_DIR 		   = $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))/
+VERSION_PATH	   = $(shell echo $(ROOT_DIR) | sed -e "s;${GOPATH}/src/;;g")pkg/util
+LD_GIT_COMMIT      = -X '$(VERSION_PATH).GitCommit=`git rev-parse --short HEAD`'
+LD_BUILD_TIME      = -X '$(VERSION_PATH).BuildTime=`date +%FT%T%z`'
+LD_GO_VERSION      = -X '$(VERSION_PATH).GoVersion=`go version`'
+LD_GATEWAY_VERSION = -X '$(VERSION_PATH).Version=$(RELEASE_VERSION)'
+LD_FLAGS           = -ldflags "$(LD_GIT_COMMIT) $(LD_BUILD_TIME) $(LD_GO_VERSION) $(LD_GATEWAY_VERSION) -w -s"
 
 GOOS 		= linux
 CGO_ENABLED = 0
@@ -11,12 +18,6 @@ DIST_DIR 	= $(ROOT_DIR)dist/
 
 ETCD_VER			= v3.0.14
 ETCD_DOWNLOAD_URL	= https://github.com/coreos/etcd/releases/download
-
-DOCKER_TAG			:= $(tag)
-
-ifeq ("$(DOCKER_TAG)","")
-	DOCKER_TAG		:= $(shell date +%Y%m%d%H%M)
-endif
 
 .PHONY: release
 release: dist_dir apiserver proxy;
@@ -26,10 +27,13 @@ release_darwin: darwin dist_dir apiserver proxy;
 
 .PHONY: docker
 docker: release download_etcd ui;
-	@echo ========== current docker tag is: $(DOCKER_TAG) ==========
-	docker build -t fagongzi/gateway:$(DOCKER_TAG) -f Dockerfile .
-	docker build -t fagongzi/proxy:$(DOCKER_TAG) -f Dockerfile-proxy .
-	docker build -t fagongzi/apiserver:$(DOCKER_TAG) -f Dockerfile-apiserver .
+	@echo ========== current docker tag is: $(RELEASE_VERSION) ==========
+	docker build -t fagongzi/gateway:$(RELEASE_VERSION) -f Dockerfile .
+	docker build -t fagongzi/proxy:$(RELEASE_VERSION) -f Dockerfile-proxy .
+	docker build -t fagongzi/apiserver:$(RELEASE_VERSION) -f Dockerfile-apiserver .
+	docker tag fagongzi/gateway:$(RELEASE_VERSION) fagongzi/gateway
+	docker tag fagongzi/proxy:$(RELEASE_VERSION) fagongzi/proxy
+	docker tag fagongzi/apiserver:$(RELEASE_VERSION) fagongzi/apiserver
 
 .PHONY: ui
 ui: ; $(info ======== compile ui:)
