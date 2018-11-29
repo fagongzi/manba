@@ -116,7 +116,7 @@ func (a *Analysis) AddTarget(key uint64, interval time.Duration) {
 	}
 
 	if _, ok := a.recentlyPoints[key][interval]; ok {
-		log.Infof("analysis: already added, key=<%s> interval=<%s>",
+		log.Infof("analysis: already added, key=<%d> interval=<%s>",
 			key,
 			interval)
 		return
