@@ -8,15 +8,18 @@ import (
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/goetty"
+	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/task"
 	"github.com/valyala/fasthttp"
 )
 
 type copyReq struct {
-	origin *fasthttp.Request
-	api    *apiRuntime
-	node   *apiNode
-	to     *serverRuntime
+	origin     *fasthttp.Request
+	api        *apiRuntime
+	node       *apiNode
+	to         *serverRuntime
+	idx        int
+	requestTag string
 }
 
 func (req *copyReq) prepare() {
@@ -26,6 +29,11 @@ func (req *copyReq) prepare() {
 		if "" != realPath {
 			req.origin.SetRequestURI(realPath)
 			req.origin.SetHost(req.to.meta.Addr)
+
+			log.Infof("%s: dipatch node %d rewrite url to %s for copy",
+				req.requestTag,
+				req.idx,
+				realPath)
 		}
 	}
 }
@@ -44,6 +52,8 @@ type dispathNode struct {
 	multiCtx *multiContext
 	wg       *sync.WaitGroup
 
+	requestTag           string
+	idx                  int
 	api                  *apiRuntime
 	node                 *apiNode
 	dest                 *serverRuntime
@@ -227,8 +237,9 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) (*apiRuntime, []*dispathNod
 				break
 			}
 
-			for _, node := range api.nodes {
+			for idx, node := range api.nodes {
 				dn := acquireDispathNode()
+				dn.idx = idx
 				dn.api = api
 				dn.node = node
 				r.selectServer(req, dn)
