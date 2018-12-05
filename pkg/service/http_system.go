@@ -1,8 +1,6 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/fagongzi/grpcx"
 	"github.com/fagongzi/log"
 	"github.com/labstack/echo"
@@ -12,11 +10,11 @@ type backup struct {
 	ToAddr string `json:"toAddr"`
 }
 
-func initSystemRouter(server *echo.Echo) {
-	server.GET(fmt.Sprintf("/%s%s", apiVersion, "/system"),
+func initSystemRouter(server *echo.Group) {
+	server.GET("/system",
 		grpcx.NewGetHTTPHandle(emptyParamFactory, getSystemHandler))
 
-	server.POST(fmt.Sprintf("/%s%s", apiVersion, "/system/backup"),
+	server.POST("/system/backup",
 		grpcx.NewJSONBodyHTTPHandle(backupFactory, postBackupHandler))
 }
 
