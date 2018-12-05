@@ -1,26 +1,24 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/grpcx"
 	"github.com/fagongzi/log"
 	"github.com/labstack/echo"
 )
 
-func initClusterRouter(server *echo.Echo) {
-	server.GET(fmt.Sprintf("/%s%s", apiVersion, "/clusters/:id"),
+func initClusterRouter(server *echo.Group) {
+	server.GET("/clusters/:id",
 		grpcx.NewGetHTTPHandle(idParamFactory, getClusterHandler))
-	server.GET(fmt.Sprintf("/%s%s", apiVersion, "/clusters/:id/binds"),
+	server.GET("/clusters/:id/binds",
 		grpcx.NewGetHTTPHandle(idParamFactory, bindsClusterHandler))
-	server.DELETE(fmt.Sprintf("/%s%s", apiVersion, "/clusters/:id"),
+	server.DELETE("/clusters/:id",
 		grpcx.NewGetHTTPHandle(idParamFactory, deleteClusterHandler))
-	server.DELETE(fmt.Sprintf("/%s%s", apiVersion, "/clusters/:id/binds"),
+	server.DELETE("/clusters/:id/binds",
 		grpcx.NewGetHTTPHandle(idParamFactory, deleteClusterBindsHandler))
-	server.PUT(fmt.Sprintf("/%s%s", apiVersion, "/clusters"),
+	server.PUT("/clusters",
 		grpcx.NewJSONBodyHTTPHandle(putClusterFactory, postClusterHandler))
-	server.GET(fmt.Sprintf("/%s%s", apiVersion, "/clusters"),
+	server.GET("/clusters",
 		grpcx.NewGetHTTPHandle(limitQueryFactory, listClusterHandler))
 }
 

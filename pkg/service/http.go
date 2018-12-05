@@ -8,18 +8,19 @@ import (
 )
 
 const (
-	apiVersion = "v1"
+	apiVersion = "/v1"
 )
 
 // InitHTTPRouter init http router
 func InitHTTPRouter(server *echo.Echo, ui, uiPrefix string) {
-	initClusterRouter(server)
-	initServerRouter(server)
-	initBindRouter(server)
-	initRoutingRouter(server)
-	initAPIRouter(server)
-	initSystemRouter(server)
-	initStatic(server, ui, uiPrefix)
+	serverV1 := server.Group(apiVersion)
+	initClusterRouter(serverV1)
+	initServerRouter(serverV1)
+	initBindRouter(serverV1)
+	initRoutingRouter(serverV1)
+	initAPIRouter(serverV1)
+	initSystemRouter(serverV1)
+	initStatic(serverV1, ui, uiPrefix)
 }
 
 type limitQuery struct {

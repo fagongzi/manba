@@ -1,19 +1,17 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/grpcx"
 	"github.com/fagongzi/log"
 	"github.com/labstack/echo"
 )
 
-func initBindRouter(server *echo.Echo) {
-	server.DELETE(fmt.Sprintf("/%s%s", apiVersion, "/binds"),
+func initBindRouter(server *echo.Group) {
+	server.DELETE("/binds",
 		grpcx.NewJSONBodyHTTPHandle(bindFactory, deleteBindHandler))
 
-	server.PUT(fmt.Sprintf("/%s%s", apiVersion, "/binds"),
+	server.PUT("/binds",
 		grpcx.NewJSONBodyHTTPHandle(bindFactory, postBindHandler))
 }
 

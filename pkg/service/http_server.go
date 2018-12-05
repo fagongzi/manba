@@ -1,22 +1,20 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/grpcx"
 	"github.com/fagongzi/log"
 	"github.com/labstack/echo"
 )
 
-func initServerRouter(server *echo.Echo) {
-	server.GET(fmt.Sprintf("/%s%s", apiVersion, "/servers/:id"),
+func initServerRouter(server *echo.Group) {
+	server.GET("/servers/:id",
 		grpcx.NewGetHTTPHandle(idParamFactory, getServerHandler))
-	server.DELETE(fmt.Sprintf("/%s%s", apiVersion, "/servers/:id"),
+	server.DELETE("/servers/:id",
 		grpcx.NewGetHTTPHandle(idParamFactory, deleteServerHandler))
-	server.PUT(fmt.Sprintf("/%s%s", apiVersion, "/servers"),
+	server.PUT("/servers",
 		grpcx.NewJSONBodyHTTPHandle(putServerFactory, postServerHandler))
-	server.GET(fmt.Sprintf("/%s%s", apiVersion, "/servers"),
+	server.GET("/servers",
 		grpcx.NewGetHTTPHandle(limitQueryFactory, listServerHandler))
 }
 
