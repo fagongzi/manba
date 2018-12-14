@@ -340,6 +340,7 @@ func (f *JWTFilter) fetchToCookie(args map[string]interface{}, token string, cla
 		buf.WriteString(prefix)
 		buf.WriteString(field)
 		c.ForwardRequest().Header.SetCookie(buf.String(), fmt.Sprintf("%v", claims[field]))
+		buf.Reset()
 	}
 
 	return true, nil

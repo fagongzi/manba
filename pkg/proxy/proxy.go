@@ -525,6 +525,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 			times)
 
 		if !dn.api.isWebSocket() {
+			forwardReq.SetHost(svr.meta.Addr)
 			res, err = p.client.Do(forwardReq, svr.meta.Addr, dn.httpOption())
 		} else {
 			res, err = p.onWebsocket(c, svr.meta.Addr)
@@ -570,7 +571,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 			dn.err = ErrNoServer
 			dn.code = fasthttp.StatusServiceUnavailable
 			dn.maybeDone()
-			
+
 			log.Infof("%s: dipatch node %d has no server, return with 503",
 				dn.requestTag,
 				dn.idx)
