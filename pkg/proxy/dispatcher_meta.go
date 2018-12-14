@@ -406,6 +406,8 @@ func (r *dispatcher) refreshAllQPS() {
 		qps := r.refreshQPS(svr.meta)
 		svr.updateMeta(svr.meta)
 		svr.meta.MaxQPS = qps
+		r.addAnalysis(svr.meta.ID, svr.meta.CircuitBreaker)
+		r.addToCheck(svr)
 	}
 }
 
