@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"errors"
-	"math/rand"
 	"net/http"
 	"time"
 
@@ -10,18 +9,11 @@ import (
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 )
 
-const (
-	// RateBase base rate
-	RateBase = 100
-)
-
 var (
 	// ErrCircuitClose resource is in circuit close
 	ErrCircuitClose = errors.New("resource is in circuit close")
 	// ErrCircuitHalfLimited resource is in circuit half, traffic limit
 	ErrCircuitHalfLimited = errors.New("resource is in circuit half, traffic limit")
-
-	rd = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
 // CircuitBreakeFilter CircuitBreakeFilter
@@ -46,7 +38,7 @@ func (f *CircuitBreakeFilter) Name() string {
 // Pre execute before proxy
 func (f *CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) {
 	pc := c.(*proxyContext)
-	cb := pc.circuitBreaker()
+	cb, barrier := pc.circuitBreaker()
 	if cb == nil {
 		return f.BaseFilter.Pre(c)
 	}
@@ -64,7 +56,7 @@ func (f *CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) 
 
 		return http.StatusOK, nil
 	case metapb.Half:
-		if limitAllow(cb.HalfTrafficRate) {
+		if barrier.Allow() {
 			return f.BaseFilter.Pre(c)
 		}
 
@@ -79,7 +71,7 @@ func (f *CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) 
 // Post execute after proxy
 func (f *CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error) {
 	pc := c.(*proxyContext)
-	cb := pc.circuitBreaker()
+	cb, _ := pc.circuitBreaker()
 	if cb == nil {
 		return f.BaseFilter.Post(c)
 	}
@@ -98,7 +90,7 @@ func (f *CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error)
 // PostErr execute proxy has errors
 func (f *CircuitBreakeFilter) PostErr(c filter.Context) {
 	pc := c.(*proxyContext)
-	cb := pc.circuitBreaker()
+	cb, _ := pc.circuitBreaker()
 	if cb == nil {
 		f.BaseFilter.PostErr(c)
 		return
@@ -111,9 +103,4 @@ func (f *CircuitBreakeFilter) PostErr(c filter.Context) {
 		c.Analysis().GetRecentlyRequestFailureRate(protectedResource, time.Duration(cb.RateCheckPeriod)) >= int(cb.FailureRateToClose) {
 		pc.changeCircuitStatusToClose()
 	}
-}
-
-func limitAllow(rate int32) bool {
-	randValue := rd.Intn(RateBase)
-	return randValue < int(rate)
 }

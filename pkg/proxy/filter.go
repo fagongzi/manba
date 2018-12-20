@@ -139,12 +139,12 @@ func (c *proxyContext) circuitResourceID() uint64 {
 	return c.result.api.id
 }
 
-func (c *proxyContext) circuitBreaker() *metapb.CircuitBreaker {
+func (c *proxyContext) circuitBreaker() (*metapb.CircuitBreaker, *util.RateBarrier) {
 	if c.result.dest != nil {
-		return c.result.dest.cb
+		return c.result.dest.cb, c.result.dest.barrier
 	}
 
-	return c.result.api.cb
+	return c.result.api.cb, c.result.api.barrier
 }
 
 func (c *proxyContext) circuitStatus() metapb.CircuitStatus {
