@@ -8,7 +8,7 @@ Gateway目前支持Etcd作为元数据区的存储，所以需要一个Etcd环�
 
 
 ## Golang
-如果你希望从源码编译Gateway，你需要一个[golang 环境](https://github.com/golang/go)，必须使用`1.8`以上的版本。
+如果你希望从源码编译Gateway，你需要一个[golang 环境](https://github.com/golang/go)，必须使用`1.11`及以上的版本。
 
 # 从源码编译
 
