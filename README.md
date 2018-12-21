@@ -91,8 +91,8 @@ API是Gateway的核心概念，我们可以在Gateway的中维护对外的API，
 ### Routing
 Routing是一个路由策略，根据HTTP Request中的Cookie，Querystring、Header、Path中的一些信息把流量分发到或者复制到指定的Cluster，通过这个功能，我们可以实现AB Test和线上引流，[更多](./docs/routing.md)。
 
-### 参与开发
+## 参与开发
 [更多](./docs/build.md)
 
-# 交流方式-微信
+## 交流方式-微信
 ![](./images/qr.jpg)
