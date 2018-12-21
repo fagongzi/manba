@@ -564,18 +564,29 @@ func (a *routingRuntime) updateMeta(meta *metapb.Routing) {
 	a.barrier = util.NewRateBarrier(int(a.meta.TrafficRate))
 }
 
-func (a *routingRuntime) matches(apiID uint64, req *fasthttp.Request) bool {
+func (a *routingRuntime) matches(apiID uint64, req *fasthttp.Request, requestTag string) bool {
 	if a.meta.API > 0 && apiID != a.meta.API {
 		return false
 	}
 
 	for _, c := range a.meta.Conditions {
 		if !conditionsMatches(&c, req) {
+			log.Debugf("%s: skip routing %s by condition %+v",
+				requestTag,
+				a.meta.Name,
+				c)
 			return false
 		}
 	}
 
-	return a.barrier.Allow()
+	value := a.barrier.Allow()
+	if !value {
+		log.Debugf("%s: skip routing %s by rate",
+			requestTag,
+			a.meta.Name)
+	}
+
+	return value
 }
 
 func (a *routingRuntime) isUp() bool {

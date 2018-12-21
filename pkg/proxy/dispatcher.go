@@ -224,7 +224,7 @@ func (r *dispatcher) dispatchCompleted() {
 	r.RUnlock()
 }
 
-func (r *dispatcher) dispatch(req *fasthttp.Request) (*apiRuntime, []*dispathNode) {
+func (r *dispatcher) dispatch(req *fasthttp.Request, requestTag string) (*apiRuntime, []*dispathNode) {
 	r.RLock()
 
 	var targetAPI *apiRuntime
@@ -234,6 +234,9 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) (*apiRuntime, []*dispathNod
 		if api.matches(req) {
 			targetAPI = api
 			if api.meta.UseDefault {
+				log.Debugf("%s: match api %s, and use default force",
+					requestTag,
+					api.meta.Name)
 				break
 			}
 
@@ -242,7 +245,7 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) (*apiRuntime, []*dispathNod
 				dn.idx = idx
 				dn.api = api
 				dn.node = node
-				r.selectServer(req, dn)
+				r.selectServer(req, dn, requestTag)
 				dispathes = append(dispathes, dn)
 			}
 			break
@@ -252,14 +255,20 @@ func (r *dispatcher) dispatch(req *fasthttp.Request) (*apiRuntime, []*dispathNod
 	return targetAPI, dispathes
 }
 
-func (r *dispatcher) selectServer(req *fasthttp.Request, dn *dispathNode) {
+func (r *dispatcher) selectServer(req *fasthttp.Request, dn *dispathNode, requestTag string) {
 	dn.dest = r.selectServerFromCluster(req, dn.node.meta.ClusterID)
-	r.adjustByRouting(dn.api.meta.ID, req, dn)
+	r.adjustByRouting(dn.api.meta.ID, req, dn, requestTag)
 }
 
-func (r *dispatcher) adjustByRouting(apiID uint64, req *fasthttp.Request, dn *dispathNode) {
+func (r *dispatcher) adjustByRouting(apiID uint64, req *fasthttp.Request, dn *dispathNode, requestTag string) {
 	for _, routing := range r.routings {
-		if routing.isUp() && routing.matches(apiID, req) {
+		if routing.isUp() && routing.matches(apiID, req, requestTag) {
+			log.Infof("%s: match routing %s, %s traffic to cluster %d",
+				requestTag,
+				routing.meta.Name,
+				routing.meta.Status.String(),
+				routing.meta.ClusterID)
+
 			svr := r.selectServerFromCluster(req, routing.meta.ClusterID)
 
 			switch routing.meta.Strategy {
