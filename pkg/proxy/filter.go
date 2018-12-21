@@ -131,6 +131,10 @@ func (c *proxyContext) allowWithWhitelist(ip string) bool {
 	return c.result.api.allowWithWhitelist(ip)
 }
 
+func (c *proxyContext) circuitRateBarrier() *util.RateBarrier {
+	return c.result.dest.barrier
+}
+
 func (c *proxyContext) circuitStatus() metapb.CircuitStatus {
 	return c.result.dest.getCircuitStatus()
 }

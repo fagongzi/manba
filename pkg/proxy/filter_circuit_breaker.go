@@ -10,11 +10,6 @@ import (
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 )
 
-const (
-	// RateBase base rate
-	RateBase = 100
-)
-
 var (
 	// ErrCircuitClose server is in circuit close
 	ErrCircuitClose = errors.New("server is in circuit close")
@@ -50,17 +45,19 @@ func (f *CircuitBreakeFilter) Pre(c filter.Context) (statusCode int, err error) 
 		return f.BaseFilter.Pre(c)
 	}
 
-	switch c.(*proxyContext).circuitStatus() {
+	pc := c.(*proxyContext)
+
+	switch pc.circuitStatus() {
 	case metapb.Open:
-		if c.Analysis().GetRecentlyRequestFailureRate(c.Server().ID, time.Duration(c.Server().CircuitBreaker.RateCheckPeriod)) >= int(cb.FailureRateToClose) {
-			c.(*proxyContext).changeCircuitStatusToClose()
+		if c.Analysis().GetRecentlyRequestFailureRate(c.Server().ID, time.Duration(cb.RateCheckPeriod)) >= int(cb.FailureRateToClose) {
+			pc.changeCircuitStatusToClose()
 			c.Analysis().Reject(c.Server().ID)
 			return http.StatusServiceUnavailable, ErrCircuitClose
 		}
 
 		return http.StatusOK, nil
 	case metapb.Half:
-		if limitAllow(cb.HalfTrafficRate) {
+		if pc.circuitRateBarrier().Allow() {
 			return f.BaseFilter.Pre(c)
 		}
 
@@ -79,9 +76,10 @@ func (f *CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error)
 		return f.BaseFilter.Pre(c)
 	}
 
-	if c.(*proxyContext).circuitStatus() == metapb.Half &&
-		c.Analysis().GetRecentlyRequestSuccessedRate(c.Server().ID, time.Duration(c.Server().CircuitBreaker.RateCheckPeriod)) >= int(cb.SucceedRateToOpen) {
-		c.(*proxyContext).changeCircuitStatusToOpen()
+	pc := c.(*proxyContext)
+	if pc.circuitStatus() == metapb.Half &&
+		c.Analysis().GetRecentlyRequestSuccessedRate(c.Server().ID, time.Duration(cb.RateCheckPeriod)) >= int(cb.SucceedRateToOpen) {
+		pc.changeCircuitStatusToOpen()
 	}
 
 	return f.BaseFilter.Post(c)
@@ -95,13 +93,9 @@ func (f *CircuitBreakeFilter) PostErr(c filter.Context) {
 		return
 	}
 
-	if c.(*proxyContext).circuitStatus() == metapb.Half &&
-		c.Analysis().GetRecentlyRequestFailureRate(c.Server().ID, time.Duration(c.Server().CircuitBreaker.RateCheckPeriod)) >= int(cb.FailureRateToClose) {
-		c.(*proxyContext).changeCircuitStatusToClose()
+	pc := c.(*proxyContext)
+	if pc.circuitStatus() == metapb.Half &&
+		c.Analysis().GetRecentlyRequestFailureRate(c.Server().ID, time.Duration(cb.RateCheckPeriod)) >= int(cb.FailureRateToClose) {
+		pc.changeCircuitStatusToClose()
 	}
-}
-
-func limitAllow(rate int32) bool {
-	randValue := rd.Intn(RateBase)
-	return randValue < int(rate)
 }

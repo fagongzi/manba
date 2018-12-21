@@ -3,7 +3,6 @@ package proxy
 import (
 	"container/list"
 	"fmt"
-	"math/rand"
 	"net/url"
 	"regexp"
 	"sort"
@@ -94,6 +93,7 @@ type serverRuntime struct {
 	checkFailCount   int
 	useCheckDuration time.Duration
 	circuit          metapb.CircuitStatus
+	barrier          *util.RateBarrier
 }
 
 func newServerRuntime(meta *metapb.Server, tw *goetty.TimeoutWheel) *serverRuntime {
@@ -122,6 +122,9 @@ func (s *serverRuntime) updateMeta(meta *metapb.Server) {
 	s.limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(meta.MaxQPS)), int(meta.MaxQPS))
 	s.status = metapb.Down
 	s.circuit = metapb.Open
+	if meta.CircuitBreaker != nil {
+		s.barrier = util.NewRateBarrier(int(meta.CircuitBreaker.HalfTrafficRate))
+	}
 }
 
 func (s *serverRuntime) getCheckURL() string {
@@ -527,19 +530,20 @@ func (r *apiRule) validate(value []byte) bool {
 }
 
 type routingRuntime struct {
-	meta *metapb.Routing
-	rand *rand.Rand
+	meta    *metapb.Routing
+	barrier *util.RateBarrier
 }
 
 func newRoutingRuntime(meta *metapb.Routing) *routingRuntime {
-	return &routingRuntime{
-		meta: meta,
-		rand: rand.New(rand.NewSource(time.Now().UnixNano())),
-	}
+	r := &routingRuntime{}
+	r.updateMeta(meta)
+
+	return r
 }
 
 func (a *routingRuntime) updateMeta(meta *metapb.Routing) {
 	a.meta = meta
+	a.barrier = util.NewRateBarrier(int(a.meta.TrafficRate))
 }
 
 func (a *routingRuntime) matches(apiID uint64, req *fasthttp.Request) bool {
@@ -553,8 +557,7 @@ func (a *routingRuntime) matches(apiID uint64, req *fasthttp.Request) bool {
 		}
 	}
 
-	n := a.rand.Intn(100)
-	return n < int(a.meta.TrafficRate)
+	return a.barrier.Allow()
 }
 
 func (a *routingRuntime) isUp() bool {
