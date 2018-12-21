@@ -315,7 +315,7 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	}
 
 	startAt := time.Now()
-	api, dispatches := p.dispatcher.dispatch(&ctx.Request)
+	api, dispatches := p.dispatcher.dispatch(&ctx.Request, requestTag)
 	if len(dispatches) == 0 &&
 		(nil == api || api.meta.DefaultValue == nil) {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
@@ -402,6 +402,9 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 
 	p.postRequest(api, dispatches, startAt)
 	p.dispatcher.dispatchCompleted()
+
+	log.Debugf("%s: dispatch complete",
+		requestTag)
 }
 
 func (p *Proxy) doCopy(req *copyReq) {
@@ -439,7 +442,7 @@ func (p *Proxy) doCopy(req *copyReq) {
 func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 	if dn.node.meta.UseDefault {
 		dn.maybeDone()
-		log.Infof("%s: dipatch node %d using default value",
+		log.Infof("%s: dipatch node %d force using default",
 			dn.requestTag,
 			dn.idx)
 		return
@@ -510,7 +513,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 		dn.maybeDone()
 		releaseContext(c)
 
-		log.Infof("%s: dipatch node %d hit cache",
+		log.Infof("%s: dipatch node %d using cache",
 			dn.requestTag,
 			dn.idx)
 		return
@@ -565,7 +568,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 		}
 
 		fasthttp.ReleaseResponse(res)
-		p.dispatcher.selectServer(&ctx.Request, dn)
+		p.dispatcher.selectServer(&ctx.Request, dn, dn.requestTag)
 		svr = dn.dest
 		if nil == svr {
 			dn.err = ErrNoServer

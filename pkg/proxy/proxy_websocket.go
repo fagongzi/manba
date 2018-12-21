@@ -1,11 +1,13 @@
 package proxy
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/url"
 
 	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/hack"
 	"github.com/gorilla/websocket"
 	"github.com/koding/websocketproxy"
 	"github.com/valyala/fasthttp"
@@ -22,6 +24,13 @@ func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	var buf bytes.Buffer
+	buf.WriteByte(charLeft)
+	buf.Write(hack.StringToSlice(req.Method))
+	buf.WriteByte(charRight)
+	buf.Write(hack.StringToSlice(req.RequestURI))
+	requestTag := hack.SliceToString(buf.Bytes())
+
 	if req.Method != "GET" {
 		rw.WriteHeader(fasthttp.StatusMethodNotAllowed)
 		return
@@ -35,7 +44,7 @@ func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 	ctx.Request.SetRequestURI(req.RequestURI)
 
-	api, dispatches := p.dispatcher.dispatch(&ctx.Request)
+	api, dispatches := p.dispatcher.dispatch(&ctx.Request, requestTag)
 	if len(dispatches) <= 0 &&
 		(nil == api || api.meta.DefaultValue == nil) {
 		rw.WriteHeader(fasthttp.StatusNotFound)
