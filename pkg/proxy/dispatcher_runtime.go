@@ -272,12 +272,11 @@ func newAPINode(meta *metapb.DispatchNode) *apiNode {
 
 	rn.httpOption = *globalHTTPOptions
 	if meta.ReadTimeout > 0 {
-		rn.httpOption.ReadTimeout = time.Second * time.Duration(meta.ReadTimeout)
+		rn.httpOption.ReadTimeout = time.Duration(meta.ReadTimeout)
 	}
 	if meta.WriteTimeout > 0 {
-		rn.httpOption.WriteTimeout = time.Second * time.Duration(meta.WriteTimeout)
+		rn.httpOption.WriteTimeout = time.Duration(meta.WriteTimeout)
 	}
-
 	return rn
 }
 
