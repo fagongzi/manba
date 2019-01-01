@@ -8,6 +8,7 @@ import (
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/valyala/fasthttp"
+	"golang.org/x/time/rate"
 )
 
 func (f *Proxy) doPreFilters(c filter.Context) (filterName string, statusCode int, err error) {
@@ -132,41 +133,49 @@ func (c *proxyContext) allowWithWhitelist(ip string) bool {
 }
 
 func (c *proxyContext) circuitResourceID() uint64 {
-	if c.result.dest != nil {
-		return c.result.dest.id
+	if c.result.api.cb != nil {
+		return c.result.api.id
 	}
 
-	return c.result.api.id
+	return c.result.dest.id
+}
+
+func (c *proxyContext) rateLimiter() *rate.Limiter {
+	if c.result.api.limiter != nil {
+		return c.result.api.limiter
+	}
+
+	return c.result.dest.limiter
 }
 
 func (c *proxyContext) circuitBreaker() (*metapb.CircuitBreaker, *util.RateBarrier) {
-	if c.result.dest != nil {
-		return c.result.dest.cb, c.result.dest.barrier
+	if c.result.api.cb != nil {
+		return c.result.api.cb, c.result.api.barrier
 	}
 
-	return c.result.api.cb, c.result.api.barrier
+	return c.result.dest.cb, c.result.dest.barrier
 }
 
 func (c *proxyContext) circuitStatus() metapb.CircuitStatus {
-	if c.result.dest != nil {
-		return c.result.dest.getCircuitStatus()
+	if c.result.api.cb != nil {
+		return c.result.api.getCircuitStatus()
 	}
 
-	return c.result.api.getCircuitStatus()
+	return c.result.dest.getCircuitStatus()
 }
 
 func (c *proxyContext) changeCircuitStatusToClose() {
-	if c.result.dest != nil {
-		c.result.dest.circuitToClose()
+	if c.result.api.cb != nil {
+		c.result.api.circuitToClose()
 	}
 
-	c.result.api.circuitToClose()
+	c.result.dest.circuitToClose()
 }
 
 func (c *proxyContext) changeCircuitStatusToOpen() {
-	if c.result.dest != nil {
-		c.result.dest.circuitToOpen()
+	if c.result.api.cb != nil {
+		c.result.api.circuitToOpen()
 	}
 
-	c.result.api.circuitToOpen()
+	c.result.dest.circuitToOpen()
 }
