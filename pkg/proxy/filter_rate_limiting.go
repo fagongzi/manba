@@ -28,7 +28,7 @@ func (f *RateLimitingFilter) Name() string {
 
 // Pre execute before proxy
 func (f *RateLimitingFilter) Pre(c filter.Context) (statusCode int, err error) {
-	err = c.(*proxyContext).result.dest.limiter.Wait(context.Background())
+	err = c.(*proxyContext).rateLimiter().Wait(context.Background())
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
