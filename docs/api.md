@@ -77,3 +77,21 @@ API匹配时按该值的升序匹配，即值越小优先级越高。默认值�
 
 ## WebSocketOptions（可选）
 websocket选项，设置该API为`websocket`，注意：`websocket特性还处于试验阶段，默认关闭，可以使用--websocket启用特性`。网关转发websocket的时候，`Origin`默认使用后端Server的地址，如果需要设置特殊值，可以指定`Origin`参数。
+
+## MaxQPS（可选）
+API能够支持的最大QPS，用于流控。Gateway采用令牌桶算法，根据QPS限制流量，保护后端API被压垮。API的优先级高于`Server`的配置
+
+## CircuitBreaker（可选）
+熔断器，设置后端API的熔断规则，API的优先级高于`Server`的配置。熔断器分为3个状态：
+
+* Open
+
+  Open状态，正常状态，Gateway放入全部流量。当Gateway发现失败的请求比例达到了设置的规则，熔断器会把状态切换到Close状态
+
+* Half
+
+  Half状态，尝试恢复的状态。在这个状态下，Gateway会尝试放入一定比例的流量，然后观察这些流量的请求的情况，如果达到预期就把状态转换为Open状态，如果没有达到预期，恢复成Close状态
+
+* Close
+
+  Close状态，在这个状态下，Gateway禁止任何流量进入这个后端Server，在达到指定的阈值时间后，Gateway自动尝试切换到Half状态，尝试恢复。
