@@ -9,8 +9,8 @@ Gateway
 Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的API接入层。
 
 ## Features
-* 流量控制
-* 熔断
+* 流量控制(Server或API级别)
+* 熔断(Server或API级别)
 * 负载均衡
 * 服务发现
 * 插件机制
