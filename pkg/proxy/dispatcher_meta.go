@@ -322,8 +322,13 @@ func (r *dispatcher) addAPI(api *metapb.API) error {
 		return errAPIExists
 	}
 
-	r.apis[api.ID] = newAPIRuntime(api, r.tw)
+	a := newAPIRuntime(api, r.tw, r.refreshQPS(api.MaxQPS))
+	r.apis[api.ID] = a
 	r.sortAPIs()
+
+	if a.cb != nil {
+		r.addAnalysis(api.ID, a.cb)
+	}
 
 	log.Infof("api <%d> added, data <%s>",
 		api.ID,
@@ -341,8 +346,14 @@ func (r *dispatcher) updateAPI(api *metapb.API) error {
 		return errAPINotFound
 	}
 
+	rt.activeQPS = r.refreshQPS(api.MaxQPS)
 	rt.updateMeta(api)
 	r.sortAPIs()
+
+	if rt.cb != nil {
+		r.addAnalysis(rt.meta.ID, rt.meta.CircuitBreaker)
+	}
+
 	log.Infof("api <%d> updated, data <%s>",
 		api.ID,
 		api.String())
@@ -403,20 +414,22 @@ func (r *dispatcher) sortAPIs() {
 
 func (r *dispatcher) refreshAllQPS() {
 	for _, svr := range r.servers {
-		qps := r.refreshQPS(svr.meta)
+		svr.activeQPS = r.refreshQPS(svr.meta.MaxQPS)
 		svr.updateMeta(svr.meta)
-		svr.meta.MaxQPS = qps
-		r.addAnalysis(svr.meta.ID, svr.meta.CircuitBreaker)
 		r.addToCheck(svr)
+	}
+
+	for _, api := range r.apis {
+		api.activeQPS = r.refreshQPS(api.meta.MaxQPS)
+		api.updateMeta(api.meta)
 	}
 }
 
-func (r *dispatcher) refreshQPS(svr *metapb.Server) (originQPS int64) {
-	originQPS = svr.MaxQPS
+func (r *dispatcher) refreshQPS(value int64) int64 {
 	if len(r.proxies) > 0 {
-		svr.MaxQPS = svr.MaxQPS / int64(len(r.proxies))
+		return value / int64(len(r.proxies))
 	}
-	return
+	return value
 }
 
 func (r *dispatcher) addServer(svr *metapb.Server) error {
@@ -427,10 +440,7 @@ func (r *dispatcher) addServer(svr *metapb.Server) error {
 		return errServerExists
 	}
 
-	qps := r.refreshQPS(svr)
-
-	rt := newServerRuntime(svr, r.tw)
-	svr.MaxQPS = qps
+	rt := newServerRuntime(svr, r.tw, r.refreshQPS(svr.MaxQPS))
 	r.servers[svr.ID] = rt
 
 	r.addAnalysis(rt.meta.ID, rt.meta.CircuitBreaker)
@@ -452,9 +462,9 @@ func (r *dispatcher) updateServer(meta *metapb.Server) error {
 		return errServerNotFound
 	}
 
-	qps := r.refreshQPS(meta)
+	rt.activeQPS = r.refreshQPS(meta.MaxQPS)
 	rt.updateMeta(meta)
-	meta.MaxQPS = qps
+
 	r.addAnalysis(rt.meta.ID, rt.meta.CircuitBreaker)
 	r.addToCheck(rt)
 
