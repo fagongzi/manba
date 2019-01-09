@@ -4,7 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/fagongzi/util/format"
 	"github.com/labstack/echo"
 	md "github.com/labstack/echo/middleware"
 )
@@ -18,6 +20,20 @@ func main() {
 
 	server := echo.New()
 	server.Use(md.Logger())
+
+	server.GET("/fail", func(c echo.Context) error {
+		sleep := c.QueryParam("sleep")
+		if sleep != "" {
+			time.Sleep(time.Second * time.Duration(format.MustParseStrInt(sleep)))
+		}
+
+		code := c.QueryParam("code")
+		if code != "" {
+			return c.String(format.MustParseStrInt(code), "OK")
+		}
+
+		return c.String(http.StatusOK, "OK")
+	})
 
 	server.GET("/check", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK")

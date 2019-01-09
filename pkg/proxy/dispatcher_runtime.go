@@ -85,12 +85,13 @@ func (c *clusterRuntime) selectServer(req *fasthttp.Request) uint64 {
 type abstractSupportProtectedRuntime struct {
 	sync.RWMutex
 
-	id      uint64
-	tw      *goetty.TimeoutWheel
-	limiter *rate.Limiter
-	circuit metapb.CircuitStatus
-	cb      *metapb.CircuitBreaker
-	barrier *util.RateBarrier
+	id        uint64
+	tw        *goetty.TimeoutWheel
+	activeQPS int64
+	limiter   *rate.Limiter
+	circuit   metapb.CircuitStatus
+	cb        *metapb.CircuitBreaker
+	barrier   *util.RateBarrier
 }
 
 func (s *abstractSupportProtectedRuntime) getCircuitStatus() metapb.CircuitStatus {
@@ -147,9 +148,10 @@ type serverRuntime struct {
 	useCheckDuration time.Duration
 }
 
-func newServerRuntime(meta *metapb.Server, tw *goetty.TimeoutWheel) *serverRuntime {
+func newServerRuntime(meta *metapb.Server, tw *goetty.TimeoutWheel, activeQPS int64) *serverRuntime {
 	rt := &serverRuntime{}
 	rt.tw = tw
+	rt.activeQPS = activeQPS
 	rt.updateMeta(meta)
 	return rt
 }
@@ -157,18 +159,21 @@ func newServerRuntime(meta *metapb.Server, tw *goetty.TimeoutWheel) *serverRunti
 func (s *serverRuntime) clone() *serverRuntime {
 	meta := &metapb.Server{}
 	pbutil.MustUnmarshal(meta, pbutil.MustMarshal(s.meta))
-	return newServerRuntime(meta, s.tw)
+	return newServerRuntime(meta, s.tw, s.activeQPS)
 }
 
 func (s *serverRuntime) updateMeta(meta *metapb.Server) {
 	s.heathTimeout.Stop()
+	activeQPS := s.activeQPS
 	tw := s.tw
+
 	*s = serverRuntime{}
 	s.tw = tw
+	s.activeQPS = activeQPS
 	s.meta = meta
 	s.id = meta.ID
 	s.cb = meta.CircuitBreaker
-	s.limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(meta.MaxQPS)), int(meta.MaxQPS))
+	s.limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(s.activeQPS)), int(s.activeQPS))
 	s.status = metapb.Down
 	s.circuit = metapb.Open
 	if s.cb != nil {
@@ -322,10 +327,11 @@ type apiRuntime struct {
 	parsedRenderObjects []*renderObject
 }
 
-func newAPIRuntime(meta *metapb.API, tw *goetty.TimeoutWheel) *apiRuntime {
+func newAPIRuntime(meta *metapb.API, tw *goetty.TimeoutWheel, activeQPS int64) *apiRuntime {
 	ar := &apiRuntime{
 		meta: meta,
 	}
+	ar.activeQPS = activeQPS
 	ar.tw = tw
 	ar.init()
 
@@ -335,12 +341,17 @@ func newAPIRuntime(meta *metapb.API, tw *goetty.TimeoutWheel) *apiRuntime {
 func (a *apiRuntime) clone() *apiRuntime {
 	meta := &metapb.API{}
 	pbutil.MustUnmarshal(meta, pbutil.MustMarshal(a.meta))
-	return newAPIRuntime(meta, a.tw)
+	return newAPIRuntime(meta, a.tw, a.activeQPS)
 }
 
 func (a *apiRuntime) updateMeta(meta *metapb.API) {
+	tw := a.tw
+	activeQPS := a.activeQPS
+
 	*a = apiRuntime{}
 	a.meta = meta
+	a.tw = tw
+	a.activeQPS = activeQPS
 	a.init()
 }
 
@@ -413,7 +424,7 @@ func (a *apiRuntime) init() {
 		a.barrier = util.NewRateBarrier(int(a.cb.HalfTrafficRate))
 	}
 	if a.meta.MaxQPS > 0 {
-		a.limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(a.meta.MaxQPS)), int(a.meta.MaxQPS))
+		a.limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(a.activeQPS)), int(a.activeQPS))
 	}
 
 	return
