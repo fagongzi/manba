@@ -25,17 +25,18 @@ func (f *AnalysisFilter) Name() string {
 
 // Pre execute before proxy
 func (f *AnalysisFilter) Pre(c filter.Context) (statusCode int, err error) {
-	c.Analysis().Request(c.Server().ID)
+	// TODO: avoid lock overhead in every request
+	c.Analysis().Request(c.(*proxyContext).circuitResourceID())
 	return f.BaseFilter.Pre(c)
 }
 
 // Post execute after proxy
 func (f *AnalysisFilter) Post(c filter.Context) (statusCode int, err error) {
-	c.Analysis().Response(c.Server().ID, c.EndAt().Sub(c.StartAt()).Nanoseconds())
+	c.Analysis().Response(c.(*proxyContext).circuitResourceID(), c.EndAt().Sub(c.StartAt()).Nanoseconds())
 	return f.BaseFilter.Post(c)
 }
 
 // PostErr execute proxy has errors
 func (f *AnalysisFilter) PostErr(c filter.Context) {
-	c.Analysis().Failure(c.Server().ID)
+	c.Analysis().Failure(c.(*proxyContext).circuitResourceID())
 }

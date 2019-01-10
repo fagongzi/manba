@@ -310,42 +310,46 @@ func (a *Analysis) GetContinuousFailureCount(server uint64) int {
 // Reject incr reject count
 func (a *Analysis) Reject(key uint64) {
 	a.Lock()
-	p := a.points[key]
-	p.rejects.Incr()
+	if p, ok := a.points[key]; ok {
+		p.rejects.Incr()
+	}
 	a.Unlock()
 }
 
 // Failure incr failure count
 func (a *Analysis) Failure(key uint64) {
 	a.Lock()
-	p := a.points[key]
-	p.failure.Incr()
-	p.continuousFailure.Incr()
+	if p, ok := a.points[key]; ok {
+		p.failure.Incr()
+		p.continuousFailure.Incr()
+	}
 	a.Unlock()
 }
 
 // Request incr request count
 func (a *Analysis) Request(key uint64) {
 	a.Lock()
-	p := a.points[key]
-	p.requests.Incr()
+	if p, ok := a.points[key]; ok {
+		p.requests.Incr()
+	}
 	a.Unlock()
 }
 
 // Response incr successed count
 func (a *Analysis) Response(key uint64, cost int64) {
 	a.Lock()
-	p := a.points[key]
-	p.successed.Incr()
-	p.costs.Add(cost)
-	p.continuousFailure.Set(0)
+	if p, ok := a.points[key]; ok {
+		p.successed.Incr()
+		p.costs.Add(cost)
+		p.continuousFailure.Set(0)
 
-	if p.max.Get() < cost {
-		p.max.Set(cost)
-	}
+		if p.max.Get() < cost {
+			p.max.Set(cost)
+		}
 
-	if p.min.Get() == 0 || p.min.Get() > cost {
-		p.min.Set(cost)
+		if p.min.Get() == 0 || p.min.Get() > cost {
+			p.min.Set(cost)
+		}
 	}
 	a.Unlock()
 }
