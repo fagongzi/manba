@@ -67,8 +67,11 @@ func (f *CachingFilter) Post(c filter.Context) (statusCode int, err error) {
 	}
 
 	f.cache.Add(id, genCachedValue(c))
-	f.tw.Schedule(time.Second*time.Duration(c.DispatchNode().Cache.Deadline),
-		f.removeCache, id)
+	if c.DispatchNode().Cache.Deadline > 0 {
+		f.tw.Schedule(time.Duration(c.DispatchNode().Cache.Deadline),
+			f.removeCache, id)
+	}
+
 	return f.BaseFilter.Post(c)
 }
 
