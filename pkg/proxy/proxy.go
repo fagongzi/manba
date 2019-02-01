@@ -326,6 +326,9 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
+	// make sure fasthttp request header is parsed, avoid concurrent copy header bug
+	ctx.Request.Header.Peek("fuck")
+
 	log.Infof("%s: match api %s, has %d dispatches",
 		requestTag,
 		api.meta.Name,
