@@ -35,6 +35,13 @@ func main() {
 		return c.String(http.StatusOK, "OK")
 	})
 
+	server.GET("/header", func(c echo.Context) error {
+		if c.Request().Header.Get("Token") == "" {
+			return c.String(http.StatusOK, "missing token")
+		}
+		return c.String(http.StatusOK, "OK")
+	})
+
 	server.GET("/check", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK")
 	})

@@ -2,49 +2,32 @@ package route
 
 import (
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
-)
-
-type nodeType int
-
-const (
-	slashType  = nodeType(1)
-	constType  = nodeType(2)
-	numberType = nodeType(3)
-	stringType = nodeType(4)
-	enumType   = nodeType(5)
+	"github.com/fagongzi/util/hack"
 )
 
 // Route route for api match
 // url define: /conststring/(number|string|enum:m1|m2|m3)[:argname]
 type Route struct {
-	root *node
+	root node
 }
 
-type node struct {
-	nt       nodeType
-	value    []byte
-	enums    [][]byte
-	argName  []byte
-	children []node
-}
-
-func (n *node) isEnum() bool {
-	return n.nt == enumType
-}
-
-func (n *node) isConst() bool {
-	return n.nt == constType
-}
-
-func (n *node) addEnum(value []byte) {
-	n.enums = append(n.enums, value)
-}
-
-func (n *node) setArgName(value []byte) {
-	n.argName = value
+// NewRoute create a api match route
+func NewRoute() *Route {
+	return &Route{
+		root: node{
+			nt:    slashType,
+			value: slashValue,
+		},
+	}
 }
 
 // Add add a url to this route
 func (r *Route) Add(api metapb.API) error {
+	p := newParser(hack.StringToSlice(api.URLPattern))
+	_, err := p.parse()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
