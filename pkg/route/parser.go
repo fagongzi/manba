@@ -5,47 +5,6 @@ import (
 	"fmt"
 )
 
-type nodeType int
-
-const (
-	slashType  = nodeType(1)
-	constType  = nodeType(2)
-	numberType = nodeType(3)
-	stringType = nodeType(4)
-	enumType   = nodeType(5)
-)
-
-type node struct {
-	nt      nodeType
-	value   []byte
-	enums   [][]byte
-	argName []byte
-}
-
-func (n *node) matches(target *node) bool {
-	if n.nt != target.nt {
-		return false
-	}
-
-	return bytes.Equal(n.value, target.value)
-}
-
-func (n *node) isEnum() bool {
-	return n.nt == enumType
-}
-
-func (n *node) isConst() bool {
-	return n.nt == constType
-}
-
-func (n *node) addEnum(value []byte) {
-	n.enums = append(n.enums, value)
-}
-
-func (n *node) setArgName(value []byte) {
-	n.argName = value
-}
-
 type parser struct {
 	nodes []node
 	input []byte

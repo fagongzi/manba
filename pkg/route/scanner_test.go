@@ -14,7 +14,6 @@ func TestNext(t *testing.T) {
 	}
 
 	s.Next()
-	ch = s.Current()
 	if ch != eoi {
 		t.Errorf("ch expect eoi but %c", ch)
 	}
