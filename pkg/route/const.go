@@ -20,9 +20,18 @@ const (
 )
 
 var (
-	slashValue = []byte("/")
-
+	slashValue  = []byte("/")
 	numberValue = []byte("number")
 	stringValue = []byte("string")
 	enumValue   = []byte("enum")
+)
+
+type nodeType int
+
+const (
+	slashType  = nodeType(1)
+	constType  = nodeType(2)
+	numberType = nodeType(3)
+	stringType = nodeType(4)
+	enumType   = nodeType(5)
 )
