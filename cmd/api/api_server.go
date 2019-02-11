@@ -24,6 +24,8 @@ var (
 	addr           = flag.String("addr", "127.0.0.1:9092", "Addr: client grpc entrypoint")
 	addrHTTP       = flag.String("addr-http", "127.0.0.1:9093", "Addr: client http restful entrypoint")
 	addrStore      = flag.String("addr-store", "etcd://127.0.0.1:2379", "Addr: store address")
+	addrStoreUser  = flag.String("addr-store-user", "", "addr Store UserName")
+	addrStorePwd   = flag.String("addr-store-pwd", "", "addr Store Password")
 	namespace      = flag.String("namespace", "dev", "The namespace to isolation the environment.")
 	discovery      = flag.Bool("discovery", false, "Publish apiserver service via discovery.")
 	servicePrefix  = flag.String("service-prefix", "/services", "The prefix for service name.")
@@ -46,13 +48,15 @@ func main() {
 
 	log.Infof("addr: %s", *addr)
 	log.Infof("addr-store: %s", *addrStore)
+	log.Infof("addr-store-user: %s", *addrStoreUser)
+	log.Infof("addr-store-pwd: %s", *addrStorePwd)
 	log.Infof("namespace: %s", *namespace)
 	log.Infof("discovery: %v", *discovery)
 	log.Infof("service-prefix: %s", *servicePrefix)
 	log.Infof("publish-lease: %d", *publishLease)
 	log.Infof("publish-timeout: %d", *publishTimeout)
 
-	db, err := store.GetStoreFrom(*addrStore, fmt.Sprintf("/%s", *namespace))
+	db, err := store.GetStoreFrom(*addrStore, fmt.Sprintf("/%s", *namespace), *addrStoreUser, *addrStorePwd)
 	if err != nil {
 		log.Fatalf("init store failed for %s, errors:\n%+v",
 			*addrStore,
