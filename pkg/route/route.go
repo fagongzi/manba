@@ -15,6 +15,21 @@ type routeItem struct {
 	api      uint64
 }
 
+func (item *routeItem) removeAPI(api uint64) bool {
+	if item.api == api {
+		item.api = 0
+		return true
+	}
+
+	for _, c := range item.children {
+		if c.removeAPI(api) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (item *routeItem) addChildren(id uint64, nodes ...node) {
 	parent := item
 
@@ -119,8 +134,8 @@ func (r *Route) Add(api metapb.API) error {
 }
 
 // Remove remove api
-func (r *Route) Remove(api uint64) {
-
+func (r *Route) Remove(api uint64) bool {
+	return r.root.removeAPI(api)
 }
 
 func removeSlash(nodes ...node) []node {
