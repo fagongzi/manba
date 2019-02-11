@@ -5,6 +5,29 @@ import (
 	"fmt"
 )
 
+type node struct {
+	nt      nodeType
+	value   []byte
+	enums   [][]byte
+	argName []byte
+}
+
+func (n *node) isEnum() bool {
+	return n.nt == enumType
+}
+
+func (n *node) isConst() bool {
+	return n.nt == constType
+}
+
+func (n *node) addEnum(value []byte) {
+	n.enums = append(n.enums, value)
+}
+
+func (n *node) setArgName(value []byte) {
+	n.argName = value
+}
+
 type parser struct {
 	nodes []node
 	input []byte
@@ -30,7 +53,7 @@ func (p *parser) parse() ([]node, error) {
 		}}, nil
 	}
 
-	// /conststring/(number|string|enum:m1|m2|m3)[:argname]
+	// /(number|string:const|enum:m1|m2|m3)[:argname]
 	prev := tokenUnknown
 	prevIndex := -1
 
