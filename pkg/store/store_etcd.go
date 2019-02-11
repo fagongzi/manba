@@ -86,6 +86,7 @@ func NewEtcdStore(etcdAddrs []string, prefix string, basicAuth BasicAuth) (Store
 	if basicAuth.password != "" {
 		config.Password = basicAuth.password
 	}
+
 	cli, err := clientv3.New(*config)
 
 	if err != nil {

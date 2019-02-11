@@ -221,7 +221,7 @@ func (p *Proxy) init() {
 }
 
 func (p *Proxy) initDispatcher() error {
-	s, err := store.GetStoreFrom(p.cfg.AddrStore, p.cfg.Namespace)
+	s, err := store.GetStoreFrom(p.cfg.AddrStore, p.cfg.Namespace, p.cfg.AddrStoreUserName, p.cfg.AddrStorePwd)
 
 	if err != nil {
 		return err
