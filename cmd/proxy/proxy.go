@@ -34,6 +34,8 @@ var (
 	addr                          = flag.String("addr", "127.0.0.1:80", "Addr: http request entrypoint")
 	addrRPC                       = flag.String("addr-rpc", "127.0.0.1:9091", "Addr: manager request entrypoint")
 	addrStore                     = flag.String("addr-store", "etcd://127.0.0.1:2379", "Addr: store of meta data, support etcd")
+	addrStoreUser                 = flag.String("addr-store-user", "", "addr Store UserName")
+	addrStorePwd                  = flag.String("addr-store-pwd", "", "addr Store Password")
 	addrPPROF                     = flag.String("addr-pprof", "", "Addr: pprof addr")
 	namespace                     = flag.String("namespace", "dev", "The namespace to isolation the environment.")
 	limitCpus                     = flag.Int("limit-cpus", 0, "Limit: schedule threads count")
@@ -139,6 +141,8 @@ func getCfg() *proxy.Cfg {
 	cfg.AddrRPC = *addrRPC
 	cfg.AddrPPROF = *addrPPROF
 	cfg.AddrStore = *addrStore
+	cfg.AddrStoreUserName = *addrStoreUser
+	cfg.AddrStorePwd = *addrStorePwd
 	cfg.TTLProxy = *ttlProxy
 	cfg.Namespace = fmt.Sprintf("/%s", *namespace)
 	cfg.Option.LimitBytesBody = *limitBytesBodyMB * 1024 * 1024

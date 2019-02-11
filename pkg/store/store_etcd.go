@@ -61,7 +61,7 @@ type EtcdStore struct {
 }
 
 // NewEtcdStore create a etcd store
-func NewEtcdStore(etcdAddrs []string, prefix string) (Store, error) {
+func NewEtcdStore(etcdAddrs []string, prefix string, basicAuth BasicAuth) (Store, error) {
 	store := &EtcdStore{
 		prefix:             prefix,
 		clustersDir:        fmt.Sprintf("%s/clusters", prefix),
@@ -76,10 +76,18 @@ func NewEtcdStore(etcdAddrs []string, prefix string) (Store, error) {
 		end:                100,
 	}
 
-	cli, err := clientv3.New(clientv3.Config{
+	config := &clientv3.Config{
 		Endpoints:   etcdAddrs,
 		DialTimeout: DefaultTimeout,
-	})
+	}
+	if basicAuth.userName != "" {
+		config.Username = basicAuth.userName
+	}
+	if basicAuth.password != "" {
+		config.Password = basicAuth.password
+	}
+
+	cli, err := clientv3.New(*config)
 
 	if err != nil {
 		return nil, err
