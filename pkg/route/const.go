@@ -29,9 +29,9 @@ var (
 type nodeType int
 
 const (
-	slashType  = nodeType(1)
-	constType  = nodeType(2)
-	numberType = nodeType(3)
+	slashType  = nodeType(5)
 	stringType = nodeType(4)
-	enumType   = nodeType(5)
+	constType  = nodeType(3)
+	enumType   = nodeType(2)
+	numberType = nodeType(1)
 )
