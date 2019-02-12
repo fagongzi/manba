@@ -138,6 +138,12 @@ func (r *Route) Remove(api uint64) bool {
 	return r.root.removeAPI(api)
 }
 
+// Update update api
+func (r *Route) Update(api metapb.API) error {
+	r.Remove(api.ID)
+	return r.Add(api)
+}
+
 func removeSlash(nodes ...node) []node {
 	var value []node
 
