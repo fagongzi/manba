@@ -28,6 +28,27 @@ func (n *node) setArgName(value []byte) {
 	n.argName = value
 }
 
+func (n *node) isNumberValue() bool {
+	for _, v := range n.value {
+		if v < '0' || v > '9' {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (n *node) inEnumValue(value []byte) bool {
+	in := false
+	for _, enum := range n.enums {
+		if bytes.Compare(enum, value) == 0 {
+			in = true
+		}
+	}
+
+	return in
+}
+
 type parser struct {
 	nodes []node
 	input []byte

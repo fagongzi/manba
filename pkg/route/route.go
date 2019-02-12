@@ -3,6 +3,7 @@ package route
 import (
 	"bytes"
 	"fmt"
+	"sort"
 
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/log"
@@ -38,10 +39,32 @@ func (item *routeItem) addChildren(id uint64, nodes ...node) {
 			node: n,
 		}
 		parent.children = append(parent.children, p)
+		sort.Slice(parent.children, func(i, j int) bool {
+			return parent.children[i].node.nt < parent.children[j].node.nt
+		})
 		parent = p
 	}
 
 	parent.api = id
+}
+
+func (item *routeItem) urlMatches(n node) bool {
+	switch item.node.nt {
+	case slashType:
+		return n.nt == slashType
+	case numberType:
+		return n.isNumberValue()
+	case enumType:
+		return item.node.inEnumValue(n.value)
+	case constType:
+		return bytes.Compare(item.node.value, n.value) == 0
+	case stringType:
+		return true
+	default:
+		log.Fatalf("bug: error node type %d", item.node.nt)
+	}
+
+	return false
 }
 
 func (item *routeItem) matches(n node) bool {
@@ -96,10 +119,6 @@ func (r *Route) Add(api metapb.API) error {
 	parent := r.root
 	matchedIdx := 0
 	for idx, node := range nodes {
-		if idx != 0 && node.nt == slashType {
-			continue
-		}
-
 		if parent.matches(node) {
 			matchedIdx = idx
 			continue
@@ -142,6 +161,49 @@ func (r *Route) Remove(api uint64) bool {
 func (r *Route) Update(api metapb.API) error {
 	r.Remove(api.ID)
 	return r.Add(api)
+}
+
+// Find find matched api for url
+func (r *Route) Find(url []byte) (uint64, bool) {
+	p := newParser(url)
+	nodes, err := p.parse()
+	if err != nil {
+		return 0, false
+	}
+
+	nodes = removeSlash(nodes...)
+	target := r.root
+	matchedIdx := 0
+	for idx, node := range nodes {
+		if target.urlMatches(node) {
+			matchedIdx = idx
+			continue
+		}
+
+		matched := false
+		for _, item := range target.children {
+			if item.urlMatches(node) {
+				target = item
+				matched = true
+				matchedIdx = idx
+				break
+			}
+		}
+
+		if !matched {
+			break
+		}
+	}
+
+	if matchedIdx == len(nodes)-1 {
+		if target.api == 0 {
+			return 0, false
+		}
+
+		return target.api, true
+	}
+
+	return 0, false
 }
 
 func removeSlash(nodes ...node) []node {
