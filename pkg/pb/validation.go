@@ -2,8 +2,8 @@ package pb
 
 import (
 	"fmt"
-	"regexp"
 
+	"github.com/fagongzi/gateway/pkg/expr"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 )
 
@@ -56,9 +56,16 @@ func ValidateAPI(value *metapb.API) error {
 		return fmt.Errorf("missing api name")
 	}
 
-	if value.URLPattern != "" {
-		if _, err := regexp.Compile(value.URLPattern); err != nil {
-			return err
+	if value.URLPattern == "" {
+		return fmt.Errorf("missing URLPattern")
+	}
+
+	for _, n := range value.Nodes {
+		if n.URLRewrite != "" {
+			_, err := expr.Parse([]byte(n.URLRewrite))
+			if err != nil {
+				return err
+			}
 		}
 	}
 
