@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
+	"github.com/fagongzi/gateway/pkg/expr"
 	"github.com/fagongzi/gateway/pkg/lb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/util"
@@ -248,12 +249,11 @@ type apiRule struct {
 }
 
 type apiNode struct {
-	httpOption        util.HTTPOption
-	meta              *metapb.DispatchNode
-	validations       []*apiValidation
-	defaultCookies    []*fasthttp.Cookie
-	dependencies      []string
-	dependenciesPaths [][]string
+	httpOption     util.HTTPOption
+	meta           *metapb.DispatchNode
+	validations    []*apiValidation
+	defaultCookies []*fasthttp.Cookie
+	parsedExprs    []expr.Expr
 }
 
 func newAPINode(meta *metapb.DispatchNode) *apiNode {
@@ -262,11 +262,11 @@ func newAPINode(meta *metapb.DispatchNode) *apiNode {
 	}
 
 	if meta.URLRewrite != "" {
-		matches := dependP.FindAllStringSubmatch(meta.URLRewrite, -1)
-		for _, match := range matches {
-			rn.dependencies = append(rn.dependencies, match[0])
-			rn.dependenciesPaths = append(rn.dependenciesPaths, strings.Split(match[0][1:], "."))
+		exprs, err := expr.Parse([]byte(meta.URLRewrite))
+		if err != nil {
+			log.Fatalf("bug: parse url rewrite expr failed with error %+v", err)
 		}
+		rn.parsedExprs = exprs
 	}
 
 	if nil != meta.DefaultValue {
@@ -337,7 +337,6 @@ type apiRuntime struct {
 
 	meta                *metapb.API
 	nodes               []*apiNode
-	urlPattern          *regexp.Regexp
 	defaultCookies      []*fasthttp.Cookie
 	parsedWhitelist     []*ipSegment
 	parsedBlacklist     []*ipSegment
@@ -377,10 +376,6 @@ func (a *apiRuntime) compare(i, j int) bool {
 }
 
 func (a *apiRuntime) init() {
-	if a.meta.URLPattern != "" {
-		a.urlPattern = regexp.MustCompile(a.meta.URLPattern)
-	}
-
 	for _, n := range a.meta.Nodes {
 		a.nodes = append(a.nodes, newAPINode(n))
 	}
@@ -491,19 +486,8 @@ func (a *apiRuntime) allowWithWhitelist(ip string) bool {
 	return false
 }
 
-func (a *apiRuntime) rewriteURL(req *fasthttp.Request, node *apiNode, ctx *multiContext) string {
-	rewrite := node.meta.URLRewrite
-	if rewrite == "" || a.meta.URLPattern == "" {
-		return ""
-	}
-
-	if nil != ctx && len(node.dependencies) > 0 {
-		for idx, dep := range node.dependencies {
-			rewrite = strings.Replace(rewrite, dep, ctx.getAttr(node.dependenciesPaths[idx]...), -1)
-		}
-	}
-
-	return a.urlPattern.ReplaceAllString(hack.SliceToString(req.URI().RequestURI()), rewrite)
+func (a *apiRuntime) isUp() bool {
+	return a.meta.Status == metapb.Up
 }
 
 func (a *apiRuntime) matches(req *fasthttp.Request) bool {
@@ -513,28 +497,16 @@ func (a *apiRuntime) matches(req *fasthttp.Request) bool {
 
 	switch a.matchRule() {
 	case metapb.MatchAll:
-		return a.isDomainMatches(req) && a.isMethodMatches(req) && a.isURIMatches(req)
+		return a.isDomainMatches(req) && a.isMethodMatches(req)
 	case metapb.MatchAny:
-		return a.isDomainMatches(req) || a.isMethodMatches(req) || a.isURIMatches(req)
+		return a.isDomainMatches(req) || a.isMethodMatches(req)
 	default:
-		return a.isDomainMatches(req) || (a.isMethodMatches(req) && a.isURIMatches(req))
+		return a.isDomainMatches(req) || a.isMethodMatches(req)
 	}
-}
-
-func (a *apiRuntime) isUp() bool {
-	return a.meta.Status == metapb.Up
 }
 
 func (a *apiRuntime) isMethodMatches(req *fasthttp.Request) bool {
 	return a.meta.Method == "*" || strings.ToUpper(hack.SliceToString(req.Header.Method())) == a.meta.Method
-}
-
-func (a *apiRuntime) isURIMatches(req *fasthttp.Request) bool {
-	if a.urlPattern == nil {
-		return false
-	}
-
-	return a.urlPattern.Match(req.URI().RequestURI())
 }
 
 func (a *apiRuntime) isDomainMatches(req *fasthttp.Request) bool {

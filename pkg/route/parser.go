@@ -10,6 +10,7 @@ type node struct {
 	value   []byte
 	enums   [][]byte
 	argName []byte
+	hasArg  bool
 }
 
 func (n *node) isEnum() bool {
@@ -26,6 +27,7 @@ func (n *node) addEnum(value []byte) {
 
 func (n *node) setArgName(value []byte) {
 	n.argName = value
+	n.hasArg = true
 }
 
 func (n *node) isNumberValue() bool {
@@ -36,6 +38,10 @@ func (n *node) isNumberValue() bool {
 	}
 
 	return true
+}
+
+func (n *node) isMatchAllConstString() bool {
+	return len(n.value) == 1 && n.value[0] == '*'
 }
 
 func (n *node) inEnumValue(value []byte) bool {

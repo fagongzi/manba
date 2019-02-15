@@ -57,7 +57,7 @@ func (item *routeItem) urlMatches(n node) bool {
 	case enumType:
 		return item.node.inEnumValue(n.value)
 	case constType:
-		return bytes.Compare(item.node.value, n.value) == 0
+		return item.node.isMatchAllConstString() || bytes.Compare(item.node.value, n.value) == 0
 	case stringType:
 		return true
 	default:
@@ -108,7 +108,7 @@ func NewRoute() *Route {
 }
 
 // Add add a url to this route
-func (r *Route) Add(api metapb.API) error {
+func (r *Route) Add(api *metapb.API) error {
 	p := newParser(hack.StringToSlice(api.URLPattern))
 	nodes, err := p.parse()
 	if err != nil {
@@ -158,13 +158,13 @@ func (r *Route) Remove(api uint64) bool {
 }
 
 // Update update api
-func (r *Route) Update(api metapb.API) error {
+func (r *Route) Update(api *metapb.API) error {
 	r.Remove(api.ID)
 	return r.Add(api)
 }
 
 // Find find matched api for url
-func (r *Route) Find(url []byte) (uint64, bool) {
+func (r *Route) Find(url []byte, paramsFunc func(name, value []byte)) (uint64, bool) {
 	p := newParser(url)
 	nodes, err := p.parse()
 	if err != nil {
@@ -177,6 +177,11 @@ func (r *Route) Find(url []byte) (uint64, bool) {
 	for idx, node := range nodes {
 		if target.urlMatches(node) {
 			matchedIdx = idx
+			if target.node.hasArg {
+				if paramsFunc != nil {
+					paramsFunc(target.node.argName, node.value)
+				}
+			}
 			continue
 		}
 
@@ -186,6 +191,12 @@ func (r *Route) Find(url []byte) (uint64, bool) {
 				target = item
 				matched = true
 				matchedIdx = idx
+
+				if item.node.hasArg {
+					if paramsFunc != nil {
+						paramsFunc(item.node.argName, node.value)
+					}
+				}
 				break
 			}
 		}
