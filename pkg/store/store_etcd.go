@@ -13,6 +13,7 @@ import (
 	pbutil "github.com/fagongzi/gateway/pkg/pb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/pb/rpcpb"
+	"github.com/fagongzi/gateway/pkg/route"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/util/format"
 	"golang.org/x/net/context"
@@ -380,10 +381,23 @@ func (e *EtcdStore) GetServer(id uint64) (*metapb.Server, error) {
 
 // PutAPI add or update a API
 func (e *EtcdStore) PutAPI(value *metapb.API) (uint64, error) {
+	err := pbutil.ValidateAPI(value)
+	if err != nil {
+		return 0, err
+	}
+
 	e.Lock()
 	defer e.Unlock()
 
-	err := pbutil.ValidateAPI(value)
+	// load all api every times for validate
+	// TODO: maybe need optimization if there are too much apis
+	apiRoute := route.NewRoute()
+	e.getValues(e.apisDir, 64, func() pb { return &metapb.API{} }, func(value interface{}) error {
+		apiRoute.Add(value.(*metapb.API))
+		return nil
+	})
+
+	err = apiRoute.Add(value)
 	if err != nil {
 		return 0, err
 	}
