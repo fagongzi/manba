@@ -264,3 +264,21 @@ message CountMetric {
     optional int64 api     = 3 [(gogoproto.nullable) = false, (gogoproto.customname) = "API"];
     optional int64 Routing = 4 [(gogoproto.nullable) = false];
 }
+
+// PluginType plugin type enum
+enum PluginType {
+    JavaScript = 0;
+}
+
+// Plugin plugin
+message Plugin {
+    optional uint64     id       = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+    optional string     name     = 2 [(gogoproto.nullable) = false];
+    optional string     author   = 3 [(gogoproto.nullable) = false];
+    optional string     email    = 4 [(gogoproto.nullable) = false];
+    optional Status     status   = 5 [(gogoproto.nullable) = false];
+    optional int64      updateAt = 6 [(gogoproto.nullable) = false];
+    optional int64      version  = 7 [(gogoproto.nullable) = false];
+    optional PluginType type     = 8 [(gogoproto.nullable) = false];
+    optional bytes      content  = 9 [(gogoproto.nullable) = false];
+}
