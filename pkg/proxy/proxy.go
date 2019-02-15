@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/fagongzi/gateway/pkg/expr"
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/store"
@@ -315,11 +316,12 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	}
 
 	startAt := time.Now()
-	api, dispatches := p.dispatcher.dispatch(&ctx.Request, requestTag)
+	api, dispatches, exprCtx := p.dispatcher.dispatch(&ctx.Request, requestTag)
 	if len(dispatches) == 0 &&
 		(nil == api || api.meta.DefaultValue == nil) {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		p.dispatcher.dispatchCompleted()
+		releaseExprCtx(exprCtx)
 
 		log.Infof("%s: not match, return with 404",
 			requestTag)
@@ -366,6 +368,9 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 			wg.Add(1)
 		}
 
+		if nil != multiCtx {
+			exprCtx.Depend = multiCtx.data
+		}
 		dn.multiCtx = multiCtx
 		dn.requestTag = requestTag
 		dn.rd = rd
@@ -382,6 +387,7 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 				api:        dn.api.clone(),
 				node:       dn.node.clone(),
 				idx:        idx,
+				params:     exprCtx.CopyParams(),
 				requestTag: requestTag,
 			}
 		}
@@ -405,6 +411,7 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 
 	p.postRequest(api, dispatches, startAt)
 	p.dispatcher.dispatchCompleted()
+	releaseExprCtx(exprCtx)
 
 	log.Debugf("%s: dispatch complete",
 		requestTag)
@@ -468,14 +475,14 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 	// change url
 	if dn.needRewrite() {
 		// if not use rewrite, it only change uri path and query string
-		realPath := dn.rewiteURL(&ctx.Request)
-		if "" != realPath {
+		realPath := expr.Exec(dn.exprCtx, dn.node.parsedExprs...)
+		if len(realPath) != 0 {
 			log.Infof("%s: dipatch node %d rewrite url to %s",
 				dn.requestTag,
 				dn.idx,
-				realPath)
+				hack.SliceToString(realPath))
 
-			forwardReq.SetRequestURI(realPath)
+			forwardReq.SetRequestURIBytes(realPath)
 		} else {
 			dn.err = ErrRewriteNotMatch
 			dn.code = fasthttp.StatusBadRequest

@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"errors"
-	"sort"
 	"time"
 
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
@@ -129,10 +128,6 @@ func (r *dispatcher) loadAPIs() {
 			err)
 		return
 	}
-
-	r.Lock()
-	r.sortAPIs()
-	r.Unlock()
 }
 
 func (r *dispatcher) watch() {
@@ -322,9 +317,13 @@ func (r *dispatcher) addAPI(api *metapb.API) error {
 		return errAPIExists
 	}
 
+	err := r.route.Add(api)
+	if err != nil {
+		return err
+	}
+
 	a := newAPIRuntime(api, r.tw, r.refreshQPS(api.MaxQPS))
 	r.apis[api.ID] = a
-	r.sortAPIs()
 
 	if a.cb != nil {
 		r.addAnalysis(api.ID, a.cb)
@@ -346,9 +345,13 @@ func (r *dispatcher) updateAPI(api *metapb.API) error {
 		return errAPINotFound
 	}
 
+	err := r.route.Update(api)
+	if err != nil {
+		return err
+	}
+
 	rt.activeQPS = r.refreshQPS(api.MaxQPS)
 	rt.updateMeta(api)
-	r.sortAPIs()
 
 	if rt.cb != nil {
 		r.addAnalysis(rt.meta.ID, rt.meta.CircuitBreaker)
@@ -370,46 +373,9 @@ func (r *dispatcher) removeAPI(id uint64) error {
 	}
 
 	delete(r.apis, id)
-	// delete sorted keys
-	for i, v := range r.apiSortedKeys {
-		if v == id {
-			r.apiSortedKeys = append(r.apiSortedKeys[:i], r.apiSortedKeys[i+1:]...)
-			break
-		}
-	}
+
 	log.Infof("api <%d> removed", id)
-
 	return nil
-}
-
-// NOTE: MUST Lock on call this function!!
-func (r *dispatcher) sortAPIs() {
-	if len(r.apis) == 0 {
-		return
-	}
-
-	type kv struct {
-		Key   uint64
-		Value uint32
-	}
-
-	ss := make([]kv, len(r.apis))
-
-	var i = 0
-	for k, v := range r.apis {
-		ss[i] = kv{k, v.position()}
-		i++
-	}
-
-	// position升序
-	sort.SliceStable(ss, func(i, j int) bool {
-		return ss[i].Value < ss[j].Value
-	})
-
-	r.apiSortedKeys = make([]uint64, len(ss))
-	for i, v := range ss {
-		r.apiSortedKeys[i] = v.Key
-	}
 }
 
 func (r *dispatcher) refreshAllQPS() {
