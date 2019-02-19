@@ -20,8 +20,6 @@ github.com/dgrijalva/jwt-go v0.0.0-20180308231308-06ea1031745c h1:uwivskbBuX2rEO
 github.com/dgrijalva/jwt-go v0.0.0-20180308231308-06ea1031745c/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/fagongzi/goetty v0.0.0-20180427060148-8f06d410550f h1:8qmWoPu1y2s2qHVoac+4MzJEWp+tWzdzw7PbhbQ7oLg=
 github.com/fagongzi/goetty v0.0.0-20180427060148-8f06d410550f/go.mod h1:lLUyHhtjlOqatxVXgyLocwoI2o359JzLE7EWRGZiGw4=
-github.com/fagongzi/grpcx v0.0.0-20180330022349-f6b611cab691 h1:/GdQcr98uAhehm6mOTB5ElnRDT8MvRfcVeNgeSFoizc=
-github.com/fagongzi/grpcx v0.0.0-20180330022349-f6b611cab691/go.mod h1:OJr1w37s39K05FjX0OxQ/Nd6E9jp3OVaCiHi7eL+JV4=
 github.com/fagongzi/grpcx v1.1.0 h1:TZurQaMAmZv/OdQShNj45VdW5Fw8+nPpXSGvJKFlDag=
 github.com/fagongzi/grpcx v1.1.0/go.mod h1:OJr1w37s39K05FjX0OxQ/Nd6E9jp3OVaCiHi7eL+JV4=
 github.com/fagongzi/log v0.0.0-20170831135209-9a647df25e0e h1:ze4Ee25lIEbvKN0niRh0o+PgfE0O36ZsX44S8qMB1Go=
@@ -78,6 +76,8 @@ github.com/prometheus/common v0.0.0-20180518154759-7600349dcfe1 h1:osmNoEW2SCW3L
 github.com/prometheus/common v0.0.0-20180518154759-7600349dcfe1/go.mod h1:daVV7qP5qjZbuso7PdcryaAu0sAZbrN9i7WWcTMWvro=
 github.com/prometheus/procfs v0.0.0-20180705121852-ae68e2d4c00f h1:c9M4CCa6g8WURSsbrl3lb/w/G1Z5xZpYvhhjdcVDOkE=
 github.com/prometheus/procfs v0.0.0-20180705121852-ae68e2d4c00f/go.mod h1:c3At6R/oaqEKCNdg8wHV1ftS6bRYblBhIjjI8uT2IGk=
+github.com/robertkrimen/otto v0.0.0-20180617131154-15f95af6e78d h1:1VUlQbCfkoSGv7qP7Y+ro3ap1P1pPZxgdGVqiTVy5C4=
+github.com/robertkrimen/otto v0.0.0-20180617131154-15f95af6e78d/go.mod h1:xvqspoSXJTIpemEonrMDFq6XzwHYYgToXWj5eRX1OtY=
 github.com/sirupsen/logrus v1.2.0 h1:juTguoYk5qI21pwyTXY3B3Y5cOTH3ZUyZCg1v/mihuo=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/soheilhy/cmux v0.0.0-20180129155001-e09e9389d85d h1:ZQlTUfGe475Mrh9Kba+o3vF8eNAdWxq1CyKvefcnWwE=
@@ -115,5 +115,7 @@ google.golang.org/grpc v0.0.0-20180619221905-168a6198bcb0 h1:ij3kgpkq8Hem+1Atd8R
 google.golang.org/grpc v0.0.0-20180619221905-168a6198bcb0/go.mod h1:yo6s7OP7yaDglbqo1J04qKzAhqBH6lvTonzMVmEdcZw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/sourcemap.v1 v1.0.5 h1:inv58fC9f9J3TK2Y2R1NPntXEn3/wjWHkonhIUODNTI=
+gopkg.in/sourcemap.v1 v1.0.5/go.mod h1:2RlvNNSMglmRrcvhfuzp4hQHwOtjxlbjX7UPY/GXb78=
 gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
