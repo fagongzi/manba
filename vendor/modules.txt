@@ -19,9 +19,9 @@ github.com/fagongzi/grpcx
 # github.com/fagongzi/log v0.0.0-20170831135209-9a647df25e0e
 github.com/fagongzi/log
 # github.com/fagongzi/util v0.0.0-20180330021808-4acf02da76a9
-github.com/fagongzi/util/collection
 github.com/fagongzi/util/format
 github.com/fagongzi/util/hack
+github.com/fagongzi/util/collection
 github.com/fagongzi/util/protoc
 github.com/fagongzi/util/task
 github.com/fagongzi/util/atomic
@@ -75,6 +75,14 @@ github.com/prometheus/procfs
 github.com/prometheus/procfs/nfs
 github.com/prometheus/procfs/xfs
 github.com/prometheus/procfs/internal/util
+# github.com/robertkrimen/otto v0.0.0-20180617131154-15f95af6e78d
+github.com/robertkrimen/otto
+github.com/robertkrimen/otto/ast
+github.com/robertkrimen/otto/dbg
+github.com/robertkrimen/otto/file
+github.com/robertkrimen/otto/parser
+github.com/robertkrimen/otto/registry
+github.com/robertkrimen/otto/token
 # github.com/soheilhy/cmux v0.0.0-20180129155001-e09e9389d85d
 github.com/soheilhy/cmux
 # github.com/valyala/bytebufferpool v0.0.0-20160817181652-e746df99fe4a
@@ -134,3 +142,6 @@ google.golang.org/grpc/tap
 google.golang.org/grpc/transport
 google.golang.org/grpc/balancer/base
 google.golang.org/grpc/internal/grpcrand
+# gopkg.in/sourcemap.v1 v1.0.5
+gopkg.in/sourcemap.v1
+gopkg.in/sourcemap.v1/base64vlq
