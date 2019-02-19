@@ -6,8 +6,12 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
+// RedisModule redis module
+type RedisModule struct {
+}
+
 // CreateRedis create redis
-func CreateRedis(cfg map[string]interface{}) *Redis {
+func (m *RedisModule) CreateRedis(cfg map[string]interface{}) *Redis {
 	p := &redis.Pool{
 		MaxActive:   int(cfg["maxActive"].(int64)),
 		MaxIdle:     int(cfg["maxIdle"].(int64)),
