@@ -92,50 +92,50 @@ func (res *HTTPResult) Body() string {
 	return res.body
 }
 
-// HTTP http support
-type HTTP struct {
+// HTTPModule http module
+type HTTPModule struct {
 }
 
 // Get go get
-func (h *HTTP) Get(url string) *HTTPResult {
+func (h *HTTPModule) Get(url string) *HTTPResult {
 	rsp, err := http.DefaultClient.Get(url)
 	return newHTTPResult(rsp, err)
 }
 
 // Post do post
-func (h *HTTP) Post(url string, body string, header map[string][]string) *HTTPResult {
+func (h *HTTPModule) Post(url string, body string, header map[string][]string) *HTTPResult {
 	return h.do("POST", url, body, header)
 }
 
 // PostJSON do post
-func (h *HTTP) PostJSON(url string, body string, header map[string][]string) *HTTPResult {
+func (h *HTTPModule) PostJSON(url string, body string, header map[string][]string) *HTTPResult {
 	header["Content-Type"] = []string{"application/json"}
 	return h.Post(url, body, header)
 }
 
 // Put do put
-func (h *HTTP) Put(url string, body string, header map[string][]string) *HTTPResult {
+func (h *HTTPModule) Put(url string, body string, header map[string][]string) *HTTPResult {
 	return h.do("PUT", url, body, header)
 }
 
 // PutJSON do put json
-func (h *HTTP) PutJSON(url string, body string, header map[string][]string) *HTTPResult {
+func (h *HTTPModule) PutJSON(url string, body string, header map[string][]string) *HTTPResult {
 	header["Content-Type"] = []string{"application/json"}
 	return h.Put(url, body, header)
 }
 
 // Delete do delete
-func (h *HTTP) Delete(url string, body string, header map[string][]string) *HTTPResult {
+func (h *HTTPModule) Delete(url string, body string, header map[string][]string) *HTTPResult {
 	return h.do("DELETE", url, body, header)
 }
 
 // DeleteJSON do delete json
-func (h *HTTP) DeleteJSON(url string, body string, header map[string][]string) *HTTPResult {
+func (h *HTTPModule) DeleteJSON(url string, body string, header map[string][]string) *HTTPResult {
 	header["Content-Type"] = []string{"application/json"}
 	return h.Delete(url, body, header)
 }
 
-func (h *HTTP) do(method string, url string, body string, header map[string][]string) *HTTPResult {
+func (h *HTTPModule) do(method string, url string, body string, header map[string][]string) *HTTPResult {
 	r := bytes.NewReader([]byte(body))
 	req, err := http.NewRequest(method, url, r)
 	if err != nil {
