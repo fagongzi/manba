@@ -6,6 +6,7 @@ import (
 
 	"github.com/fagongzi/gateway/pkg/expr"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/plugin"
 	"github.com/fagongzi/gateway/pkg/route"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
@@ -181,25 +182,28 @@ func (dn *dispathNode) maybeDone() {
 type dispatcher struct {
 	sync.RWMutex
 
-	cnf         *Cfg
-	routings    map[uint64]*routingRuntime
-	route       *route.Route
-	apis        map[uint64]*apiRuntime
-	clusters    map[uint64]*clusterRuntime
-	servers     map[uint64]*serverRuntime
-	binds       map[uint64]map[uint64]*clusterRuntime
-	proxies     map[string]*metapb.Proxy
-	checkerC    chan uint64
-	watchStopC  chan bool
-	watchEventC chan *store.Evt
-	analysiser  *util.Analysis
-	store       store.Store
-	httpClient  *util.FastHTTPClient
-	tw          *goetty.TimeoutWheel
-	runner      *task.Runner
+	cnf            *Cfg
+	routings       map[uint64]*routingRuntime
+	route          *route.Route
+	apis           map[uint64]*apiRuntime
+	clusters       map[uint64]*clusterRuntime
+	servers        map[uint64]*serverRuntime
+	binds          map[uint64]map[uint64]*clusterRuntime
+	proxies        map[string]*metapb.Proxy
+	plugins        map[uint64]*metapb.Plugin
+	appliedPlugins *metapb.AppliedPlugins
+	checkerC       chan uint64
+	watchStopC     chan bool
+	watchEventC    chan *store.Evt
+	analysiser     *util.Analysis
+	store          store.Store
+	httpClient     *util.FastHTTPClient
+	tw             *goetty.TimeoutWheel
+	runner         *task.Runner
+	jsEngine       *plugin.Engine
 }
 
-func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner) *dispatcher {
+func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner, jsEngine *plugin.Engine) *dispatcher {
 	tw := goetty.NewTimeoutWheel(goetty.WithTickInterval(time.Second))
 	rt := &dispatcher{
 		cnf:         cnf,
@@ -215,9 +219,11 @@ func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner) *dispatcher {
 		routings:    make(map[uint64]*routingRuntime),
 		binds:       make(map[uint64]map[uint64]*clusterRuntime),
 		proxies:     make(map[string]*metapb.Proxy),
+		plugins:     make(map[uint64]*metapb.Plugin),
 		checkerC:    make(chan uint64, 1024),
 		watchStopC:  make(chan bool),
 		watchEventC: make(chan *store.Evt),
+		jsEngine:    jsEngine,
 	}
 
 	rt.readyToHeathChecker()

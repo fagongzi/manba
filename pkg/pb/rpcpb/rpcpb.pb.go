@@ -2028,7 +2028,7 @@ func (m *CleanReq) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CleanReq proto.InternalMessageInfo
 
-func (m *CleanReq) GetHeader() RpcHeader {
+func (m *PutPluginReq) GetHeader() RpcHeader {
 	if m != nil {
 		return m.Header
 	}
@@ -2075,11 +2075,26 @@ func (m *CleanRsp) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CleanRsp proto.InternalMessageInfo
 
-func (m *CleanRsp) GetHeader() RpcHeader {
-	if m != nil {
-		return m.Header
+func (m *PutPluginRsp) Reset()         { *m = PutPluginRsp{} }
+func (m *PutPluginRsp) String() string { return proto.CompactTextString(m) }
+func (*PutPluginRsp) ProtoMessage()    {}
+func (*PutPluginRsp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{38}
+}
+func (m *PutPluginRsp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *PutPluginRsp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_PutPluginRsp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
 	}
-	return RpcHeader{}
 }
 
 type SetIDReq struct {
@@ -2123,14 +2138,14 @@ func (m *SetIDReq) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SetIDReq proto.InternalMessageInfo
 
-func (m *SetIDReq) GetHeader() RpcHeader {
+func (m *PutPluginRsp) GetHeader() RpcHeader {
 	if m != nil {
 		return m.Header
 	}
 	return RpcHeader{}
 }
 
-func (m *SetIDReq) GetID() uint64 {
+func (m *PutPluginRsp) GetID() uint64 {
 	if m != nil {
 		return m.ID
 	}
@@ -2206,6 +2221,706 @@ func (m *BatchReq) String() string { return proto.CompactTextString(m) }
 func (*BatchReq) ProtoMessage()    {}
 func (*BatchReq) Descriptor() ([]byte, []int) {
 	return fileDescriptor_rpcpb_f7f5893866fd3533, []int{41}
+}
+func (m *BatchReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *BatchReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_BatchReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *BatchReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BatchReq.Merge(dst, src)
+}
+func (m *BatchReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *BatchReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_BatchReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BatchReq proto.InternalMessageInfo
+
+type RemovePluginRsp struct {
+	Header               RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *RemovePluginRsp) Reset()         { *m = RemovePluginRsp{} }
+func (m *RemovePluginRsp) String() string { return proto.CompactTextString(m) }
+func (*RemovePluginRsp) ProtoMessage()    {}
+func (*RemovePluginRsp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{40}
+}
+func (m *RemovePluginRsp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RemovePluginRsp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RemovePluginRsp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *RemovePluginRsp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RemovePluginRsp.Merge(dst, src)
+}
+func (m *RemovePluginRsp) XXX_Size() int {
+	return m.Size()
+}
+func (m *RemovePluginRsp) XXX_DiscardUnknown() {
+	xxx_messageInfo_RemovePluginRsp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RemovePluginRsp proto.InternalMessageInfo
+
+func (m *RemovePluginRsp) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+type GetPluginReq struct {
+	Header               RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	ID                   uint64    `protobuf:"varint,2,opt,name=id" json:"id"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *GetPluginReq) Reset()         { *m = GetPluginReq{} }
+func (m *GetPluginReq) String() string { return proto.CompactTextString(m) }
+func (*GetPluginReq) ProtoMessage()    {}
+func (*GetPluginReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{41}
+}
+func (m *GetPluginReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetPluginReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetPluginReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *GetPluginReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetPluginReq.Merge(dst, src)
+}
+func (m *GetPluginReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetPluginReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetPluginReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetPluginReq proto.InternalMessageInfo
+
+func (m *GetPluginReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *GetPluginReq) GetID() uint64 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
+type GetPluginRsp struct {
+	Header               RpcHeader      `protobuf:"bytes,1,opt,name=header" json:"header"`
+	Plugin               *metapb.Plugin `protobuf:"bytes,2,opt,name=plugin" json:"plugin,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *GetPluginRsp) Reset()         { *m = GetPluginRsp{} }
+func (m *GetPluginRsp) String() string { return proto.CompactTextString(m) }
+func (*GetPluginRsp) ProtoMessage()    {}
+func (*GetPluginRsp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{42}
+}
+func (m *GetPluginRsp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetPluginRsp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetPluginRsp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *GetPluginRsp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetPluginRsp.Merge(dst, src)
+}
+func (m *GetPluginRsp) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetPluginRsp) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetPluginRsp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetPluginRsp proto.InternalMessageInfo
+
+func (m *GetPluginRsp) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *GetPluginRsp) GetPlugin() *metapb.Plugin {
+	if m != nil {
+		return m.Plugin
+	}
+	return nil
+}
+
+type GetPluginListReq struct {
+	Header               RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *GetPluginListReq) Reset()         { *m = GetPluginListReq{} }
+func (m *GetPluginListReq) String() string { return proto.CompactTextString(m) }
+func (*GetPluginListReq) ProtoMessage()    {}
+func (*GetPluginListReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{43}
+}
+func (m *GetPluginListReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetPluginListReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetPluginListReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *GetPluginListReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetPluginListReq.Merge(dst, src)
+}
+func (m *GetPluginListReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetPluginListReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetPluginListReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetPluginListReq proto.InternalMessageInfo
+
+func (m *GetPluginListReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+type ApplyPluginsReq struct {
+	Header               RpcHeader              `protobuf:"bytes,1,opt,name=header" json:"header"`
+	Applied              *metapb.AppliedPlugins `protobuf:"bytes,2,opt,name=applied" json:"applied,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
+}
+
+func (m *ApplyPluginsReq) Reset()         { *m = ApplyPluginsReq{} }
+func (m *ApplyPluginsReq) String() string { return proto.CompactTextString(m) }
+func (*ApplyPluginsReq) ProtoMessage()    {}
+func (*ApplyPluginsReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{44}
+}
+func (m *ApplyPluginsReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ApplyPluginsReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ApplyPluginsReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *ApplyPluginsReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ApplyPluginsReq.Merge(dst, src)
+}
+func (m *ApplyPluginsReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *ApplyPluginsReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_ApplyPluginsReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ApplyPluginsReq proto.InternalMessageInfo
+
+func (m *ApplyPluginsReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *ApplyPluginsReq) GetApplied() *metapb.AppliedPlugins {
+	if m != nil {
+		return m.Applied
+	}
+	return nil
+}
+
+type BatchRsp struct {
+	Header               RpcHeader           `protobuf:"bytes,1,opt,name=header" json:"header"`
+	PutClusters          []*PutClusterRsp    `protobuf:"bytes,2,rep,name=putClusters" json:"putClusters,omitempty"`
+	RemoveClusters       []*RemoveClusterRsp `protobuf:"bytes,3,rep,name=removeClusters" json:"removeClusters,omitempty"`
+	PutServers           []*PutServerRsp     `protobuf:"bytes,4,rep,name=putServers" json:"putServers,omitempty"`
+	RemoveServers        []*RemoveServerRsp  `protobuf:"bytes,5,rep,name=removeServers" json:"removeServers,omitempty"`
+	PutAPIs              []*PutAPIRsp        `protobuf:"bytes,6,rep,name=putAPIs" json:"putAPIs,omitempty"`
+	RemoveAPIs           []*RemoveAPIRsp     `protobuf:"bytes,7,rep,name=removeAPIs" json:"removeAPIs,omitempty"`
+	PutRoutings          []*PutRoutingRsp    `protobuf:"bytes,8,rep,name=putRoutings" json:"putRoutings,omitempty"`
+	RemoveRoutings       []*RemoveRoutingRsp `protobuf:"bytes,9,rep,name=removeRoutings" json:"removeRoutings,omitempty"`
+	AddBinds             []*AddBindRsp       `protobuf:"bytes,10,rep,name=addBinds" json:"addBinds,omitempty"`
+	RemoveBinds          []*RemoveBindRsp    `protobuf:"bytes,11,rep,name=removeBinds" json:"removeBinds,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
+	XXX_unrecognized     []byte              `json:"-"`
+	XXX_sizecache        int32               `json:"-"`
+}
+
+func (m *BatchRsp) Reset()         { *m = BatchRsp{} }
+func (m *BatchRsp) String() string { return proto.CompactTextString(m) }
+func (*BatchRsp) ProtoMessage()    {}
+func (*BatchRsp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_f7f5893866fd3533, []int{42}
+}
+func (m *BatchRsp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *BatchRsp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_BatchRsp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *BatchRsp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BatchRsp.Merge(dst, src)
+}
+func (m *BatchRsp) XXX_Size() int {
+	return m.Size()
+}
+func (m *BatchRsp) XXX_DiscardUnknown() {
+	xxx_messageInfo_BatchRsp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BatchRsp proto.InternalMessageInfo
+
+func (m *ApplyPluginsRsp) Reset()         { *m = ApplyPluginsRsp{} }
+func (m *ApplyPluginsRsp) String() string { return proto.CompactTextString(m) }
+func (*ApplyPluginsRsp) ProtoMessage()    {}
+func (*ApplyPluginsRsp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{45}
+}
+func (m *ApplyPluginsRsp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ApplyPluginsRsp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ApplyPluginsRsp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *ApplyPluginsRsp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ApplyPluginsRsp.Merge(dst, src)
+}
+func (m *ApplyPluginsRsp) XXX_Size() int {
+	return m.Size()
+}
+func (m *ApplyPluginsRsp) XXX_DiscardUnknown() {
+	xxx_messageInfo_ApplyPluginsRsp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ApplyPluginsRsp proto.InternalMessageInfo
+
+func (m *ApplyPluginsRsp) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+type GetAppliedPluginsReq struct {
+	Header               RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *GetAppliedPluginsReq) Reset()         { *m = GetAppliedPluginsReq{} }
+func (m *GetAppliedPluginsReq) String() string { return proto.CompactTextString(m) }
+func (*GetAppliedPluginsReq) ProtoMessage()    {}
+func (*GetAppliedPluginsReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{46}
+}
+func (m *GetAppliedPluginsReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetAppliedPluginsReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetAppliedPluginsReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *GetAppliedPluginsReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetAppliedPluginsReq.Merge(dst, src)
+}
+func (m *GetAppliedPluginsReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetAppliedPluginsReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetAppliedPluginsReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetAppliedPluginsReq proto.InternalMessageInfo
+
+func (m *GetAppliedPluginsReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+type GetAppliedPluginsRsp struct {
+	Header               RpcHeader              `protobuf:"bytes,1,opt,name=header" json:"header"`
+	Applied              *metapb.AppliedPlugins `protobuf:"bytes,2,opt,name=applied" json:"applied,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
+}
+
+func (m *GetAppliedPluginsRsp) Reset()         { *m = GetAppliedPluginsRsp{} }
+func (m *GetAppliedPluginsRsp) String() string { return proto.CompactTextString(m) }
+func (*GetAppliedPluginsRsp) ProtoMessage()    {}
+func (*GetAppliedPluginsRsp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{47}
+}
+func (m *GetAppliedPluginsRsp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetAppliedPluginsRsp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetAppliedPluginsRsp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *GetAppliedPluginsRsp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetAppliedPluginsRsp.Merge(dst, src)
+}
+func (m *GetAppliedPluginsRsp) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetAppliedPluginsRsp) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetAppliedPluginsRsp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetAppliedPluginsRsp proto.InternalMessageInfo
+
+func (m *GetAppliedPluginsRsp) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *GetAppliedPluginsRsp) GetApplied() *metapb.AppliedPlugins {
+	if m != nil {
+		return m.Applied
+	}
+	return nil
+}
+
+type CleanReq struct {
+	Header               RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *CleanReq) Reset()         { *m = CleanReq{} }
+func (m *CleanReq) String() string { return proto.CompactTextString(m) }
+func (*CleanReq) ProtoMessage()    {}
+func (*CleanReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{48}
+}
+func (m *CleanReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CleanReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CleanReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *CleanReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CleanReq.Merge(dst, src)
+}
+func (m *CleanReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *CleanReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_CleanReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CleanReq proto.InternalMessageInfo
+
+func (m *CleanReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+type CleanRsp struct {
+	Header               RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *CleanRsp) Reset()         { *m = CleanRsp{} }
+func (m *CleanRsp) String() string { return proto.CompactTextString(m) }
+func (*CleanRsp) ProtoMessage()    {}
+func (*CleanRsp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{49}
+}
+func (m *CleanRsp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CleanRsp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CleanRsp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *CleanRsp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CleanRsp.Merge(dst, src)
+}
+func (m *CleanRsp) XXX_Size() int {
+	return m.Size()
+}
+func (m *CleanRsp) XXX_DiscardUnknown() {
+	xxx_messageInfo_CleanRsp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CleanRsp proto.InternalMessageInfo
+
+func (m *CleanRsp) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+type SetIDReq struct {
+	Header               RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	ID                   uint64    `protobuf:"varint,2,opt,name=id" json:"id"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *SetIDReq) Reset()         { *m = SetIDReq{} }
+func (m *SetIDReq) String() string { return proto.CompactTextString(m) }
+func (*SetIDReq) ProtoMessage()    {}
+func (*SetIDReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{50}
+}
+func (m *SetIDReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *SetIDReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_SetIDReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *SetIDReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SetIDReq.Merge(dst, src)
+}
+func (m *SetIDReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *SetIDReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_SetIDReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SetIDReq proto.InternalMessageInfo
+
+func (m *SetIDReq) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+func (m *SetIDReq) GetID() uint64 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
+type SetIDRsp struct {
+	Header               RpcHeader `protobuf:"bytes,1,opt,name=header" json:"header"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
+}
+
+func (m *SetIDRsp) Reset()         { *m = SetIDRsp{} }
+func (m *SetIDRsp) String() string { return proto.CompactTextString(m) }
+func (*SetIDRsp) ProtoMessage()    {}
+func (*SetIDRsp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{51}
+}
+func (m *SetIDRsp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *SetIDRsp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_SetIDRsp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *SetIDRsp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SetIDRsp.Merge(dst, src)
+}
+func (m *SetIDRsp) XXX_Size() int {
+	return m.Size()
+}
+func (m *SetIDRsp) XXX_DiscardUnknown() {
+	xxx_messageInfo_SetIDRsp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SetIDRsp proto.InternalMessageInfo
+
+func (m *SetIDRsp) GetHeader() RpcHeader {
+	if m != nil {
+		return m.Header
+	}
+	return RpcHeader{}
+}
+
+type BatchReq struct {
+	Header               RpcHeader           `protobuf:"bytes,1,opt,name=header" json:"header"`
+	PutClusters          []*PutClusterReq    `protobuf:"bytes,2,rep,name=putClusters" json:"putClusters,omitempty"`
+	RemoveClusters       []*RemoveClusterReq `protobuf:"bytes,3,rep,name=removeClusters" json:"removeClusters,omitempty"`
+	PutServers           []*PutServerReq     `protobuf:"bytes,4,rep,name=putServers" json:"putServers,omitempty"`
+	RemoveServers        []*RemoveServerReq  `protobuf:"bytes,5,rep,name=removeServers" json:"removeServers,omitempty"`
+	PutAPIs              []*PutAPIReq        `protobuf:"bytes,6,rep,name=putAPIs" json:"putAPIs,omitempty"`
+	RemoveAPIs           []*RemoveAPIReq     `protobuf:"bytes,7,rep,name=removeAPIs" json:"removeAPIs,omitempty"`
+	PutRoutings          []*PutRoutingReq    `protobuf:"bytes,8,rep,name=putRoutings" json:"putRoutings,omitempty"`
+	RemoveRoutings       []*RemoveRoutingReq `protobuf:"bytes,9,rep,name=removeRoutings" json:"removeRoutings,omitempty"`
+	AddBinds             []*AddBindReq       `protobuf:"bytes,10,rep,name=addBinds" json:"addBinds,omitempty"`
+	RemoveBinds          []*RemoveBindReq    `protobuf:"bytes,11,rep,name=removeBinds" json:"removeBinds,omitempty"`
+	PutPlugins           []*PutPluginReq     `protobuf:"bytes,12,rep,name=putPlugins" json:"putPlugins,omitempty"`
+	RemovePlugins        []*RemovePluginReq  `protobuf:"bytes,13,rep,name=removePlugins" json:"removePlugins,omitempty"`
+	ApplyPlugins         *ApplyPluginsReq    `protobuf:"bytes,14,opt,name=applyPlugins" json:"applyPlugins,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
+	XXX_unrecognized     []byte              `json:"-"`
+	XXX_sizecache        int32               `json:"-"`
+}
+
+func (m *BatchReq) Reset()         { *m = BatchReq{} }
+func (m *BatchReq) String() string { return proto.CompactTextString(m) }
+func (*BatchReq) ProtoMessage()    {}
+func (*BatchReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{52}
 }
 func (m *BatchReq) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2311,6 +3026,27 @@ func (m *BatchReq) GetRemoveBinds() []*RemoveBindReq {
 	return nil
 }
 
+func (m *BatchReq) GetPutPlugins() []*PutPluginReq {
+	if m != nil {
+		return m.PutPlugins
+	}
+	return nil
+}
+
+func (m *BatchReq) GetRemovePlugins() []*RemovePluginReq {
+	if m != nil {
+		return m.RemovePlugins
+	}
+	return nil
+}
+
+func (m *BatchReq) GetApplyPlugins() *ApplyPluginsReq {
+	if m != nil {
+		return m.ApplyPlugins
+	}
+	return nil
+}
+
 type BatchRsp struct {
 	Header               RpcHeader           `protobuf:"bytes,1,opt,name=header" json:"header"`
 	PutClusters          []*PutClusterRsp    `protobuf:"bytes,2,rep,name=putClusters" json:"putClusters,omitempty"`
@@ -2323,6 +3059,9 @@ type BatchRsp struct {
 	RemoveRoutings       []*RemoveRoutingRsp `protobuf:"bytes,9,rep,name=removeRoutings" json:"removeRoutings,omitempty"`
 	AddBinds             []*AddBindRsp       `protobuf:"bytes,10,rep,name=addBinds" json:"addBinds,omitempty"`
 	RemoveBinds          []*RemoveBindRsp    `protobuf:"bytes,11,rep,name=removeBinds" json:"removeBinds,omitempty"`
+	PutPlugins           []*PutPluginRsp     `protobuf:"bytes,12,rep,name=putPlugins" json:"putPlugins,omitempty"`
+	RemovePlugins        []*RemovePluginRsp  `protobuf:"bytes,13,rep,name=removePlugins" json:"removePlugins,omitempty"`
+	ApplyPlugins         *ApplyPluginsRsp    `protobuf:"bytes,14,opt,name=applyPlugins" json:"applyPlugins,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
@@ -2332,7 +3071,7 @@ func (m *BatchRsp) Reset()         { *m = BatchRsp{} }
 func (m *BatchRsp) String() string { return proto.CompactTextString(m) }
 func (*BatchRsp) ProtoMessage()    {}
 func (*BatchRsp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_f7f5893866fd3533, []int{42}
+	return fileDescriptor_rpcpb_a460804f5caec904, []int{53}
 }
 func (m *BatchRsp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2438,6 +3177,27 @@ func (m *BatchRsp) GetRemoveBinds() []*RemoveBindRsp {
 	return nil
 }
 
+func (m *BatchRsp) GetPutPlugins() []*PutPluginRsp {
+	if m != nil {
+		return m.PutPlugins
+	}
+	return nil
+}
+
+func (m *BatchRsp) GetRemovePlugins() []*RemovePluginRsp {
+	if m != nil {
+		return m.RemovePlugins
+	}
+	return nil
+}
+
+func (m *BatchRsp) GetApplyPlugins() *ApplyPluginsRsp {
+	if m != nil {
+		return m.ApplyPlugins
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*RpcHeader)(nil), "rpcpb.RpcHeader")
 	proto.RegisterType((*PutClusterReq)(nil), "rpcpb.PutClusterReq")
@@ -2476,6 +3236,17 @@ func init() {
 	proto.RegisterType((*RemoveClusterBindRsp)(nil), "rpcpb.RemoveClusterBindRsp")
 	proto.RegisterType((*GetBindServersReq)(nil), "rpcpb.GetBindServersReq")
 	proto.RegisterType((*GetBindServersRsp)(nil), "rpcpb.GetBindServersRsp")
+	proto.RegisterType((*PutPluginReq)(nil), "rpcpb.PutPluginReq")
+	proto.RegisterType((*PutPluginRsp)(nil), "rpcpb.PutPluginRsp")
+	proto.RegisterType((*RemovePluginReq)(nil), "rpcpb.RemovePluginReq")
+	proto.RegisterType((*RemovePluginRsp)(nil), "rpcpb.RemovePluginRsp")
+	proto.RegisterType((*GetPluginReq)(nil), "rpcpb.GetPluginReq")
+	proto.RegisterType((*GetPluginRsp)(nil), "rpcpb.GetPluginRsp")
+	proto.RegisterType((*GetPluginListReq)(nil), "rpcpb.GetPluginListReq")
+	proto.RegisterType((*ApplyPluginsReq)(nil), "rpcpb.ApplyPluginsReq")
+	proto.RegisterType((*ApplyPluginsRsp)(nil), "rpcpb.ApplyPluginsRsp")
+	proto.RegisterType((*GetAppliedPluginsReq)(nil), "rpcpb.GetAppliedPluginsReq")
+	proto.RegisterType((*GetAppliedPluginsRsp)(nil), "rpcpb.GetAppliedPluginsRsp")
 	proto.RegisterType((*CleanReq)(nil), "rpcpb.CleanReq")
 	proto.RegisterType((*CleanRsp)(nil), "rpcpb.CleanRsp")
 	proto.RegisterType((*SetIDReq)(nil), "rpcpb.SetIDReq")
@@ -2516,6 +3287,12 @@ type MetaServiceClient interface {
 	RemoveBind(ctx context.Context, in *RemoveBindReq, opts ...grpc.CallOption) (*RemoveBindRsp, error)
 	RemoveClusterBind(ctx context.Context, in *RemoveClusterBindReq, opts ...grpc.CallOption) (*RemoveClusterBindRsp, error)
 	GetBindServers(ctx context.Context, in *GetBindServersReq, opts ...grpc.CallOption) (*GetBindServersRsp, error)
+	PutPlugin(ctx context.Context, in *PutPluginReq, opts ...grpc.CallOption) (*PutPluginRsp, error)
+	RemovePlugin(ctx context.Context, in *RemovePluginReq, opts ...grpc.CallOption) (*RemovePluginRsp, error)
+	GetPlugin(ctx context.Context, in *GetPluginReq, opts ...grpc.CallOption) (*GetPluginRsp, error)
+	GetPluginList(ctx context.Context, in *GetPluginListReq, opts ...grpc.CallOption) (MetaService_GetPluginListClient, error)
+	ApplyPlugins(ctx context.Context, in *ApplyPluginsReq, opts ...grpc.CallOption) (*ApplyPluginsRsp, error)
+	GetAppliedPlugins(ctx context.Context, in *GetAppliedPluginsReq, opts ...grpc.CallOption) (*GetAppliedPluginsRsp, error)
 	Clean(ctx context.Context, in *CleanReq, opts ...grpc.CallOption) (*CleanRsp, error)
 	SetID(ctx context.Context, in *SetIDReq, opts ...grpc.CallOption) (*SetIDRsp, error)
 	Batch(ctx context.Context, in *BatchReq, opts ...grpc.CallOption) (*BatchRsp, error)
@@ -2850,6 +3627,12 @@ type MetaServiceServer interface {
 	RemoveBind(context.Context, *RemoveBindReq) (*RemoveBindRsp, error)
 	RemoveClusterBind(context.Context, *RemoveClusterBindReq) (*RemoveClusterBindRsp, error)
 	GetBindServers(context.Context, *GetBindServersReq) (*GetBindServersRsp, error)
+	PutPlugin(context.Context, *PutPluginReq) (*PutPluginRsp, error)
+	RemovePlugin(context.Context, *RemovePluginReq) (*RemovePluginRsp, error)
+	GetPlugin(context.Context, *GetPluginReq) (*GetPluginRsp, error)
+	GetPluginList(*GetPluginListReq, MetaService_GetPluginListServer) error
+	ApplyPlugins(context.Context, *ApplyPluginsReq) (*ApplyPluginsRsp, error)
+	GetAppliedPlugins(context.Context, *GetAppliedPluginsReq) (*GetAppliedPluginsRsp, error)
 	Clean(context.Context, *CleanReq) (*CleanRsp, error)
 	SetID(context.Context, *SetIDReq) (*SetIDRsp, error)
 	Batch(context.Context, *BatchReq) (*BatchRsp, error)
@@ -3231,6 +4014,117 @@ func _MetaService_GetBindServers_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MetaService_PutPlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutPluginReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetaServiceServer).PutPlugin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcpb.MetaService/PutPlugin",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetaServiceServer).PutPlugin(ctx, req.(*PutPluginReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetaService_RemovePlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemovePluginReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetaServiceServer).RemovePlugin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcpb.MetaService/RemovePlugin",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetaServiceServer).RemovePlugin(ctx, req.(*RemovePluginReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetaService_GetPlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPluginReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetaServiceServer).GetPlugin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcpb.MetaService/GetPlugin",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetaServiceServer).GetPlugin(ctx, req.(*GetPluginReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetaService_GetPluginList_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(GetPluginListReq)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MetaServiceServer).GetPluginList(m, &metaServiceGetPluginListServer{stream})
+}
+
+type MetaService_GetPluginListServer interface {
+	Send(*metapb.Plugin) error
+	grpc.ServerStream
+}
+
+type metaServiceGetPluginListServer struct {
+	grpc.ServerStream
+}
+
+func (x *metaServiceGetPluginListServer) Send(m *metapb.Plugin) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _MetaService_ApplyPlugins_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApplyPluginsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetaServiceServer).ApplyPlugins(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcpb.MetaService/ApplyPlugins",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetaServiceServer).ApplyPlugins(ctx, req.(*ApplyPluginsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MetaService_GetAppliedPlugins_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAppliedPluginsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetaServiceServer).GetAppliedPlugins(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcpb.MetaService/GetAppliedPlugins",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetaServiceServer).GetAppliedPlugins(ctx, req.(*GetAppliedPluginsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _MetaService_Clean_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CleanReq)
 	if err := dec(in); err != nil {
@@ -3354,6 +4248,26 @@ var _MetaService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _MetaService_GetBindServers_Handler,
 		},
 		{
+			MethodName: "PutPlugin",
+			Handler:    _MetaService_PutPlugin_Handler,
+		},
+		{
+			MethodName: "RemovePlugin",
+			Handler:    _MetaService_RemovePlugin_Handler,
+		},
+		{
+			MethodName: "GetPlugin",
+			Handler:    _MetaService_GetPlugin_Handler,
+		},
+		{
+			MethodName: "ApplyPlugins",
+			Handler:    _MetaService_ApplyPlugins_Handler,
+		},
+		{
+			MethodName: "GetAppliedPlugins",
+			Handler:    _MetaService_GetAppliedPlugins_Handler,
+		},
+		{
 			MethodName: "Clean",
 			Handler:    _MetaService_Clean_Handler,
 		},
@@ -3385,6 +4299,11 @@ var _MetaService_serviceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "GetRoutingList",
 			Handler:       _MetaService_GetRoutingList_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "GetPluginList",
+			Handler:       _MetaService_GetPluginList_Handler,
 			ServerStreams: true,
 		},
 	},
@@ -4593,7 +5512,7 @@ func (m *GetBindServersRsp) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CleanReq) Marshal() (dAtA []byte, err error) {
+func (m *PutPluginReq) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalTo(dAtA)
@@ -4603,7 +5522,7 @@ func (m *CleanReq) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *CleanReq) MarshalTo(dAtA []byte) (int, error) {
+func (m *PutPluginReq) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -4616,31 +5535,10 @@ func (m *CleanReq) MarshalTo(dAtA []byte) (int, error) {
 		return 0, err
 	}
 	i += n45
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *CleanRsp) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CleanRsp) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	dAtA[i] = 0xa
+	dAtA[i] = 0x12
 	i++
-	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
-	n46, err := m.Header.MarshalTo(dAtA[i:])
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Plugin.Size()))
+	n46, err := m.Plugin.MarshalTo(dAtA[i:])
 	if err != nil {
 		return 0, err
 	}
@@ -4651,7 +5549,7 @@ func (m *CleanRsp) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func (m *SetIDReq) Marshal() (dAtA []byte, err error) {
+func (m *PutPluginRsp) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalTo(dAtA)
@@ -4661,7 +5559,7 @@ func (m *SetIDReq) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *SetIDReq) MarshalTo(dAtA []byte) (int, error) {
+func (m *PutPluginRsp) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -4683,7 +5581,7 @@ func (m *SetIDReq) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func (m *SetIDRsp) Marshal() (dAtA []byte, err error) {
+func (m *RemovePluginReq) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalTo(dAtA)
@@ -4693,7 +5591,7 @@ func (m *SetIDRsp) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *SetIDRsp) MarshalTo(dAtA []byte) (int, error) {
+func (m *RemovePluginReq) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -4706,13 +5604,16 @@ func (m *SetIDRsp) MarshalTo(dAtA []byte) (int, error) {
 		return 0, err
 	}
 	i += n48
+	dAtA[i] = 0x10
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.ID))
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
 
-func (m *BatchReq) Marshal() (dAtA []byte, err error) {
+func (m *RemovePluginRsp) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalTo(dAtA)
@@ -4722,7 +5623,7 @@ func (m *BatchReq) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *BatchReq) MarshalTo(dAtA []byte) (int, error) {
+func (m *RemovePluginRsp) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -4735,133 +5636,13 @@ func (m *BatchReq) MarshalTo(dAtA []byte) (int, error) {
 		return 0, err
 	}
 	i += n49
-	if len(m.PutClusters) > 0 {
-		for _, msg := range m.PutClusters {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.RemoveClusters) > 0 {
-		for _, msg := range m.RemoveClusters {
-			dAtA[i] = 0x1a
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.PutServers) > 0 {
-		for _, msg := range m.PutServers {
-			dAtA[i] = 0x22
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.RemoveServers) > 0 {
-		for _, msg := range m.RemoveServers {
-			dAtA[i] = 0x2a
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.PutAPIs) > 0 {
-		for _, msg := range m.PutAPIs {
-			dAtA[i] = 0x32
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.RemoveAPIs) > 0 {
-		for _, msg := range m.RemoveAPIs {
-			dAtA[i] = 0x3a
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.PutRoutings) > 0 {
-		for _, msg := range m.PutRoutings {
-			dAtA[i] = 0x42
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.RemoveRoutings) > 0 {
-		for _, msg := range m.RemoveRoutings {
-			dAtA[i] = 0x4a
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.AddBinds) > 0 {
-		for _, msg := range m.AddBinds {
-			dAtA[i] = 0x52
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	if len(m.RemoveBinds) > 0 {
-		for _, msg := range m.RemoveBinds {
-			dAtA[i] = 0x5a
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
 
-func (m *BatchRsp) Marshal() (dAtA []byte, err error) {
+func (m *GetPluginReq) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalTo(dAtA)
@@ -4871,7 +5652,7 @@ func (m *BatchRsp) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *BatchRsp) MarshalTo(dAtA []byte) (int, error) {
+func (m *GetPluginReq) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -4884,125 +5665,115 @@ func (m *BatchRsp) MarshalTo(dAtA []byte) (int, error) {
 		return 0, err
 	}
 	i += n50
-	if len(m.PutClusters) > 0 {
-		for _, msg := range m.PutClusters {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
+	dAtA[i] = 0x10
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if len(m.RemoveClusters) > 0 {
-		for _, msg := range m.RemoveClusters {
-			dAtA[i] = 0x1a
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
+	return i, nil
+}
+
+func (m *GetPluginRsp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
 	}
-	if len(m.PutServers) > 0 {
-		for _, msg := range m.PutServers {
-			dAtA[i] = 0x22
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
+	return dAtA[:n], nil
+}
+
+func (m *GetPluginRsp) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n51, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
 	}
-	if len(m.RemoveServers) > 0 {
-		for _, msg := range m.RemoveServers {
-			dAtA[i] = 0x2a
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
+	i += n51
+	if m.Plugin != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintRpcpb(dAtA, i, uint64(m.Plugin.Size()))
+		n52, err := m.Plugin.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n52
 	}
-	if len(m.PutAPIs) > 0 {
-		for _, msg := range m.PutAPIs {
-			dAtA[i] = 0x32
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if len(m.RemoveAPIs) > 0 {
-		for _, msg := range m.RemoveAPIs {
-			dAtA[i] = 0x3a
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
+	return i, nil
+}
+
+func (m *GetPluginListReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
 	}
-	if len(m.PutRoutings) > 0 {
-		for _, msg := range m.PutRoutings {
-			dAtA[i] = 0x42
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
+	return dAtA[:n], nil
+}
+
+func (m *GetPluginListReq) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n53, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
 	}
-	if len(m.RemoveRoutings) > 0 {
-		for _, msg := range m.RemoveRoutings {
-			dAtA[i] = 0x4a
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
+	i += n53
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if len(m.AddBinds) > 0 {
-		for _, msg := range m.AddBinds {
-			dAtA[i] = 0x52
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
+	return i, nil
+}
+
+func (m *ApplyPluginsReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
 	}
-	if len(m.RemoveBinds) > 0 {
-		for _, msg := range m.RemoveBinds {
-			dAtA[i] = 0x5a
-			i++
-			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
+	return dAtA[:n], nil
+}
+
+func (m *ApplyPluginsReq) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n54, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n54
+	if m.Applied != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintRpcpb(dAtA, i, uint64(m.Applied.Size()))
+		n55, err := m.Applied.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n55
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -5016,8 +5787,7 @@ func encodeVarintRpcpb(dAtA []byte, offset int, v uint64) int {
 		v >>= 7
 		offset++
 	}
-	dAtA[offset] = uint8(v)
-	return offset + 1
+	return dAtA[:n], nil
 }
 func (m *RpcHeader) Size() (n int) {
 	if m == nil {
@@ -5025,12 +5795,18 @@ func (m *RpcHeader) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Uuid)
-	n += 1 + l + sovRpcpb(uint64(l))
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n56, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
 	}
-	return n
+	i += n56
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
 }
 
 func (m *PutClusterReq) Size() (n int) {
@@ -5046,7 +5822,7 @@ func (m *PutClusterReq) Size() (n int) {
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
-	return n
+	return dAtA[:n], nil
 }
 
 func (m *PutClusterRsp) Size() (n int) {
@@ -5055,13 +5831,18 @@ func (m *PutClusterRsp) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = m.Header.Size()
-	n += 1 + l + sovRpcpb(uint64(l))
-	n += 1 + sovRpcpb(uint64(m.ID))
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n57, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
 	}
-	return n
+	i += n57
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
 }
 
 func (m *RemoveClusterReq) Size() (n int) {
@@ -5076,7 +5857,7 @@ func (m *RemoveClusterReq) Size() (n int) {
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
-	return n
+	return dAtA[:n], nil
 }
 
 func (m *RemoveClusterRsp) Size() (n int) {
@@ -5121,9 +5902,9 @@ func (m *GetClusterRsp) Size() (n int) {
 		n += 1 + l + sovRpcpb(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
+		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	return n
+	return i, nil
 }
 
 func (m *GetClusterListReq) Size() (n int) {
@@ -5137,10 +5918,496 @@ func (m *GetClusterListReq) Size() (n int) {
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
-	return n
+	return dAtA[:n], nil
 }
 
 func (m *PutServerReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n60, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	return n
+}
+
+func (m *PutServerRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *RemoveServerReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RemoveServerRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n61, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	return n
+}
+
+func (m *GetServerReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *GetServerRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.Server != nil {
+		l = m.Server.Size()
+		n += 1 + l + sovRpcpb(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetServerListReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n62, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	return n
+}
+
+func (m *PutAPIReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	l = m.API.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *PutAPIRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RemoveAPIReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n63, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	return n
+}
+
+func (m *RemoveAPIRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *GetAPIReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetAPIRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	dAtA[i] = 0xa
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Header.Size()))
+	n64, err := m.Header.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
+	}
+	return n
+}
+
+func (m *GetAPIListReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *PutRoutingReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	l = m.Routing.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *PutRoutingRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RemoveRoutingReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RemoveRoutingRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetRoutingReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetRoutingRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.Routing != nil {
+		l = m.Routing.Size()
+		n += 1 + l + sovRpcpb(uint64(l))
+	}
+	if len(m.RemoveRoutings) > 0 {
+		for _, msg := range m.RemoveRoutings {
+			dAtA[i] = 0x4a
+			i++
+			i = encodeVarintRpcpb(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return n
+}
+
+func (m *GetRoutingListReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *AddBindReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.Cluster))
+	n += 1 + sovRpcpb(uint64(m.Server))
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *AddBindRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RemoveBindReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.Cluster))
+	n += 1 + sovRpcpb(uint64(m.Server))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RemoveBindRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	l = m.Cluster.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RemoveClusterBindReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RemoveClusterBindRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetBindServersReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetBindServersRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetClusterRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.Cluster != nil {
+		l = m.Cluster.Size()
+		n += 1 + l + sovRpcpb(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *CleanReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *CleanRsp) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5156,7 +6423,7 @@ func (m *PutServerReq) Size() (n int) {
 	return n
 }
 
-func (m *PutServerRsp) Size() (n int) {
+func (m *SetIDReq) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5171,7 +6438,7 @@ func (m *PutServerRsp) Size() (n int) {
 	return n
 }
 
-func (m *RemoveServerReq) Size() (n int) {
+func (m *SetIDRsp) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5186,7 +6453,7 @@ func (m *RemoveServerReq) Size() (n int) {
 	return n
 }
 
-func (m *RemoveServerRsp) Size() (n int) {
+func (m *BatchReq) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5278,7 +6545,7 @@ func (m *PutAPIRsp) Size() (n int) {
 	return n
 }
 
-func (m *RemoveAPIReq) Size() (n int) {
+func (m *BatchRsp) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -5584,6 +6851,177 @@ func (m *GetBindServersRsp) Size() (n int) {
 	return n
 }
 
+func (m *PutPluginReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	l = m.Plugin.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *PutPluginRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RemovePluginReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *RemovePluginRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetPluginReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	n += 1 + sovRpcpb(uint64(m.ID))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetPluginRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.Plugin != nil {
+		l = m.Plugin.Size()
+		n += 1 + l + sovRpcpb(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetPluginListReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ApplyPluginsReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.Applied != nil {
+		l = m.Applied.Size()
+		n += 1 + l + sovRpcpb(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ApplyPluginsRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetAppliedPluginsReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *GetAppliedPluginsRsp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Header.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
+	if m.Applied != nil {
+		l = m.Applied.Size()
+		n += 1 + l + sovRpcpb(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
 func (m *CleanReq) Size() (n int) {
 	if m == nil {
 		return 0
@@ -5709,6 +7147,22 @@ func (m *BatchReq) Size() (n int) {
 			n += 1 + l + sovRpcpb(uint64(l))
 		}
 	}
+	if len(m.PutPlugins) > 0 {
+		for _, e := range m.PutPlugins {
+			l = e.Size()
+			n += 1 + l + sovRpcpb(uint64(l))
+		}
+	}
+	if len(m.RemovePlugins) > 0 {
+		for _, e := range m.RemovePlugins {
+			l = e.Size()
+			n += 1 + l + sovRpcpb(uint64(l))
+		}
+	}
+	if m.ApplyPlugins != nil {
+		l = m.ApplyPlugins.Size()
+		n += 1 + l + sovRpcpb(uint64(l))
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -5782,6 +7236,22 @@ func (m *BatchRsp) Size() (n int) {
 			l = e.Size()
 			n += 1 + l + sovRpcpb(uint64(l))
 		}
+	}
+	if len(m.PutPlugins) > 0 {
+		for _, e := range m.PutPlugins {
+			l = e.Size()
+			n += 1 + l + sovRpcpb(uint64(l))
+		}
+	}
+	if len(m.RemovePlugins) > 0 {
+		for _, e := range m.RemovePlugins {
+			l = e.Size()
+			n += 1 + l + sovRpcpb(uint64(l))
+		}
+	}
+	if m.ApplyPlugins != nil {
+		l = m.ApplyPlugins.Size()
+		n += 1 + l + sovRpcpb(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -9465,6 +10935,1106 @@ func (m *GetBindServersRsp) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *PutPluginReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PutPluginReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PutPluginReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Plugin", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Plugin.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PutPluginRsp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PutPluginRsp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PutPluginRsp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RemovePluginReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RemovePluginReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RemovePluginReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RemovePluginRsp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RemovePluginRsp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RemovePluginRsp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetPluginReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetPluginReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetPluginReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetPluginRsp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetPluginRsp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetPluginRsp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Plugin", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Plugin == nil {
+				m.Plugin = &metapb.Plugin{}
+			}
+			if err := m.Plugin.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetPluginListReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetPluginListReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetPluginListReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ApplyPluginsReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ApplyPluginsReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ApplyPluginsReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Applied", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Applied == nil {
+				m.Applied = &metapb.AppliedPlugins{}
+			}
+			if err := m.Applied.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ApplyPluginsRsp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ApplyPluginsRsp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ApplyPluginsRsp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetAppliedPluginsReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetAppliedPluginsReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetAppliedPluginsReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetAppliedPluginsRsp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRpcpb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetAppliedPluginsRsp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetAppliedPluginsRsp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Header", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Header.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Applied", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				var count int
+				for _, integer := range dAtA {
+					if integer < 128 {
+						count++
+					}
+				}
+				elementCount = count
+				if elementCount != 0 && len(m.Servers) == 0 {
+					m.Servers = make([]uint64, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowRpcpb
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= (uint64(b) & 0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.Servers = append(m.Servers, v)
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Applied == nil {
+				m.Applied = &metapb.AppliedPlugins{}
+			}
+			if err := m.Applied.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRpcpb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *CleanReq) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -10177,6 +12747,101 @@ func (m *BatchReq) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PutPlugins", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PutPlugins = append(m.PutPlugins, &PutPluginReq{})
+			if err := m.PutPlugins[len(m.PutPlugins)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RemovePlugins", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RemovePlugins = append(m.RemovePlugins, &RemovePluginReq{})
+			if err := m.RemovePlugins[len(m.RemovePlugins)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ApplyPlugins", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ApplyPlugins == nil {
+				m.ApplyPlugins = &ApplyPluginsReq{}
+			}
+			if err := m.ApplyPlugins.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipRpcpb(dAtA[iNdEx:])
@@ -10565,6 +13230,101 @@ func (m *BatchRsp) Unmarshal(dAtA []byte) error {
 			}
 			m.RemoveBinds = append(m.RemoveBinds, &RemoveBindRsp{})
 			if err := m.RemoveBinds[len(m.RemoveBinds)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PutPlugins", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PutPlugins = append(m.PutPlugins, &PutPluginRsp{})
+			if err := m.PutPlugins[len(m.PutPlugins)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RemovePlugins", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.RemovePlugins = append(m.RemovePlugins, &RemovePluginRsp{})
+			if err := m.RemovePlugins[len(m.RemovePlugins)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 14:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ApplyPlugins", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRpcpb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRpcpb
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ApplyPlugins == nil {
+				m.ApplyPlugins = &ApplyPluginsRsp{}
+			}
+			if err := m.ApplyPlugins.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
