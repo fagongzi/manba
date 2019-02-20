@@ -263,7 +263,7 @@ func (e *EtcdStore) Batch(batch *rpcpb.BatchReq) (*rpcpb.BatchRsp, error) {
 		ops = append(ops, op)
 	}
 	if batch.ApplyPlugins != nil {
-		op, err := e.putPBKeyWithOp(e.appliedPluginDir, batch.ApplyPlugins.Applied)
+		op, err := e.putPBKeyWithOp(e.appliedPluginDir, &batch.ApplyPlugins.Applied)
 		if err != nil {
 			return nil, err
 		}
@@ -508,11 +508,12 @@ func (e *EtcdStore) PutPlugin(value *metapb.Plugin) (uint64, error) {
 	e.Lock()
 	defer e.Unlock()
 
-	_, err := plugin.NewRuntime(string(value.Content), string(value.Cfg))
+	err := pbutil.ValidatePlugin(value)
 	if err != nil {
 		return 0, err
 	}
 
+	value.UpdateAt = util.NowWithMillisecond()
 	return e.putPB(e.pluginsDir, value, func(id uint64) {
 		value.ID = id
 	})
@@ -870,8 +871,10 @@ func (e *EtcdStore) BackupTo(to string) error {
 	if err != nil {
 		return err
 	}
-	batch.ApplyPlugins = &rpcpb.ApplyPluginsReq{
-		Applied: applied,
+	if applied != nil {
+		batch.ApplyPlugins = &rpcpb.ApplyPluginsReq{
+			Applied: *applied,
+		}
 	}
 
 	if int64(len(batch.PutPlugins)) > 0 {

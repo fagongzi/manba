@@ -424,7 +424,7 @@ func (s *metaService) ApplyPlugins(ctx context.Context, req *rpcpb.ApplyPluginsR
 	case <-ctx.Done():
 		return nil, errRPCCancel
 	default:
-		err := s.db.ApplyPlugins(req.Applied)
+		err := s.db.ApplyPlugins(&req.Applied)
 		if err != nil {
 			return nil, err
 		}

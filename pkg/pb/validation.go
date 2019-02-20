@@ -3,6 +3,8 @@ package pb
 import (
 	"fmt"
 
+	"github.com/fagongzi/gateway/pkg/plugin"
+
 	"github.com/fagongzi/gateway/pkg/expr"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 )
@@ -67,6 +69,28 @@ func ValidateAPI(value *metapb.API) error {
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+// ValidatePlugin validate plugin
+func ValidatePlugin(value *metapb.Plugin) error {
+	if value.Name == "" {
+		return fmt.Errorf("missing plugin name")
+	}
+
+	if value.Version == 0 {
+		return fmt.Errorf("missing plugin version")
+	}
+
+	if len(value.Content) == 0 {
+		return fmt.Errorf("missing plugin content")
+	}
+
+	_, err := plugin.NewRuntime(string(value.Content), string(value.Content))
+	if err != nil {
+		return err
 	}
 
 	return nil

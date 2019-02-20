@@ -39,6 +39,13 @@ type Client interface {
 	RemoveClusterBind(cluster uint64) error
 	GetBindServers(cluster uint64) ([]uint64, error)
 
+	NewPluginBuilder() *PluginBuilder
+	RemovePlugin(id uint64) error
+	GetPlugin(id uint64) (*metapb.Plugin, error)
+	GetPluginList(fn func(*metapb.Plugin) bool) error
+	ApplyPlugins(ids ...uint64) error
+	GetAppliedPlugins() ([]uint64, error)
+
 	Clean() error
 	SetID(id uint64) error
 	Batch(batch *rpcpb.BatchReq) (*rpcpb.BatchRsp, error)
@@ -460,6 +467,117 @@ func (c *client) GetBindServers(cluster uint64) ([]uint64, error) {
 	}
 
 	return rsp.Servers, nil
+}
+
+func (c *client) putPlugin(plugin metapb.Plugin) (uint64, error) {
+	meta, err := c.getMetaClient()
+	if err != nil {
+		return 0, err
+	}
+
+	rsp, err := meta.PutPlugin(context.Background(), &rpcpb.PutPluginReq{
+		Plugin: plugin,
+	}, grpc.FailFast(true))
+	if err != nil {
+		return 0, err
+	}
+
+	return rsp.ID, nil
+}
+
+func (c *client) RemovePlugin(id uint64) error {
+	meta, err := c.getMetaClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = meta.RemovePlugin(context.Background(), &rpcpb.RemovePluginReq{
+		ID: id,
+	}, grpc.FailFast(true))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *client) GetPlugin(id uint64) (*metapb.Plugin, error) {
+	meta, err := c.getMetaClient()
+	if err != nil {
+		return nil, err
+	}
+
+	rsp, err := meta.GetPlugin(context.Background(), &rpcpb.GetPluginReq{
+		ID: id,
+	}, grpc.FailFast(true))
+	if err != nil {
+		return nil, err
+	}
+
+	return rsp.Plugin, nil
+}
+
+func (c *client) GetPluginList(fn func(*metapb.Plugin) bool) error {
+	meta, err := c.getMetaClient()
+	if err != nil {
+		return err
+	}
+
+	stream, err := meta.GetPluginList(context.Background(), &rpcpb.GetPluginListReq{}, grpc.FailFast(true))
+	if err != nil {
+		return err
+	}
+
+	for {
+		c, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+
+		next := fn(c)
+		if !next {
+			return nil
+		}
+	}
+}
+
+func (c *client) ApplyPlugins(ids ...uint64) error {
+	meta, err := c.getMetaClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = meta.ApplyPlugins(context.Background(), &rpcpb.ApplyPluginsReq{
+		Applied: metapb.AppliedPlugins{
+			AppliedIDs: ids,
+		},
+	}, grpc.FailFast(true))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *client) GetAppliedPlugins() ([]uint64, error) {
+	meta, err := c.getMetaClient()
+	if err != nil {
+		return nil, err
+	}
+
+	rsp, err := meta.GetAppliedPlugins(context.Background(), &rpcpb.GetAppliedPluginsReq{}, grpc.FailFast(true))
+	if err != nil {
+		return nil, err
+	}
+
+	if rsp.Applied == nil {
+		return nil, nil
+	}
+
+	return rsp.Applied.AppliedIDs, nil
 }
 
 func (c *client) Clean() error {
