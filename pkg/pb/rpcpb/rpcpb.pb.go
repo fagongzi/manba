@@ -2079,7 +2079,7 @@ func (m *PutPluginRsp) Reset()         { *m = PutPluginRsp{} }
 func (m *PutPluginRsp) String() string { return proto.CompactTextString(m) }
 func (*PutPluginRsp) ProtoMessage()    {}
 func (*PutPluginRsp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{38}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{38}
 }
 func (m *PutPluginRsp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2260,7 +2260,7 @@ func (m *RemovePluginRsp) Reset()         { *m = RemovePluginRsp{} }
 func (m *RemovePluginRsp) String() string { return proto.CompactTextString(m) }
 func (*RemovePluginRsp) ProtoMessage()    {}
 func (*RemovePluginRsp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{40}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{40}
 }
 func (m *RemovePluginRsp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2308,7 +2308,7 @@ func (m *GetPluginReq) Reset()         { *m = GetPluginReq{} }
 func (m *GetPluginReq) String() string { return proto.CompactTextString(m) }
 func (*GetPluginReq) ProtoMessage()    {}
 func (*GetPluginReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{41}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{41}
 }
 func (m *GetPluginReq) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2363,7 +2363,7 @@ func (m *GetPluginRsp) Reset()         { *m = GetPluginRsp{} }
 func (m *GetPluginRsp) String() string { return proto.CompactTextString(m) }
 func (*GetPluginRsp) ProtoMessage()    {}
 func (*GetPluginRsp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{42}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{42}
 }
 func (m *GetPluginRsp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2417,7 +2417,7 @@ func (m *GetPluginListReq) Reset()         { *m = GetPluginListReq{} }
 func (m *GetPluginListReq) String() string { return proto.CompactTextString(m) }
 func (*GetPluginListReq) ProtoMessage()    {}
 func (*GetPluginListReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{43}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{43}
 }
 func (m *GetPluginListReq) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2454,18 +2454,18 @@ func (m *GetPluginListReq) GetHeader() RpcHeader {
 }
 
 type ApplyPluginsReq struct {
-	Header               RpcHeader              `protobuf:"bytes,1,opt,name=header" json:"header"`
-	Applied              *metapb.AppliedPlugins `protobuf:"bytes,2,opt,name=applied" json:"applied,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
-	XXX_unrecognized     []byte                 `json:"-"`
-	XXX_sizecache        int32                  `json:"-"`
+	Header               RpcHeader             `protobuf:"bytes,1,opt,name=header" json:"header"`
+	Applied              metapb.AppliedPlugins `protobuf:"bytes,2,opt,name=applied" json:"applied"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
 }
 
 func (m *ApplyPluginsReq) Reset()         { *m = ApplyPluginsReq{} }
 func (m *ApplyPluginsReq) String() string { return proto.CompactTextString(m) }
 func (*ApplyPluginsReq) ProtoMessage()    {}
 func (*ApplyPluginsReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{44}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{44}
 }
 func (m *ApplyPluginsReq) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2501,11 +2501,11 @@ func (m *ApplyPluginsReq) GetHeader() RpcHeader {
 	return RpcHeader{}
 }
 
-func (m *ApplyPluginsReq) GetApplied() *metapb.AppliedPlugins {
+func (m *ApplyPluginsReq) GetApplied() metapb.AppliedPlugins {
 	if m != nil {
 		return m.Applied
 	}
-	return nil
+	return metapb.AppliedPlugins{}
 }
 
 type BatchRsp struct {
@@ -2562,7 +2562,7 @@ func (m *ApplyPluginsRsp) Reset()         { *m = ApplyPluginsRsp{} }
 func (m *ApplyPluginsRsp) String() string { return proto.CompactTextString(m) }
 func (*ApplyPluginsRsp) ProtoMessage()    {}
 func (*ApplyPluginsRsp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{45}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{45}
 }
 func (m *ApplyPluginsRsp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2609,7 +2609,7 @@ func (m *GetAppliedPluginsReq) Reset()         { *m = GetAppliedPluginsReq{} }
 func (m *GetAppliedPluginsReq) String() string { return proto.CompactTextString(m) }
 func (*GetAppliedPluginsReq) ProtoMessage()    {}
 func (*GetAppliedPluginsReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{46}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{46}
 }
 func (m *GetAppliedPluginsReq) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2657,7 +2657,7 @@ func (m *GetAppliedPluginsRsp) Reset()         { *m = GetAppliedPluginsRsp{} }
 func (m *GetAppliedPluginsRsp) String() string { return proto.CompactTextString(m) }
 func (*GetAppliedPluginsRsp) ProtoMessage()    {}
 func (*GetAppliedPluginsRsp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{47}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{47}
 }
 func (m *GetAppliedPluginsRsp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2711,7 +2711,7 @@ func (m *CleanReq) Reset()         { *m = CleanReq{} }
 func (m *CleanReq) String() string { return proto.CompactTextString(m) }
 func (*CleanReq) ProtoMessage()    {}
 func (*CleanReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{48}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{48}
 }
 func (m *CleanReq) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2758,7 +2758,7 @@ func (m *CleanRsp) Reset()         { *m = CleanRsp{} }
 func (m *CleanRsp) String() string { return proto.CompactTextString(m) }
 func (*CleanRsp) ProtoMessage()    {}
 func (*CleanRsp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{49}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{49}
 }
 func (m *CleanRsp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2806,7 +2806,7 @@ func (m *SetIDReq) Reset()         { *m = SetIDReq{} }
 func (m *SetIDReq) String() string { return proto.CompactTextString(m) }
 func (*SetIDReq) ProtoMessage()    {}
 func (*SetIDReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{50}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{50}
 }
 func (m *SetIDReq) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2860,7 +2860,7 @@ func (m *SetIDRsp) Reset()         { *m = SetIDRsp{} }
 func (m *SetIDRsp) String() string { return proto.CompactTextString(m) }
 func (*SetIDRsp) ProtoMessage()    {}
 func (*SetIDRsp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{51}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{51}
 }
 func (m *SetIDRsp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -2920,7 +2920,7 @@ func (m *BatchReq) Reset()         { *m = BatchReq{} }
 func (m *BatchReq) String() string { return proto.CompactTextString(m) }
 func (*BatchReq) ProtoMessage()    {}
 func (*BatchReq) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{52}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{52}
 }
 func (m *BatchReq) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -3071,7 +3071,7 @@ func (m *BatchRsp) Reset()         { *m = BatchRsp{} }
 func (m *BatchRsp) String() string { return proto.CompactTextString(m) }
 func (*BatchRsp) ProtoMessage()    {}
 func (*BatchRsp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rpcpb_a460804f5caec904, []int{53}
+	return fileDescriptor_rpcpb_89a80e171515a5be, []int{53}
 }
 func (m *BatchRsp) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -5765,16 +5765,14 @@ func (m *ApplyPluginsReq) MarshalTo(dAtA []byte) (int, error) {
 		return 0, err
 	}
 	i += n54
-	if m.Applied != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintRpcpb(dAtA, i, uint64(m.Applied.Size()))
-		n55, err := m.Applied.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n55
+	dAtA[i] = 0x12
+	i++
+	i = encodeVarintRpcpb(dAtA, i, uint64(m.Applied.Size()))
+	n55, err := m.Applied.MarshalTo(dAtA[i:])
+	if err != nil {
+		return 0, err
 	}
+	i += n55
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
@@ -6966,10 +6964,8 @@ func (m *ApplyPluginsReq) Size() (n int) {
 	_ = l
 	l = m.Header.Size()
 	n += 1 + l + sovRpcpb(uint64(l))
-	if m.Applied != nil {
-		l = m.Applied.Size()
-		n += 1 + l + sovRpcpb(uint64(l))
-	}
+	l = m.Applied.Size()
+	n += 1 + l + sovRpcpb(uint64(l))
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -11706,9 +11702,6 @@ func (m *ApplyPluginsReq) Unmarshal(dAtA []byte) error {
 			postIndex := iNdEx + msglen
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
-			}
-			if m.Applied == nil {
-				m.Applied = &metapb.AppliedPlugins{}
 			}
 			if err := m.Applied.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
