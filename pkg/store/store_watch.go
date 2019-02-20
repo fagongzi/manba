@@ -170,6 +170,33 @@ func (e *EtcdStore) doWatchWithProxy(evtType EvtType, kv *mvccpb.KeyValue) *Evt 
 	}
 }
 
+func (e *EtcdStore) doWatchWithPlugin(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
+	value := &metapb.Plugin{}
+	if len(kv.Value) > 0 {
+		protoc.MustUnmarshal(value, []byte(kv.Value))
+	}
+
+	return &Evt{
+		Src:   EventSrcPlugin,
+		Type:  evtType,
+		Key:   strings.Replace(string(kv.Key), fmt.Sprintf("%s/", e.pluginsDir), "", 1),
+		Value: value,
+	}
+}
+
+func (e *EtcdStore) doWatchWithApplyPlugin(evtType EvtType, kv *mvccpb.KeyValue) *Evt {
+	value := &metapb.AppliedPlugins{}
+	if len(kv.Value) > 0 {
+		protoc.MustUnmarshal(value, []byte(kv.Value))
+	}
+
+	return &Evt{
+		Src:   EventSrcApplyPlugin,
+		Type:  evtType,
+		Value: value,
+	}
+}
+
 func (e *EtcdStore) init() {
 	e.watchMethodMapping[EventSrcBind] = e.doWatchWithBind
 	e.watchMethodMapping[EventSrcServer] = e.doWatchWithServer
@@ -177,4 +204,6 @@ func (e *EtcdStore) init() {
 	e.watchMethodMapping[EventSrcAPI] = e.doWatchWithAPI
 	e.watchMethodMapping[EventSrcRouting] = e.doWatchWithRouting
 	e.watchMethodMapping[EventSrcProxy] = e.doWatchWithProxy
+	e.watchMethodMapping[EventSrcPlugin] = e.doWatchWithPlugin
+	e.watchMethodMapping[EventSrcApplyPlugin] = e.doWatchWithApplyPlugin
 }
