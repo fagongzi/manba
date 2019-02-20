@@ -2140,6 +2140,196 @@ func (m *CountMetric) GetRouting() int64 {
 	return 0
 }
 
+func (m *CountMetric) GetPlugin() int64 {
+	if m != nil {
+		return m.Plugin
+	}
+	return 0
+}
+
+func (m *CountMetric) GetAppliedPlugin() int64 {
+	if m != nil {
+		return m.AppliedPlugin
+	}
+	return 0
+}
+
+// Plugin plugin
+type Plugin struct {
+	ID                   uint64     `protobuf:"varint,1,opt,name=id" json:"id"`
+	Name                 string     `protobuf:"bytes,2,opt,name=name" json:"name"`
+	Author               string     `protobuf:"bytes,3,opt,name=author" json:"author"`
+	Email                string     `protobuf:"bytes,4,opt,name=email" json:"email"`
+	Status               Status     `protobuf:"varint,5,opt,name=status,enum=metapb.Status" json:"status"`
+	UpdateAt             int64      `protobuf:"varint,6,opt,name=updateAt" json:"updateAt"`
+	Version              int64      `protobuf:"varint,7,opt,name=version" json:"version"`
+	Type                 PluginType `protobuf:"varint,8,opt,name=type,enum=metapb.PluginType" json:"type"`
+	Content              []byte     `protobuf:"bytes,9,opt,name=content" json:"content,omitempty"`
+	Cfg                  []byte     `protobuf:"bytes,10,opt,name=cfg" json:"cfg,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_unrecognized     []byte     `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
+}
+
+func (m *Plugin) Reset()         { *m = Plugin{} }
+func (m *Plugin) String() string { return proto.CompactTextString(m) }
+func (*Plugin) ProtoMessage()    {}
+func (*Plugin) Descriptor() ([]byte, []int) {
+	return fileDescriptor_metapb_90336e286e60c77d, []int{24}
+}
+func (m *Plugin) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Plugin) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Plugin.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *Plugin) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Plugin.Merge(dst, src)
+}
+func (m *Plugin) XXX_Size() int {
+	return m.Size()
+}
+func (m *Plugin) XXX_DiscardUnknown() {
+	xxx_messageInfo_Plugin.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Plugin proto.InternalMessageInfo
+
+func (m *Plugin) GetID() uint64 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
+func (m *Plugin) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Plugin) GetAuthor() string {
+	if m != nil {
+		return m.Author
+	}
+	return ""
+}
+
+func (m *Plugin) GetEmail() string {
+	if m != nil {
+		return m.Email
+	}
+	return ""
+}
+
+func (m *Plugin) GetStatus() Status {
+	if m != nil {
+		return m.Status
+	}
+	return Down
+}
+
+func (m *Plugin) GetUpdateAt() int64 {
+	if m != nil {
+		return m.UpdateAt
+	}
+	return 0
+}
+
+func (m *Plugin) GetVersion() int64 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *Plugin) GetType() PluginType {
+	if m != nil {
+		return m.Type
+	}
+	return JavaScript
+}
+
+func (m *Plugin) GetContent() []byte {
+	if m != nil {
+		return m.Content
+	}
+	return nil
+}
+
+func (m *Plugin) GetCfg() []byte {
+	if m != nil {
+		return m.Cfg
+	}
+	return nil
+}
+
+// AppliedPlugins applied plugins
+type AppliedPlugins struct {
+	ID                   uint64   `protobuf:"varint,1,opt,name=id" json:"id"`
+	AppliedIDs           []uint64 `protobuf:"varint,2,rep,name=appliedIDs" json:"appliedIDs,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *AppliedPlugins) Reset()         { *m = AppliedPlugins{} }
+func (m *AppliedPlugins) String() string { return proto.CompactTextString(m) }
+func (*AppliedPlugins) ProtoMessage()    {}
+func (*AppliedPlugins) Descriptor() ([]byte, []int) {
+	return fileDescriptor_metapb_90336e286e60c77d, []int{25}
+}
+func (m *AppliedPlugins) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *AppliedPlugins) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_AppliedPlugins.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *AppliedPlugins) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AppliedPlugins.Merge(dst, src)
+}
+func (m *AppliedPlugins) XXX_Size() int {
+	return m.Size()
+}
+func (m *AppliedPlugins) XXX_DiscardUnknown() {
+	xxx_messageInfo_AppliedPlugins.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AppliedPlugins proto.InternalMessageInfo
+
+func (m *AppliedPlugins) GetID() uint64 {
+	if m != nil {
+		return m.ID
+	}
+	return 0
+}
+
+func (m *AppliedPlugins) GetAppliedIDs() []uint64 {
+	if m != nil {
+		return m.AppliedIDs
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*Proxy)(nil), "metapb.Proxy")
 	proto.RegisterType((*Cluster)(nil), "metapb.Cluster")
@@ -2165,6 +2355,8 @@ func init() {
 	proto.RegisterType((*WebSocketOptions)(nil), "metapb.WebSocketOptions")
 	proto.RegisterType((*System)(nil), "metapb.System")
 	proto.RegisterType((*CountMetric)(nil), "metapb.CountMetric")
+	proto.RegisterType((*Plugin)(nil), "metapb.Plugin")
+	proto.RegisterType((*AppliedPlugins)(nil), "metapb.AppliedPlugins")
 	proto.RegisterEnum("metapb.Status", Status_name, Status_value)
 	proto.RegisterEnum("metapb.CircuitStatus", CircuitStatus_name, CircuitStatus_value)
 	proto.RegisterEnum("metapb.LoadBalance", LoadBalance_name, LoadBalance_value)
@@ -2174,6 +2366,7 @@ func init() {
 	proto.RegisterEnum("metapb.CMP", CMP_name, CMP_value)
 	proto.RegisterEnum("metapb.RoutingStrategy", RoutingStrategy_name, RoutingStrategy_value)
 	proto.RegisterEnum("metapb.MatchRule", MatchRule_name, MatchRule_value)
+	proto.RegisterEnum("metapb.PluginType", PluginType_name, PluginType_value)
 }
 func (m *Proxy) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
@@ -3245,6 +3438,12 @@ func (m *CountMetric) MarshalTo(dAtA []byte) (int, error) {
 	dAtA[i] = 0x20
 	i++
 	i = encodeVarintMetapb(dAtA, i, uint64(m.Routing))
+	dAtA[i] = 0x28
+	i++
+	i = encodeVarintMetapb(dAtA, i, uint64(m.Plugin))
+	dAtA[i] = 0x30
+	i++
+	i = encodeVarintMetapb(dAtA, i, uint64(m.AppliedPlugin))
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
@@ -3773,6 +3972,57 @@ func (m *CountMetric) Size() (n int) {
 	n += 1 + sovMetapb(uint64(m.Server))
 	n += 1 + sovMetapb(uint64(m.API))
 	n += 1 + sovMetapb(uint64(m.Routing))
+	n += 1 + sovMetapb(uint64(m.Plugin))
+	n += 1 + sovMetapb(uint64(m.AppliedPlugin))
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Plugin) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovMetapb(uint64(m.ID))
+	l = len(m.Name)
+	n += 1 + l + sovMetapb(uint64(l))
+	l = len(m.Author)
+	n += 1 + l + sovMetapb(uint64(l))
+	l = len(m.Email)
+	n += 1 + l + sovMetapb(uint64(l))
+	n += 1 + sovMetapb(uint64(m.Status))
+	n += 1 + sovMetapb(uint64(m.UpdateAt))
+	n += 1 + sovMetapb(uint64(m.Version))
+	n += 1 + sovMetapb(uint64(m.Type))
+	if m.Content != nil {
+		l = len(m.Content)
+		n += 1 + l + sovMetapb(uint64(l))
+	}
+	if m.Cfg != nil {
+		l = len(m.Cfg)
+		n += 1 + l + sovMetapb(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *AppliedPlugins) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovMetapb(uint64(m.ID))
+	if len(m.AppliedIDs) > 0 {
+		for _, e := range m.AppliedIDs {
+			n += 1 + sovMetapb(uint64(e))
+		}
+	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -7490,6 +7740,482 @@ func (m *CountMetric) Unmarshal(dAtA []byte) error {
 				if b < 0x80 {
 					break
 				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Plugin", wireType)
+			}
+			m.Plugin = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetapb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Plugin |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AppliedPlugin", wireType)
+			}
+			m.AppliedPlugin = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetapb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AppliedPlugin |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMetapb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthMetapb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Plugin) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMetapb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Plugin: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Plugin: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetapb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetapb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMetapb
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Author", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetapb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMetapb
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Author = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Email", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetapb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMetapb
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Email = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			m.Status = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetapb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Status |= (Status(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UpdateAt", wireType)
+			}
+			m.UpdateAt = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetapb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.UpdateAt |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Version", wireType)
+			}
+			m.Version = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetapb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Version |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetapb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Type |= (PluginType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Content", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetapb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthMetapb
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Content = append(m.Content[:0], dAtA[iNdEx:postIndex]...)
+			if m.Content == nil {
+				m.Content = []byte{}
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Cfg", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetapb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthMetapb
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Cfg = append(m.Cfg[:0], dAtA[iNdEx:postIndex]...)
+			if m.Cfg == nil {
+				m.Cfg = []byte{}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMetapb(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthMetapb
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AppliedPlugins) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMetapb
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AppliedPlugins: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AppliedPlugins: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			m.ID = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetapb
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ID |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType == 0 {
+				var v uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowMetapb
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= (uint64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.AppliedIDs = append(m.AppliedIDs, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowMetapb
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= (int(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthMetapb
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				var count int
+				for _, integer := range dAtA {
+					if integer < 128 {
+						count++
+					}
+				}
+				elementCount = count
+				if elementCount != 0 && len(m.AppliedIDs) == 0 {
+					m.AppliedIDs = make([]uint64, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowMetapb
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= (uint64(b) & 0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.AppliedIDs = append(m.AppliedIDs, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field AppliedIDs", wireType)
 			}
 		default:
 			iNdEx = preIndex

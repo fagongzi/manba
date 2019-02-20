@@ -14,6 +14,7 @@ import (
 	"github.com/fagongzi/gateway/pkg/expr"
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/plugin"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
@@ -65,6 +66,7 @@ type Proxy struct {
 	filters    []filter.Filter
 	client     *util.FastHTTPClient
 	dispatcher *dispatcher
+	jsEngine   *plugin.Engine
 
 	rpcListener net.Listener
 
@@ -98,6 +100,7 @@ func NewProxy(cfg *Cfg) *Proxy {
 		dispatches:    make([]chan *dispathNode, cfg.Option.LimitCountDispatchWorker, cfg.Option.LimitCountDispatchWorker),
 		dispatchIndex: 0,
 		copyIndex:     0,
+		jsEngine:      plugin.NewEngine(),
 	}
 
 	p.init()
@@ -228,7 +231,7 @@ func (p *Proxy) initDispatcher() error {
 		return err
 	}
 
-	p.dispatcher = newDispatcher(p.cfg, s, p.runner)
+	p.dispatcher = newDispatcher(p.cfg, s, p.runner, p.jsEngine)
 	return nil
 }
 
@@ -248,9 +251,9 @@ func (p *Proxy) initFilters() {
 				err)
 		}
 
-		log.Infof("filter added, filter=<%+v>", filter)
 		p.filters = append(p.filters, f)
 		p.filtersMap[f.Name()] = f
+		log.Infof("filter added, filter=<%s>", f.Name())
 	}
 }
 
