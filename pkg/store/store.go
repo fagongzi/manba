@@ -50,6 +50,10 @@ const (
 	EventSrcRouting = EvtSrc(4)
 	// EventSrcProxy routing event
 	EventSrcProxy = EvtSrc(5)
+	// EventSrcPlugin plugin event
+	EventSrcPlugin = EvtSrc(6)
+	// EventSrcApplyPlugin apply plugin event
+	EventSrcApplyPlugin = EvtSrc(7)
 )
 
 // Evt event
@@ -119,6 +123,13 @@ type Store interface {
 	RemoveRouting(id uint64) error
 	GetRoutings(limit int64, fn func(interface{}) error) error
 	GetRouting(id uint64) (*metapb.Routing, error)
+
+	PutPlugin(plugin *metapb.Plugin) (uint64, error)
+	RemovePlugin(id uint64) error
+	GetPlugins(limit int64, fn func(interface{}) error) error
+	GetPlugin(id uint64) (*metapb.Plugin, error)
+	ApplyPlugins(applied *metapb.AppliedPlugins) error
+	GetAppliedPlugins() (*metapb.AppliedPlugins, error)
 
 	RegistryProxy(proxy *metapb.Proxy, ttl int64) error
 	GetProxies(limit int64, fn func(*metapb.Proxy) error) error

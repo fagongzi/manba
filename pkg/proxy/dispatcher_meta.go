@@ -17,6 +17,7 @@ var (
 	errBindExists      = errors.New("Bind already exist")
 	errAPIExists       = errors.New("API already exist")
 	errProxyExists     = errors.New("Proxy already exist")
+	errPluginExists    = errors.New("Plugin already exist")
 	errRoutingExists   = errors.New("Routing already exist")
 	errServerNotFound  = errors.New("Server not found")
 	errClusterNotFound = errors.New("Cluster not found")
@@ -24,6 +25,7 @@ var (
 	errProxyNotFound   = errors.New("Proxy not found")
 	errAPINotFound     = errors.New("API not found")
 	errRoutingNotFound = errors.New("Routing not found")
+	errPluginNotFound  = errors.New("Plugin not found")
 
 	limit = int64(32)
 )
@@ -155,6 +157,10 @@ func (r *dispatcher) readyToReceiveWatchEvent() {
 			r.doRoutingEvent(evt)
 		} else if evt.Src == store.EventSrcProxy {
 			r.doProxyEvent(evt)
+		} else if evt.Src == store.EventSrcPlugin {
+			r.doPluginEvent(evt)
+		} else if evt.Src == store.EventSrcApplyPlugin {
+			r.doApplyPluginEvent(evt)
 		} else {
 			log.Warnf("unknown event <%+v>", evt)
 		}
@@ -226,6 +232,28 @@ func (r *dispatcher) doBindEvent(evt *store.Evt) {
 		r.addBind(bind)
 	} else if evt.Type == store.EventTypeDelete {
 		r.removeBind(bind)
+	}
+}
+
+func (r *dispatcher) doPluginEvent(evt *store.Evt) {
+	value, _ := evt.Value.(*metapb.Plugin)
+
+	if evt.Type == store.EventTypeNew {
+		r.addPlugin(value)
+	} else if evt.Type == store.EventTypeDelete {
+		r.removePlugin(value.ID)
+	} else if evt.Type == store.EventTypeUpdate {
+		r.updatePlugin(value)
+	}
+}
+
+func (r *dispatcher) doApplyPluginEvent(evt *store.Evt) {
+	value, _ := evt.Value.(*metapb.AppliedPlugins)
+
+	if evt.Type == store.EventTypeNew {
+		r.updateAppliedPlugin(value)
+	} else if evt.Type == store.EventTypeUpdate {
+		r.updateAppliedPlugin(value)
 	}
 }
 
@@ -580,5 +608,94 @@ func (r *dispatcher) removeBind(bind *metapb.Bind) error {
 		log.Infof("bind <%d,%d> removed", bind.ClusterID, bind.ServerID)
 	}
 
+	return nil
+}
+
+func (r *dispatcher) addPlugin(value *metapb.Plugin) error {
+	r.Lock()
+	defer r.Unlock()
+
+	if _, ok := r.plugins[value.ID]; ok {
+		return errPluginExists
+	}
+
+	r.plugins[value.ID] = value
+
+	log.Infof("plugin <%d/%s:%d> added",
+		value.ID,
+		value.Name,
+		value.Version)
+
+	return nil
+}
+
+func (r *dispatcher) updatePlugin(value *metapb.Plugin) error {
+	r.Lock()
+	defer r.Unlock()
+
+	_, ok := r.plugins[value.ID]
+	if !ok {
+		return errPluginNotFound
+	}
+
+	if r.appliedPlugins != nil {
+		for _, id := range r.appliedPlugins.AppliedIDs {
+			if id == value.ID {
+				err := r.jsEngine.UpdatePlugin(value)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	r.plugins[value.ID] = value
+	log.Infof("plugin <%d/%s:%d> updated",
+		value.ID,
+		value.Name,
+		value.Version)
+
+	return nil
+}
+
+func (r *dispatcher) removePlugin(id uint64) error {
+	r.Lock()
+	defer r.Unlock()
+
+	value, ok := r.plugins[id]
+	if !ok {
+		return errPluginNotFound
+	}
+
+	delete(r.plugins, id)
+	log.Infof("plugin <%d/%s:%d> removed",
+		value.ID,
+		value.Name,
+		value.Version)
+	return nil
+}
+
+func (r *dispatcher) updateAppliedPlugin(value *metapb.AppliedPlugins) error {
+	r.Lock()
+	defer r.Unlock()
+
+	var plugins []*metapb.Plugin
+	for _, id := range value.AppliedIDs {
+		plugin, ok := r.plugins[id]
+		if !ok {
+			return errPluginNotFound
+		}
+
+		plugins = append(plugins, plugin)
+	}
+
+	err := r.jsEngine.ApplyPlugins(plugins...)
+	if err != nil {
+		return err
+	}
+
+	r.appliedPlugins = value
+	log.Infof("plugins applied with %+v",
+		value.AppliedIDs)
 	return nil
 }
