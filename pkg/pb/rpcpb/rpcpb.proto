@@ -259,7 +259,7 @@ message GetPluginListReq {
 
 message ApplyPluginsReq {
     optional RpcHeader             header  = 1 [(gogoproto.nullable) = false];
-    optional metapb.AppliedPlugins applied = 2;
+    optional metapb.AppliedPlugins applied = 2 [(gogoproto.nullable) = false];
 }
 
 message ApplyPluginsRsp {
