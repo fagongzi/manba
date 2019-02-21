@@ -20,6 +20,11 @@ const (
 	PluginPost = "post"
 	// PluginPostErr filter post error method
 	PluginPostErr = "postErr"
+
+	// PluginReturnCodeFieldName code field name in return json object
+	PluginReturnCodeFieldName = "code"
+	// PluginReturnErrorFieldName error field name in return json object
+	PluginReturnErrorFieldName = "error"
 )
 
 // Runtime plugin runtime
@@ -150,7 +155,7 @@ func (rt *Runtime) PostErr(c *Ctx) {
 }
 
 func parsePluginReturn(value *otto.Object) (int, error) {
-	code, err := value.Get("code")
+	code, err := value.Get(PluginReturnCodeFieldName)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
@@ -162,7 +167,7 @@ func parsePluginReturn(value *otto.Object) (int, error) {
 		return http.StatusInternalServerError, err
 	}
 
-	e, err := value.Get("error")
+	e, err := value.Get(PluginReturnErrorFieldName)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
