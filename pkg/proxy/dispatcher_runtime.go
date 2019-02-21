@@ -17,7 +17,6 @@ import (
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/goetty"
 	"github.com/fagongzi/log"
-	"github.com/fagongzi/util/collection"
 	"github.com/fagongzi/util/hack"
 	pbutil "github.com/fagongzi/util/protoc"
 	"github.com/valyala/fasthttp"
@@ -49,37 +48,55 @@ func (c *clusterRuntime) updateMeta(meta *metapb.Cluster) {
 
 func (c *clusterRuntime) foreach(do func(uint64)) {
 	for iter := c.svrs.Back(); iter != nil; iter = iter.Prev() {
-		addr, _ := iter.Value.(uint64)
-		do(addr)
+		svr, _ := iter.Value.(*metapb.Server)
+		do(svr.ID)
 	}
 }
 
 func (c *clusterRuntime) remove(id uint64) {
-	collection.Remove(c.svrs, id)
+	remove(c.svrs, id)
 	log.Infof("bind <%d,%d> inactived", c.meta.ID, id)
 }
 
-func (c *clusterRuntime) add(id uint64) {
-	if collection.IndexOf(c.svrs, id) >= 0 {
+func remove(l *list.List, id uint64) {
+	var e *list.Element
+
+	for iter := l.Front(); iter != nil; iter = iter.Next() {
+		if iter.Value.(*metapb.Server).ID == id {
+			e = iter
+			break
+		}
+	}
+
+	if nil != e {
+		l.Remove(e)
+	}
+}
+
+func (c *clusterRuntime) add(svr *metapb.Server) {
+	if indexOf(c.svrs, svr.ID) >= 0 {
 		return
 	}
 
-	c.svrs.PushBack(id)
-	log.Infof("bind <%d,%d> actived", c.meta.ID, id)
+	c.svrs.PushBack(svr)
+	log.Infof("bind <%d,%d> actived", c.meta.ID, svr.ID)
+}
+
+func indexOf(l *list.List, id uint64) int {
+	i := 0
+	for iter := l.Front(); iter != nil; iter = iter.Next() {
+		if iter.Value.(*metapb.Server).ID == id {
+			return i
+		}
+
+		i++
+	}
+
+	return -1
 }
 
 func (c *clusterRuntime) selectServer(req *fasthttp.Request) uint64 {
-	index := c.lb.Select(req, c.svrs)
-	if 0 > index {
-		return 0
-	}
-
-	e := collection.Get(c.svrs, index)
-	if nil == e {
-		return 0
-	}
-
-	return e.Value.(uint64)
+	return c.lb.Select(req, c.svrs)
 }
 
 type abstractSupportProtectedRuntime struct {
