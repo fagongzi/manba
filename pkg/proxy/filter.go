@@ -7,11 +7,12 @@ import (
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/util"
+	"github.com/fagongzi/log"
 	"github.com/valyala/fasthttp"
 	"golang.org/x/time/rate"
 )
 
-func (f *Proxy) doPreFilters(c filter.Context) (filterName string, statusCode int, err error) {
+func (f *Proxy) doPreFilters(requestTag string, c filter.Context) (filterName string, statusCode int, err error) {
 	for _, f := range f.filters {
 		filterName = f.Name()
 
@@ -19,17 +20,31 @@ func (f *Proxy) doPreFilters(c filter.Context) (filterName string, statusCode in
 		if nil != err {
 			return filterName, statusCode, err
 		}
+
+		if statusCode == filter.BreakFilterChainCode {
+			log.Debugf("%s: break pre filter chain by filter %s",
+				requestTag,
+				filterName)
+			return filterName, statusCode, err
+		}
 	}
 
 	return "", http.StatusOK, nil
 }
 
-func (f *Proxy) doPostFilters(c filter.Context) (filterName string, statusCode int, err error) {
+func (f *Proxy) doPostFilters(requestTag string, c filter.Context) (filterName string, statusCode int, err error) {
 	l := len(f.filters)
 	for i := l - 1; i >= 0; i-- {
 		f := f.filters[i]
 		statusCode, err = f.Post(c)
 		if nil != err {
+			return filterName, statusCode, err
+		}
+
+		if statusCode == filter.BreakFilterChainCode {
+			log.Debugf("%s: break post filter chain by filter %s",
+				requestTag,
+				filterName)
 			return filterName, statusCode, err
 		}
 	}
