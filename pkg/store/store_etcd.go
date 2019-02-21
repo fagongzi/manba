@@ -245,7 +245,7 @@ func (e *EtcdStore) Batch(batch *rpcpb.BatchReq) (*rpcpb.BatchRsp, error) {
 	ops = make([]clientv3.Op, 0, len(batch.PutPlugins))
 	for _, req := range batch.PutPlugins {
 		value := &req.Plugin
-		_, err := plugin.NewRuntime(string(value.Content), string(value.Cfg))
+		_, err := plugin.NewRuntime(value)
 		if err != nil {
 			return nil, err
 		}
