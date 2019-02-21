@@ -2,8 +2,8 @@ package lb
 
 import (
 	"container/list"
-	"github.com/domgoer/hiruok/pkg/collection"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/util/collection"
 	"sync/atomic"
 
 	"github.com/valyala/fasthttp"
