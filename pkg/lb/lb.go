@@ -15,12 +15,13 @@ var (
 	// LBS map loadBalance name and process function
 	LBS = map[metapb.LoadBalance]func() LoadBalance{
 		metapb.RoundRobin: NewRoundRobin,
+		metapb.WightRobin: NewWeightRobin,
 	}
 )
 
-// LoadBalance loadBalance interface
+// LoadBalance loadBalance interface returns selected server's id
 type LoadBalance interface {
-	Select(req *fasthttp.Request, servers *list.List) int
+	Select(req *fasthttp.Request, servers *list.List) uint64
 }
 
 // GetSupportLBS return supported loadBalances

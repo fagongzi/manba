@@ -80,6 +80,12 @@ func (sb *ServerBuilder) MaxQPS(max int64) *ServerBuilder {
 	return sb
 }
 
+// Weight set robin weight
+func (sb *ServerBuilder) Weight(weight int64) *ServerBuilder {
+	sb.value.Weight = weight
+	return sb
+}
+
 // NoCircuitBreaker no circuit breaker
 func (sb *ServerBuilder) NoCircuitBreaker() *ServerBuilder {
 	sb.value.CircuitBreaker = nil

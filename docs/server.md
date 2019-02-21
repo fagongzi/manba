@@ -12,6 +12,9 @@ Server地址，格式为："IP:PORT"。
 ## Protocol
 Server的接口协议，目前支持HTTP。
 
+## Weight
+Weight 服务器的权重（当该服务器所属的集群负载方式是权重轮询时则需要配置）
+
 ## MaxQPS
 Server能够支持的最大QPS，用于流控。Gateway采用令牌桶算法，根据QPS限制流量，保护后端Server被压垮。
 
