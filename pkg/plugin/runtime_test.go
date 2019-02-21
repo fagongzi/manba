@@ -121,11 +121,13 @@ func TestPre(t *testing.T) {
 		var HTTP = require("http");
 		var LOG = require("log");
 
-		function NewPlugin() {
+		function NewPlugin(cfg) {
 			return {
+				"cfg": JSON.Parse(cfg),
 				"pre": function(c) {
 					c.SetAttr("x-query-name", c.OriginRequest().Query("name"))
 					c.SetAttr("x-pre", "call-pre")
+					c.SetAttr("x-cfg-ip", this.cfg.ip)
 					c.OriginRequest().SetBody(JSON.Stringify({
 						"name":"zhangsan"
 					}))
@@ -147,6 +149,7 @@ func TestPre(t *testing.T) {
 		Version: 1,
 		Type:    metapb.JavaScript,
 		Content: []byte(script),
+		Cfg:     []byte(`{"ip":"127.0.0.1"}`),
 	}
 
 	rt, err := NewRuntime(meta)
@@ -169,6 +172,10 @@ func TestPre(t *testing.T) {
 
 	if value, ok := c.GetAttr("x-query-name").(string); !ok || value != "abc" {
 		t.Errorf(" expect attr x-query-name but %+v", value)
+	}
+
+	if value, ok := c.GetAttr("x-cfg-ip").(string); !ok || value != "127.0.0.1" {
+		t.Errorf(" expect attr x-cfg-ip but %+v", value)
 	}
 
 	if string(req.Body()) != `{"name":"zhangsan"}` {
