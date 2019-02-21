@@ -40,13 +40,13 @@ type Runtime struct {
 // NewRuntime return a runtime
 func NewRuntime(meta *metapb.Plugin) (*Runtime, error) {
 	vm := otto.New()
+	// add require for using go module
+	vm.Set("require", Require)
+
 	_, err := vm.Run(string(meta.Content))
 	if err != nil {
 		return nil, err
 	}
-
-	// add require for using go module
-	vm.Set("require", Require)
 
 	// exec constructor
 	plugin, err := vm.Get(PluginConstructor)
@@ -70,15 +70,24 @@ func NewRuntime(meta *metapb.Plugin) (*Runtime, error) {
 	if err != nil {
 		return nil, err
 	}
+	if preFunc.IsDefined() && !preFunc.IsFunction() {
+		return nil, fmt.Errorf("pre must function")
+	}
 
 	postFunc, err := this.Object().Get(PluginPost)
 	if err != nil {
 		return nil, err
 	}
+	if postFunc.IsDefined() && !postFunc.IsFunction() {
+		return nil, fmt.Errorf("post must function")
+	}
 
 	postErrFunc, err := this.Object().Get(PluginPostErr)
 	if err != nil {
 		return nil, err
+	}
+	if postErrFunc.IsDefined() && !postErrFunc.IsFunction() {
+		return nil, fmt.Errorf("postErr must function")
 	}
 
 	return &Runtime{
