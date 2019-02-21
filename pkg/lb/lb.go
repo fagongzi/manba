@@ -28,7 +28,11 @@ func GetSupportLBS() []metapb.LoadBalance {
 	return supportLbs
 }
 
-// NewLoadBalance create a LoadBalance
+// NewLoadBalance create a LoadBalance,if LoadBalance function is not supported
+// it will return NewRoundRobin
 func NewLoadBalance(name metapb.LoadBalance) LoadBalance {
-	return LBS[name]()
+	if l, ok := LBS[name]; ok {
+		return l()
+	}
+	return NewRoundRobin()
 }
