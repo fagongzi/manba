@@ -11,6 +11,11 @@ import (
 const (
 	// UsingCachingValue using cached value to response
 	UsingCachingValue = "__using_cache_value__"
+	// UsingResponse using response to response
+	UsingResponse = "__using_response__"
+
+	// BreakFilterChainCode break filter chain code
+	BreakFilterChainCode = -1
 )
 
 // NewCachedValue returns a cached value

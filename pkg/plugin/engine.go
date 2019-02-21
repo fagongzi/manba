@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
@@ -22,10 +23,9 @@ func NewEngine() *Engine {
 
 // UpdatePlugin update plugin
 func (eng *Engine) UpdatePlugin(plugin *metapb.Plugin) error {
-
 	target := -1
 	for idx, rt := range eng.applied {
-		if rt.id == plugin.ID {
+		if rt.meta.ID == plugin.ID {
 			target = idx
 			break
 		}
@@ -35,7 +35,7 @@ func (eng *Engine) UpdatePlugin(plugin *metapb.Plugin) error {
 		return fmt.Errorf("plugin not found")
 	}
 
-	rt, err := NewRuntime(string(plugin.Content), string(plugin.Cfg))
+	rt, err := NewRuntime(plugin)
 	if err != nil {
 		return err
 	}
@@ -48,12 +48,11 @@ func (eng *Engine) UpdatePlugin(plugin *metapb.Plugin) error {
 func (eng *Engine) ApplyPlugins(plugins ...*metapb.Plugin) error {
 	var applied []*Runtime
 	for idx, plugin := range plugins {
-		rt, err := NewRuntime(string(plugin.Content), string(plugin.Cfg))
+		rt, err := NewRuntime(plugin)
 		if err != nil {
 			return err
 		}
 
-		rt.id = plugin.ID
 		applied = append(applied, rt)
 		log.Infof("plugin: %d/%s:%d applied with index %d",
 			plugin.ID,
@@ -78,15 +77,72 @@ func (eng *Engine) Init(cfg string) error {
 
 // Pre filter pre method
 func (eng *Engine) Pre(c filter.Context) (int, error) {
-	return eng.BaseFilter.Pre(c)
+	if len(eng.applied) == 0 {
+		return eng.BaseFilter.Pre(c)
+	}
+
+	rc := acquireContext()
+	rc.delegate = c
+	for _, rt := range eng.applied {
+		statusCode, err := rt.Pre(rc)
+		if nil != err {
+			releaseContext(rc)
+			return statusCode, err
+		}
+
+		if statusCode == filter.BreakFilterChainCode {
+			releaseContext(rc)
+			return statusCode, err
+		}
+	}
+
+	releaseContext(rc)
+	return http.StatusOK, nil
 }
 
 // Post filter post method
 func (eng *Engine) Post(c filter.Context) (int, error) {
-	return eng.BaseFilter.Post(c)
+	if len(eng.applied) == 0 {
+		return eng.BaseFilter.Post(c)
+	}
+
+	rc := acquireContext()
+	rc.delegate = c
+
+	l := len(eng.applied)
+	for i := l - 1; i >= 0; i-- {
+		rt := eng.applied[i]
+
+		statusCode, err := rt.Post(rc)
+		if nil != err {
+			releaseContext(rc)
+			return statusCode, err
+		}
+
+		if statusCode == filter.BreakFilterChainCode {
+			releaseContext(rc)
+			return statusCode, err
+		}
+	}
+
+	releaseContext(rc)
+	return http.StatusOK, nil
 }
 
 // PostErr filter post error method
 func (eng *Engine) PostErr(c filter.Context) {
-	eng.BaseFilter.PostErr(c)
+	if len(eng.applied) == 0 {
+		eng.BaseFilter.PostErr(c)
+		return
+	}
+
+	rc := acquireContext()
+	rc.delegate = c
+
+	l := len(eng.applied)
+	for i := l - 1; i >= 0; i-- {
+		eng.applied[i].PostErr(rc)
+	}
+
+	releaseContext(rc)
 }
