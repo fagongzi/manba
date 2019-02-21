@@ -585,7 +585,7 @@ func (r *dispatcher) addBind(bind *metapb.Bind) error {
 	log.Infof("bind <%d,%d> created", bind.ClusterID, bind.ServerID)
 
 	if server.status == metapb.Up {
-		cluster.add(server.meta.ID)
+		cluster.add(server.meta)
 	}
 	return nil
 }
