@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -505,7 +506,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 	}
 
 	// pre filters
-	filterName, code, err := p.doPreFilters(c)
+	filterName, code, err := p.doPreFilters(dn.requestTag, c)
 	if nil != err {
 		dn.err = err
 		dn.code = code
@@ -517,6 +518,32 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 			dn.idx,
 			filterName,
 			err)
+		return
+	}
+
+	// using spec response
+	if value := c.GetAttr(filter.UsingResponse); nil != value {
+		res, ok := value.(*fasthttp.Response)
+		if !ok {
+			dn.err = fmt.Errorf("not support using response attr %T", value)
+			dn.code = fasthttp.StatusInternalServerError
+			dn.maybeDone()
+			releaseContext(c)
+
+			log.Errorf("%s: dipatch node %d using response attr with error %s",
+				dn.requestTag,
+				dn.idx,
+				dn.err)
+			return
+		}
+
+		dn.res = res
+		dn.maybeDone()
+		releaseContext(c)
+
+		log.Infof("%s: dipatch node %d using response attr",
+			dn.requestTag,
+			dn.idx)
 		return
 	}
 
@@ -633,7 +660,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 	}
 
 	// post filters
-	filterName, code, err = p.doPostFilters(c)
+	filterName, code, err = p.doPostFilters(dn.requestTag, c)
 	if nil != err {
 		log.Errorf("%s: dipatch node %d call filter %s post failed with error %s",
 			dn.requestTag,

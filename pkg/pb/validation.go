@@ -88,7 +88,7 @@ func ValidatePlugin(value *metapb.Plugin) error {
 		return fmt.Errorf("missing plugin content")
 	}
 
-	_, err := plugin.NewRuntime(string(value.Content), string(value.Content))
+	_, err := plugin.NewRuntime(value)
 	if err != nil {
 		return err
 	}
