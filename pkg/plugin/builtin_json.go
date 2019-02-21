@@ -17,6 +17,6 @@ func (j *JSONModule) Stringify(value interface{}) string {
 // Parse parse a string to json
 func (j *JSONModule) Parse(value string) map[string]interface{} {
 	obj := make(map[string]interface{})
-	json.Unmarshal([]byte(value), obj)
+	json.Unmarshal([]byte(value), &obj)
 	return obj
 }
