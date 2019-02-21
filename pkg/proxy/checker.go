@@ -88,7 +88,7 @@ func (r *dispatcher) check(id uint64) {
 
 			if ok {
 				for _, c := range clusters {
-					c.add(svr.meta.ID)
+					c.add(svr.meta)
 				}
 			}
 		} else {
