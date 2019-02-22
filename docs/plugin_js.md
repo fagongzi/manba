@@ -43,6 +43,43 @@ function NewPlugin(cfg) {
 }
 ```
 
+## ctx 插件上下文对象
+|method|args|return|remark|
+| - | - | - | - |
+|OriginRequest||HTTPRequest|接收到的原始请求|
+|ForwardRequest||HTTPRequest|转发到后端的请求|
+|Response||HTTPResponse|后端响应|
+|SetAttr|key String, value Any Type||在上下文中存储属性，用来在插件之间传递数据|
+|HasAttr|key String|Boolean|检查一个属性是否在上下文中存在
+|GetAttr|key String|Any Type|获取上下文中的属性|
+
+### HTTPRequest对象
+|method|args|return|remark|
+| - | - | - | - |
+|Header|name String|String|获取请求header|
+|RemoveHeader|name String||移除请求Header|
+|SetHeader|name String, value String||设置请求Header|
+|Cookie|name String|String|获取请求Cookie|
+|RemoveCookie|name String||移除请求Cookie|
+|SetCookie|name String, value String||设置请求Cookie|
+|Query|name String|String|获取请求URL参数|
+|Body||String|获取请求Body|
+|SetBody|String||设置请求Body|
+
+### HTTPResponse对象
+|method|args|return|remark|
+| - | - | - | - |
+|Header|name String|String|获取响应header|
+|RemoveHeader|name String||移除响应Header|
+|SetHeader|name String, value String||设置响应Header|
+|Cookie|name String|String|获取响应Cookie|
+|RemoveCookie|name String||移除响应Cookie|
+|SetCookie|domain String, path String, name String, value String, expire int64, httpOnly Boolean, secure Boolean||设置响应Cookie|
+|Query|name String|String|获取响应URL参数|
+|Body||String|获取响应Body|
+|SetBody|String||设置响应Body|
+|SetStatusCode|Integer||设置响应状态码
+
 ## 内建模块
 由于js执行引擎并不兼容nodejs module，所以不能使用nodes module，所以gateway提供了一些内建的模块帮助编写插件。`由于这些内建库都是GO实现的，所以所有的方法名称首字母都是大写`，这里的习惯和js有点违背，但无关大雅
 
