@@ -11,7 +11,7 @@ type RedisModule struct {
 }
 
 // CreateRedis create redis
-func (m *RedisModule) CreateRedis(cfg map[string]interface{}) *Redis {
+func (m *RedisModule) CreateRedis(cfg map[string]interface{}) *RedisOp {
 	p := &redis.Pool{
 		MaxActive:   int(cfg["maxActive"].(int64)),
 		MaxIdle:     int(cfg["maxIdle"].(int64)),
@@ -27,25 +27,25 @@ func (m *RedisModule) CreateRedis(cfg map[string]interface{}) *Redis {
 	_, err := conn.Do("PING")
 	if err != nil {
 		conn.Close()
-		return &Redis{
+		return &RedisOp{
 			err: err,
 		}
 	}
 
 	conn.Close()
-	return &Redis{
+	return &RedisOp{
 		pool: p,
 	}
 }
 
-// Redis redis
-type Redis struct {
+// RedisOp redis
+type RedisOp struct {
 	err  error
 	pool *redis.Pool
 }
 
 // Do do redis cmd
-func (r *Redis) Do(cmd string, args ...interface{}) *CmdResp {
+func (r *RedisOp) Do(cmd string, args ...interface{}) *CmdResp {
 	if r.err != nil {
 		return &CmdResp{
 			err: r.err,
