@@ -80,7 +80,7 @@ func (p *parser) parse() ([]node, error) {
 		}}, nil
 	}
 
-	// /(number|string:const|enum:m1|m2|m3)[:argname]
+	// /(number|string|enum:m1|m2|m3)[:argname]
 	prev := tokenUnknown
 	prevIndex := -1
 
