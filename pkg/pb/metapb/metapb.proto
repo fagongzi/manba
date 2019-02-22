@@ -26,6 +26,7 @@ enum CircuitStatus {
 enum LoadBalance {
     RoundRobin = 0;
     IPHash     = 1;
+    WightRobin = 2;
 }
 
 // Protocol is the protocol of the backend api
@@ -108,6 +109,7 @@ message Server {
     optional int64          maxQPS         = 4 [(gogoproto.nullable) = false];
     optional HeathCheck     heathCheck     = 5;
     optional CircuitBreaker circuitBreaker = 6;
+    optional int64          weight         = 7 [(gogoproto.nullable) = false];
 }
 
 // Bind is a bind pair with cluster and server
