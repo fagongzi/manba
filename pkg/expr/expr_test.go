@@ -2,6 +2,8 @@ package expr
 
 import (
 	"testing"
+
+	"github.com/valyala/fasthttp"
 )
 
 func TestParse(t *testing.T) {
@@ -123,5 +125,22 @@ func TestParse(t *testing.T) {
 	}
 	if len(exprs) != 11 {
 		t.Errorf("expect 11 expers but %d", len(exprs))
+	}
+}
+
+func TestExec(t *testing.T) {
+	exprs, err := Parse([]byte("$(origin.query.names)"))
+	if err != nil {
+		t.Errorf("expect syntax error: %+v", err)
+	}
+
+	req := fasthttp.AcquireRequest()
+	req.SetRequestURI("http://127.0.0.1/path?names=abc&names=abc2")
+	value := Exec(&Ctx{
+		Origin: req,
+	}, exprs...)
+
+	if string(value) != "" {
+		t.Errorf("expect but %s", value)
 	}
 }
