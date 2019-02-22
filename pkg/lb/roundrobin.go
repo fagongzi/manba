@@ -2,6 +2,8 @@ package lb
 
 import (
 	"container/list"
+	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/util/collection"
 	"sync/atomic"
 
 	"github.com/valyala/fasthttp"
@@ -23,12 +25,19 @@ func NewRoundRobin() LoadBalance {
 }
 
 // Select select a server from servers using RoundRobin
-func (rr RoundRobin) Select(req *fasthttp.Request, servers *list.List) int {
+func (rr RoundRobin) Select(req *fasthttp.Request, servers *list.List) uint64 {
 	l := uint64(servers.Len())
 
 	if 0 >= l {
-		return -1
+		return 0
 	}
 
-	return int(atomic.AddUint64(rr.ops, 1) % l)
+	idx := int(atomic.AddUint64(rr.ops, 1) % l)
+
+	v := collection.Get(servers, idx).Value
+	if v == nil {
+		return 0
+	}
+
+	return v.(*metapb.Server).ID
 }
