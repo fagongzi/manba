@@ -150,6 +150,11 @@ func newFastHTTPResponseAdapter(rsp *fasthttp.Response) *FastHTTPResponseAdapter
 	}
 }
 
+// Delegate returns delegate fasthttp response
+func (rsp *FastHTTPResponseAdapter) Delegate() *fasthttp.Response {
+	return rsp.delegate
+}
+
 // Header returns header value
 func (rsp *FastHTTPResponseAdapter) Header(name string) string {
 	return hack.SliceToString(rsp.delegate.Header.Peek(name))
