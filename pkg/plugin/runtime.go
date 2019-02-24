@@ -42,6 +42,8 @@ func NewRuntime(meta *metapb.Plugin) (*Runtime, error) {
 	vm := otto.New()
 	// add require for using go module
 	vm.Set("require", Require)
+	vm.Set("BreakFilterChainCode", filter.BreakFilterChainCode)
+	vm.Set("UsingResponse", filter.UsingResponse)
 
 	_, err := vm.Run(string(meta.Content))
 	if err != nil {
