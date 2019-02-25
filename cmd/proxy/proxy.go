@@ -79,6 +79,7 @@ func init() {
 	defaultFilters.Set(proxy.FilterHeader)
 	defaultFilters.Set(proxy.FilterXForward)
 	defaultFilters.Set(proxy.FilterValidation)
+	defaultFilters.Set(proxy.FilterJSPlugin)
 }
 
 func main() {

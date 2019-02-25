@@ -39,6 +39,8 @@ func (r *dispatcher) load() {
 	r.loadBinds()
 	r.loadAPIs()
 	r.loadRoutings()
+	r.loadPlugins()
+	r.loadAppliedPlugins()
 }
 
 func (r *dispatcher) loadProxies() {
@@ -127,6 +129,37 @@ func (r *dispatcher) loadAPIs() {
 	})
 	if nil != err {
 		log.Errorf("load apis failed, errors:\n%+v",
+			err)
+		return
+	}
+}
+
+func (r *dispatcher) loadPlugins() {
+	log.Infof("load plugins")
+
+	err := r.store.GetPlugins(limit, func(value interface{}) error {
+		return r.addPlugin(value.(*metapb.Plugin))
+	})
+	if nil != err {
+		log.Errorf("load plugins failed, errors:\n%+v",
+			err)
+		return
+	}
+}
+
+func (r *dispatcher) loadAppliedPlugins() {
+	log.Infof("load applied plugins")
+
+	applied, err := r.store.GetAppliedPlugins()
+	if nil != err {
+		log.Errorf("load applied plugins failed, errors:\n%+v",
+			err)
+		return
+	}
+
+	err = r.updateAppliedPlugin(applied)
+	if nil != err {
+		log.Errorf("updated applied plugins failed, errors:\n%+v",
 			err)
 		return
 	}

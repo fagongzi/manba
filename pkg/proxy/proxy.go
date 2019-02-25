@@ -240,7 +240,7 @@ func (p *Proxy) initFilters() {
 	for _, filter := range p.cfg.Filers {
 		f, err := p.newFilter(filter)
 		if nil != err {
-			log.Fatalf("init filter failed, filter=<%+v> errors:\n%+v",
+			log.Fatalf("create filter failed, filter=<%+v> errors:\n%+v",
 				filter,
 				err)
 		}

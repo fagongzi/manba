@@ -63,6 +63,7 @@ func main() {
 		user["name"] = fmt.Sprintf("v1-name-%s", c.Param("id"))
 		user["source"] = *addr
 		user["query"] = c.QueryString()
+		user["header"] = c.QueryParam(c.Request().Header.Get("header"))
 		return c.JSON(http.StatusOK, user)
 	})
 	server.GET("/v1/account/:id", func(c echo.Context) error {
