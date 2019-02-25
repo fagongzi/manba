@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/valyala/fasthttp"
 )
 
 // HTTPResult result
@@ -94,6 +96,11 @@ func (res *HTTPResult) Body() string {
 
 // HTTPModule http module
 type HTTPModule struct {
+}
+
+// NewHTTPResponse returns http response
+func (h *HTTPModule) NewHTTPResponse() *FastHTTPResponseAdapter {
+	return newFastHTTPResponseAdapter(fasthttp.AcquireResponse())
 }
 
 // Get go get
