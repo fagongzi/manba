@@ -431,8 +431,11 @@ func (e *EtcdStore) PutAPI(value *metapb.API) (uint64, error) {
 	// load all api every times for validate
 	// TODO: maybe need optimization if there are too much apis
 	apiRoute := route.NewRoute()
-	e.getValues(e.apisDir, 64, func() pb { return &metapb.API{} }, func(value interface{}) error {
-		apiRoute.Add(value.(*metapb.API))
+	e.getValues(e.apisDir, 64, func() pb { return &metapb.API{} }, func(data interface{}) error {
+		v := data.(*metapb.API)
+		if v.ID != value.ID {
+			apiRoute.Add(v)
+		}
 		return nil
 	})
 
