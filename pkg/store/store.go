@@ -28,6 +28,7 @@ type EvtType int
 // EvtSrc event src
 type EvtSrc int
 
+// BasicAuth basic auth
 type BasicAuth struct {
 	userName string
 	password string
