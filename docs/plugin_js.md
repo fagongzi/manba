@@ -173,7 +173,8 @@ gateway在转发请求到后端server之前会调用插件的`pre`方法，方�
 ```javascript
 {
     "pre": function(ctx) {
-        var resp = ctx.NewHTTPResponse()
+        var HTTP = require("http")
+        var resp = HTTP.NewHTTPResponse()
         resp.SetStatusCode(200)
         resp.SetBody('{"name":"zhangsan"}')
         resp.SetHeader("Content-Type", "application/json")

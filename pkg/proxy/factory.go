@@ -37,7 +37,7 @@ const (
 	// FilterJWT jwt filter
 	FilterJWT = "JWT"
 	// FilterJSPlugin js plugin engine
-	FilterJSPlugin = "JS-Plugin-Engine"
+	FilterJSPlugin = "JS-ENGINE"
 )
 
 func (p *Proxy) newFilter(filterSpec *FilterSpec) (filter.Filter, error) {
