@@ -586,7 +586,7 @@ func (e *EtcdStore) GetAppliedPlugins() (*metapb.AppliedPlugins, error) {
 
 func (e *EtcdStore) doGetAppliedPlugins() (*metapb.AppliedPlugins, error) {
 	value := &metapb.AppliedPlugins{}
-	return value, e.getPBWithKey(e.appliedPluginDir, value)
+	return value, e.getPBWithKey(e.appliedPluginDir, value, true)
 }
 
 // RegistryProxy registry
@@ -1072,15 +1072,19 @@ func (e *EtcdStore) get(key string, opts ...clientv3.OpOption) (*clientv3.GetRes
 }
 
 func (e *EtcdStore) getPB(prefix string, id uint64, value pb) error {
-	return e.getPBWithKey(getKey(prefix, id), value)
+	return e.getPBWithKey(getKey(prefix, id), value, false)
 }
 
-func (e *EtcdStore) getPBWithKey(key string, value pb) error {
+func (e *EtcdStore) getPBWithKey(key string, value pb, allowNotFound bool) error {
 	data, err := e.getValue(key)
 	if err != nil {
 		return err
 	}
 	if len(data) == 0 {
+		if allowNotFound {
+			return nil
+		}
+
 		return fmt.Errorf("<%s> not found", key)
 	}
 
