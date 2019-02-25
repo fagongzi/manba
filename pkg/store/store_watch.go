@@ -64,6 +64,10 @@ func (e *EtcdStore) doWatch() {
 					evtSrc = EventSrcRouting
 				} else if strings.HasPrefix(key, e.proxiesDir) {
 					evtSrc = EventSrcProxy
+				} else if strings.HasPrefix(key, e.pluginsDir) {
+					evtSrc = EventSrcPlugin
+				} else if strings.HasPrefix(key, e.appliedPluginDir) {
+					evtSrc = EventSrcApplyPlugin
 				} else {
 					continue
 				}
