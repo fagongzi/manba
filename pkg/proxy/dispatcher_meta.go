@@ -274,7 +274,7 @@ func (r *dispatcher) doPluginEvent(evt *store.Evt) {
 	if evt.Type == store.EventTypeNew {
 		r.addPlugin(value)
 	} else if evt.Type == store.EventTypeDelete {
-		r.removePlugin(value.ID)
+		r.removePlugin(format.MustParseStrUInt64(evt.Key))
 	} else if evt.Type == store.EventTypeUpdate {
 		r.updatePlugin(value)
 	}
@@ -285,6 +285,8 @@ func (r *dispatcher) doApplyPluginEvent(evt *store.Evt) {
 
 	if evt.Type == store.EventTypeNew {
 		r.updateAppliedPlugin(value)
+	} else if evt.Type == store.EventTypeDelete {
+		r.removeAppliedPlugin()
 	} else if evt.Type == store.EventTypeUpdate {
 		r.updateAppliedPlugin(value)
 	}
@@ -433,6 +435,7 @@ func (r *dispatcher) removeAPI(id uint64) error {
 		return errAPINotFound
 	}
 
+	r.route.Remove(id)
 	delete(r.apis, id)
 
 	log.Infof("api <%d> removed", id)
@@ -730,5 +733,16 @@ func (r *dispatcher) updateAppliedPlugin(value *metapb.AppliedPlugins) error {
 	r.appliedPlugins = value
 	log.Infof("plugins applied with %+v",
 		value.AppliedIDs)
+	return nil
+}
+
+func (r *dispatcher) removeAppliedPlugin() error {
+	err := r.jsEngine.ApplyPlugins()
+	if err != nil {
+		return err
+	}
+
+	r.appliedPlugins = &metapb.AppliedPlugins{}
+	log.Infof("plugins applied removed")
 	return nil
 }
