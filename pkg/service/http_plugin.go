@@ -22,7 +22,7 @@ func postPluginHandler(value interface{}) (*grpcx.JSONResult, error) {
 	id, err := Store.PutPlugin(value.(*metapb.Plugin))
 	if err != nil {
 		log.Errorf("api-plugin-put: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: id}, nil
@@ -32,7 +32,7 @@ func deletePluginHandler(value interface{}) (*grpcx.JSONResult, error) {
 	err := Store.RemovePlugin(value.(uint64))
 	if err != nil {
 		log.Errorf("api-plugin-delete: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{}, nil
@@ -42,7 +42,7 @@ func getPluginHandler(value interface{}) (*grpcx.JSONResult, error) {
 	value, err := Store.GetPlugin(value.(uint64))
 	if err != nil {
 		log.Errorf("api-plugin-get: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: value}, nil
@@ -61,7 +61,7 @@ func listPluginHandler(value interface{}) (*grpcx.JSONResult, error) {
 	})
 	if err != nil {
 		log.Errorf("api-plugin-list-get: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: values}, nil
