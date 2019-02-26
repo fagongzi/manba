@@ -33,6 +33,7 @@ require (
 	github.com/mattn/go-colorable v0.0.0-20170801030607-167de6bfdfba // indirect
 	github.com/mattn/go-isatty v0.0.0-20170925053441-0360b2af4f38 // indirect
 	github.com/matttproud/golang_protobuf_extensions v0.0.0-20160424113007-c12348ce28de // indirect
+	github.com/opentracing/opentracing-go v1.0.2
 	github.com/prometheus/client_golang v0.0.0-20160817154824-c5b7fccd2042
 	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910 // indirect
 	github.com/prometheus/common v0.0.0-20180518154759-7600349dcfe1

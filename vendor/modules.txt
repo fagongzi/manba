@@ -62,6 +62,9 @@ github.com/mattn/go-colorable
 github.com/mattn/go-isatty
 # github.com/matttproud/golang_protobuf_extensions v0.0.0-20160424113007-c12348ce28de
 github.com/matttproud/golang_protobuf_extensions/pbutil
+# github.com/opentracing/opentracing-go v1.0.2
+github.com/opentracing/opentracing-go
+github.com/opentracing/opentracing-go/log
 # github.com/prometheus/client_golang v0.0.0-20160817154824-c5b7fccd2042
 github.com/prometheus/client_golang/prometheus
 # github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910
