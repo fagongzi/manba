@@ -11,12 +11,12 @@ require (
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/dgrijalva/jwt-go v0.0.0-20180308231308-06ea1031745c
 	github.com/fagongzi/goetty v0.0.0-20180427060148-8f06d410550f
-	github.com/fagongzi/grpcx v1.1.0
+	github.com/fagongzi/grpcx v0.0.0-20190226052515-f1ec50ae76bf
 	github.com/fagongzi/log v0.0.0-20170831135209-9a647df25e0e
 	github.com/fagongzi/util v0.0.0-20180330021808-4acf02da76a9
 	github.com/garyburd/redigo v0.0.0-20180228092057-a69d19351219
 	github.com/ghodss/yaml v1.0.0 // indirect
-	github.com/gogo/protobuf v0.0.0-20171007142547-342cbe0a0415 // indirect
+	github.com/gogo/protobuf v0.0.0-20171007142547-342cbe0a0415
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/groupcache v0.0.0-20181024230925-c65c006176ff // indirect
 	github.com/golang/protobuf v0.0.0-20180430185241-b4deda0973fb

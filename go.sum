@@ -20,8 +20,8 @@ github.com/dgrijalva/jwt-go v0.0.0-20180308231308-06ea1031745c h1:uwivskbBuX2rEO
 github.com/dgrijalva/jwt-go v0.0.0-20180308231308-06ea1031745c/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/fagongzi/goetty v0.0.0-20180427060148-8f06d410550f h1:8qmWoPu1y2s2qHVoac+4MzJEWp+tWzdzw7PbhbQ7oLg=
 github.com/fagongzi/goetty v0.0.0-20180427060148-8f06d410550f/go.mod h1:lLUyHhtjlOqatxVXgyLocwoI2o359JzLE7EWRGZiGw4=
-github.com/fagongzi/grpcx v1.1.0 h1:TZurQaMAmZv/OdQShNj45VdW5Fw8+nPpXSGvJKFlDag=
-github.com/fagongzi/grpcx v1.1.0/go.mod h1:OJr1w37s39K05FjX0OxQ/Nd6E9jp3OVaCiHi7eL+JV4=
+github.com/fagongzi/grpcx v0.0.0-20190226052515-f1ec50ae76bf h1:VdVibJFlDx349UkWP0uYk6JkpheT+yzuo1r5RvU2KOo=
+github.com/fagongzi/grpcx v0.0.0-20190226052515-f1ec50ae76bf/go.mod h1:OJr1w37s39K05FjX0OxQ/Nd6E9jp3OVaCiHi7eL+JV4=
 github.com/fagongzi/log v0.0.0-20170831135209-9a647df25e0e h1:ze4Ee25lIEbvKN0niRh0o+PgfE0O36ZsX44S8qMB1Go=
 github.com/fagongzi/log v0.0.0-20170831135209-9a647df25e0e/go.mod h1:1aUifpZCjAdZK7L3vRRl2cpSktbKasAU5vOSyLSCODs=
 github.com/fagongzi/util v0.0.0-20180330021808-4acf02da76a9 h1:Rr0bG1Zjpo2sDnPYgvw1MfrPev/F3Fnl2ErrTrAouIs=

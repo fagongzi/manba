@@ -14,7 +14,7 @@ github.com/coreos/etcd/clientv3/naming
 github.com/dgrijalva/jwt-go
 # github.com/fagongzi/goetty v0.0.0-20180427060148-8f06d410550f
 github.com/fagongzi/goetty
-# github.com/fagongzi/grpcx v1.1.0
+# github.com/fagongzi/grpcx v0.0.0-20190226052515-f1ec50ae76bf
 github.com/fagongzi/grpcx
 # github.com/fagongzi/log v0.0.0-20170831135209-9a647df25e0e
 github.com/fagongzi/log
