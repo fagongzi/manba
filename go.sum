@@ -66,6 +66,8 @@ github.com/mattn/go-isatty v0.0.0-20170925053441-0360b2af4f38 h1:kqvWp7a1XXbbQiL
 github.com/mattn/go-isatty v0.0.0-20170925053441-0360b2af4f38/go.mod h1:M+lRXTBqGeGNdLjl/ufCoiOlB5xdOkqRJdNxMWT7Zi4=
 github.com/matttproud/golang_protobuf_extensions v0.0.0-20160424113007-c12348ce28de h1:TvEbtJWapv7jxI4C94AukCEq3o2arMqbgB2Vq6AjL2w=
 github.com/matttproud/golang_protobuf_extensions v0.0.0-20160424113007-c12348ce28de/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
+github.com/opentracing/opentracing-go v1.0.2 h1:3jA2P6O1F9UOrWVpwrIo17pu01KWvNWg4X946/Y5Zwg=
+github.com/opentracing/opentracing-go v1.0.2/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/client_golang v0.0.0-20160817154824-c5b7fccd2042 h1:uPD61Wz/xvRycWcp6KYfLcQij2MPt3UtTG8KeY2CA0k=
