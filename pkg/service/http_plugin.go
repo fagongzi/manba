@@ -16,6 +16,30 @@ func initPluginRouter(server *echo.Group) {
 		grpcx.NewJSONBodyHTTPHandle(putPluginFactory, postPluginHandler))
 	server.GET("/plugins",
 		grpcx.NewGetHTTPHandle(limitQueryFactory, listPluginHandler))
+	server.PUT("/plugins/apply",
+		grpcx.NewJSONBodyHTTPHandle(putPluginAppliedFactory, putPluginAppliedHandler))
+	server.GET("/plugins/apply",
+		grpcx.NewGetHTTPHandle(emptyParamFactory, getPluginAppliedHandler))
+}
+
+func getPluginAppliedHandler(value interface{}) (*grpcx.JSONResult, error) {
+	value, err := Store.GetAppliedPlugins()
+	if err != nil {
+		log.Errorf("api-plugin-get-applied: req %+v, errors:%+v", value, err)
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
+	}
+
+	return &grpcx.JSONResult{Data: value}, nil
+}
+
+func putPluginAppliedHandler(value interface{}) (*grpcx.JSONResult, error) {
+	err := Store.ApplyPlugins(value.(*metapb.AppliedPlugins))
+	if err != nil {
+		log.Errorf("api-plugin-put-applied: req %+v, errors:%+v", value, err)
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
+	}
+
+	return &grpcx.JSONResult{}, nil
 }
 
 func postPluginHandler(value interface{}) (*grpcx.JSONResult, error) {
@@ -69,4 +93,8 @@ func listPluginHandler(value interface{}) (*grpcx.JSONResult, error) {
 
 func putPluginFactory() interface{} {
 	return &metapb.Plugin{}
+}
+
+func putPluginAppliedFactory() interface{} {
+	return &metapb.AppliedPlugins{}
 }
