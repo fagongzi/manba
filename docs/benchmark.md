@@ -173,8 +173,6 @@ Transfer/sec:     28.16MB
 ### **11:19:04**
 
 ```log
-Requests/sec: 218695.25
-Transfer/sec:     28.16MB
 Running 30s test @ http://10.0.222.28
   20 threads and 1024 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
