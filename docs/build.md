@@ -37,6 +37,22 @@ Gateway目前支持Etcd作为元数据区的存储，所以需要一个Etcd环�
   make docker release_version='version string'
   ```
 
+  - 打包为docker镜像，且定制镜像内容
+
+  ```bash
+  # for demo, including etcd, proxy, apiserver, ui
+  make docker release_version='version string'
+
+  # only proxy
+  make docker release_version='version string' with=proxy
+
+  # only etcd
+  make docker release_version='version string' with=etcd
+
+  # apiserver with ui
+  make docker release_version='version string' with=apiserver
+  ```
+
   - 更多使用说明
 
   ```bash

@@ -30,6 +30,9 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 * 支持在线迁移数据
 
 ## Docker
+
+以下内容要求对docker基本操作有一定了解，可以看[这本书][2]，或者直接看[官方文档][1]。
+
 ### 快速开始
 使用 `docker pull fagongzi/gateway` 命令下载Docker镜像, 使用 `docker run -d -p 9093:9093 -p 80:80 -p 9092:9092 fagongzi/gateway` 运行镜像. 镜像启动后export 3个端口:
 
@@ -45,18 +48,31 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 
   APIServer的对外HTTP Restful的端口，访问 `http://127.0.0.1:9093/ui/index.html`访问WEBUI
 
+通过设置以下环境变量可以改变运行参数，参数相同时配置参数将会覆盖默认参数
+
+- GW_PROXY_OPTS
+
+   支持`proxy --help`中的所有参数；
+
+- API_SERVER_OPTS
+
+   支持`apiserver --help`中的所有参数；
+
+- ETCD_OPTS
+
+   支持`etcd --help`中的所有参数；
 
 ### 可用的docker镜像
 
-* `fagongzi/gateway` 
+* `fagongzi/gateway`
 
    镜像是一个quickstart镜像，包含了3个组件：etcd,proxy,apiserver， `仅限于快速体验，不能使用在生产`
 
-* `fagongzi/proxy` 
+* `fagongzi/proxy`
 
    proxy组件，`生产可用`
 
-* `fagongzi/apiserver` 
+* `fagongzi/apiserver`
 
    apiserver组件，`生产可用`
 
@@ -96,3 +112,6 @@ Routing是一个路由策略，根据HTTP Request中的Cookie，Querystring、He
 
 ## 交流方式-微信
 ![](./images/qr.jpg)
+
+[1]: https://docs.docker.com/ "Docker Documentation"
+[2]: https://github.com/yeasy/docker_practice "docker_practice"
