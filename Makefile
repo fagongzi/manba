@@ -16,8 +16,36 @@ GOOS 		= linux
 CGO_ENABLED = 0
 DIST_DIR 	= $(ROOT_DIR)dist/
 
-ETCD_VER			= v3.0.14
+ETCD_VER			= v3.3.12
 ETCD_DOWNLOAD_URL	= https://github.com/coreos/etcd/releases/download
+
+MY_TARGET := dist_dir
+EXEC_NAME := proxy
+IMAGE_NAME := gateway
+CMD_NAME := demo
+ifeq ("$(MAKECMDGOALS)","docker")
+	ifeq ("$(with)","")
+		MY_TARGET := release download_etcd ui
+	endif
+	ifeq ($(findstring etcd,$(with)),etcd)
+		MY_TARGET := $(MY_TARGET) download_etcd
+		EXEC_NAME := etcd
+		IMAGE_NAME = etcd
+		CMD_NAME   = etcd
+	endif
+	ifeq ($(findstring apiserver,$(with)),apiserver)
+		MY_TARGET := $(MY_TARGET) apiserver ui
+		EXEC_NAME := apiserver
+		IMAGE_NAME = apiserver
+		CMD_NAME   = apiserver
+	endif
+	ifeq ($(findstring proxy,$(with)),proxy)
+		MY_TARGET := $(MY_TARGET) proxy
+		EXEC_NAME := proxy
+		IMAGE_NAME = proxy
+		CMD_NAME   = proxy
+	endif
+endif
 
 .PHONY: release
 release: dist_dir apiserver proxy;
@@ -26,14 +54,14 @@ release: dist_dir apiserver proxy;
 release_darwin: darwin dist_dir apiserver proxy;
 
 .PHONY: docker
-docker: release download_etcd ui;
+docker:
+	@$(MAKE) $(MY_TARGET)
 	@echo ========== current docker tag is: $(RELEASE_VERSION) ==========
-	docker build -t fagongzi/gateway:$(RELEASE_VERSION) -f Dockerfile .
-	docker build -t fagongzi/proxy:$(RELEASE_VERSION) -f Dockerfile-proxy .
-	docker build -t fagongzi/apiserver:$(RELEASE_VERSION) -f Dockerfile-apiserver .
-	docker tag fagongzi/gateway:$(RELEASE_VERSION) fagongzi/gateway
-	docker tag fagongzi/proxy:$(RELEASE_VERSION) fagongzi/proxy
-	docker tag fagongzi/apiserver:$(RELEASE_VERSION) fagongzi/apiserver
+	docker build -t fagongzi/$(IMAGE_NAME):$(RELEASE_VERSION) \
+				--build-arg EXEC_NAME="$(EXEC_NAME)" \
+				--build-arg CMD_NAME="$(CMD_NAME)" \
+				-f Dockerfile .
+	docker tag fagongzi/$(IMAGE_NAME):$(RELEASE_VERSION) fagongzi/$(IMAGE_NAME)
 
 .PHONY: ui
 ui: ; $(info ======== compile ui:)
@@ -61,6 +89,7 @@ download_etcd:
 dist_dir: ; $(info ======== prepare distribute dir:)
 	mkdir -p $(DIST_DIR)
 	@rm -rf $(DIST_DIR)*
+	@cp entrypoint.sh $(DIST_DIR)
 
 .PHONY: clean
 clean: ; $(info ======== clean all:)
@@ -71,6 +100,11 @@ help:
 	@echo "build release binary: \n\t\tmake release\n"
 	@echo "build Mac OS X release binary: \n\t\tmake release_darwin\n"
 	@echo "build docker release with etcd: \n\t\tmake docker\n"
+	@echo "\t  add 「with」 params can select what you need:\n"
+	@echo "\t  default: all, like 「make docker」\n"
+	@echo "\t  etcd: download and extract etcd and etcdctl\n"
+	@echo "\t  proxy: only compile proxy\n"
+	@echo "\t  apiserver: compile apiserver and download ui\n"
 	@echo "clean all binary: \n\t\tmake clean\n"
 
 UNAME_S := $(shell uname -s)
