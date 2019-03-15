@@ -3,22 +3,22 @@
 set -e
 
 start_etcd() {
-    ./etcd $ETCD_OPTS &
+    etcd $ETCD_OPTS &
 }
 
 start_apiserver() {
-    ./apiserver --addr=:9092 --addr-http=:9093 --discovery $API_SERVER_OPTS &
+    apiserver --addr=:9092 --addr-http=:9093 --discovery $API_SERVER_OPTS &
 }
 
-PARAM=$1
+INPUT_CMD=$@
 CMD=`cat cmd`
-if [ "$PARAM" = "" ]
+if [ "$INPUT_CMD" = "" ]
 then
-    PARAM=${CMD}
+    INPUT_CMD=${CMD}
 fi
 
-DEFAULT_EXEC="./proxy --addr=:80 --log-level=$GATEWAY_LOG_LEVEL $GW_PROXY_OPTS"
-if [ "${PARAM}" = 'demo' ]
+DEFAULT_EXEC="proxy --addr=:80 --log-level=$GATEWAY_LOG_LEVEL $GW_PROXY_OPTS"
+if [ "${INPUT_CMD}" = 'demo' ]
 then
     start_etcd
     sleep 3
@@ -27,24 +27,24 @@ then
     EXEC=$DEFAULT_EXEC
 fi
 
-if [ "${PARAM}" = 'proxy' ]
+if [ "${INPUT_CMD}" = 'proxy' ]
 then
     EXEC=$DEFAULT_EXEC
 fi
 
-if [ "${PARAM}" = 'apiserver' ]
+if [ "${INPUT_CMD}" = 'apiserver' ]
 then
-    EXEC="./apiserver --addr=:9092 --addr-http=:9093 --discovery $API_SERVER_OPTS"
+    EXEC="apiserver --addr=:9092 --addr-http=:9093 --discovery $API_SERVER_OPTS"
 fi
 
-if [ "${PARAM}" = 'etcd' ]
+if [ "${INPUT_CMD}" = 'etcd' ]
 then
-    EXEC="./etcd $ETCD_OPTS"
+    EXEC="etcd $ETCD_OPTS"
 fi
 
-if [ ! -z "${PARAM}" ] && [ -z "$EXEC" ]
+if [ ! -z "${INPUT_CMD}" ] && [ -z "$EXEC" ]
 then
-    EXEC="${PARAM}"
+    EXEC=${INPUT_CMD}
 fi
 
 exec $EXEC
