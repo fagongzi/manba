@@ -39,6 +39,11 @@ func main() {
 		return c.String(http.StatusOK, "OK")
 	})
 
+	server.GET("/header", func(c echo.Context) error {
+		name := c.QueryParam("name")
+		return c.String(http.StatusOK, c.Request().Header.Get(name))
+	})
+
 	server.GET("/error", func(c echo.Context) error {
 		return c.NoContent(http.StatusBadRequest)
 	})
