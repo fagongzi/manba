@@ -531,7 +531,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 			times)
 
 		if !dn.api.isWebSocket() {
-			forwardReq.SetHost(svr.meta.Addr)
+			dn.setHost(forwardReq)
 			res, err = p.client.Do(forwardReq, svr.meta.Addr, dn.httpOption())
 		} else {
 			res, err = p.onWebsocket(c, svr.meta.Addr)
