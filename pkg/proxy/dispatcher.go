@@ -73,6 +73,20 @@ type dispathNode struct {
 	code                 int
 }
 
+func (dn *dispathNode) setHost(forwardReq *fasthttp.Request) {
+	switch dn.node.meta.HostType {
+	case metapb.HostOrigin:
+		forwardReq.SetHostBytes(dn.ctx.Request.Host())
+		break
+	case metapb.HostServerAddress:
+		forwardReq.SetHost(dn.dest.meta.Addr)
+		break
+	case metapb.HostCustom:
+		forwardReq.SetHost(dn.node.meta.CustemHost)
+		break
+	}
+}
+
 func (dn *dispathNode) reset() {
 	*dn = emptyDispathNode
 }

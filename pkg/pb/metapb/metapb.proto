@@ -71,6 +71,12 @@ enum MatchRule {
     MatchAny     = 2;
 }
 
+enum HostType {
+    HostOrigin        = 0;
+    HostServerAddress = 1;
+    HostCustom        = 2;
+}
+
 // Proxy is a meta data of the gateway proxy
 message Proxy {
     optional string addr     = 1 [(gogoproto.nullable) = false];
@@ -178,6 +184,8 @@ message DispatchNode {
     optional RetryStrategy retryStrategy = 9;
     optional int64         writeTimeout  = 10[(gogoproto.nullable) = false];
     optional int64         readTimeout   = 11[(gogoproto.nullable) = false];
+    optional HostType      hostType      = 12[(gogoproto.nullable) = false];
+    optional string        custemHost    = 13[(gogoproto.nullable) = false];
 }
 
 // Cache is used for cache api result

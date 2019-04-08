@@ -1,7 +1,14 @@
 package proxy
 
 import (
+	"bytes"
+
 	"github.com/fagongzi/gateway/pkg/filter"
+	"github.com/fagongzi/util/hack"
+)
+
+var (
+	headerName = []byte("X-Forwarded-For")
 )
 
 // XForwardForFilter XForwardForFilter
@@ -25,6 +32,17 @@ func (f *XForwardForFilter) Name() string {
 
 // Pre execute before proxy
 func (f *XForwardForFilter) Pre(c filter.Context) (statusCode int, err error) {
-	c.ForwardRequest().Header.Add("X-Forwarded-For", c.OriginRequest().RemoteIP().String())
+	prevForward := c.OriginRequest().Request.Header.PeekBytes(headerName)
+	if len(prevForward) == 0 {
+		c.ForwardRequest().Header.SetBytesKV(headerName, hack.StringToSlice(c.OriginRequest().RemoteIP().String()))
+	} else {
+		var buf bytes.Buffer
+		buf.Write(prevForward)
+		buf.WriteByte(',')
+		buf.WriteByte(' ')
+		buf.WriteString(c.OriginRequest().RemoteIP().String())
+		c.ForwardRequest().Header.SetBytesKV(headerName, buf.Bytes())
+	}
+
 	return f.BaseFilter.Pre(c)
 }
