@@ -647,6 +647,28 @@ func (ab *APIBuilder) addRenderObject(nameInTemplate string, flatAttrs bool, nam
 	return ab
 }
 
+// AddDispatchNodeHost add host
+func (ab *APIBuilder) AddDispatchNodeHost(cluster uint64, hostType metapb.HostType, custom string) *APIBuilder {
+	return ab.AddDispatchNodeHostWithIndex(cluster, 0, hostType, custom)
+}
+
+// AddDispatchNodeHostWithIndex add host
+func (ab *APIBuilder) AddDispatchNodeHostWithIndex(cluster uint64, idx int, hostType metapb.HostType, custom string) *APIBuilder {
+	node := ab.getNode(cluster, idx)
+	if nil == node {
+		ab.value.Nodes = append(ab.value.Nodes, &metapb.DispatchNode{
+			ClusterID:  cluster,
+			HostType:   hostType,
+			CustemHost: custom,
+		})
+	} else {
+		node.HostType = hostType
+		node.CustemHost = custom
+	}
+
+	return ab
+}
+
 // AddTag add tag for api
 func (ab *APIBuilder) AddTag(key, value string) *APIBuilder {
 	ab.value.Tags = append(ab.value.Tags, &metapb.PairValue{
