@@ -99,13 +99,15 @@ func (r *dispatcher) doCheck(svr *serverRuntime) bool {
 	req.SetRequestURI(svr.getCheckURL())
 
 	opt := util.DefaultHTTPOption()
+	*opt = *globalHTTPOptions
 	opt.ReadTimeout = time.Duration(svr.meta.HeathCheck.Timeout)
+
 	resp, err := r.httpClient.Do(req, svr.meta.Addr, opt)
 	defer fasthttp.ReleaseResponse(resp)
 	if err != nil {
 		log.Warnf("server <%d, %s, %d> check failed, errors:\n%+v",
 			svr.meta.ID,
-			svr.meta.HeathCheck.Path,
+			svr.getCheckURL(),
 			svr.checkFailCount+1,
 			err)
 		svr.fail()
@@ -115,7 +117,7 @@ func (r *dispatcher) doCheck(svr *serverRuntime) bool {
 	if fasthttp.StatusOK != resp.StatusCode() {
 		log.Warnf("server <%d, %s, %d, %d> check failed",
 			svr.meta.ID,
-			svr.meta.HeathCheck.Path,
+			svr.getCheckURL(),
 			resp.StatusCode(),
 			svr.checkFailCount+1)
 		svr.fail()
@@ -126,7 +128,7 @@ func (r *dispatcher) doCheck(svr *serverRuntime) bool {
 		svr.meta.HeathCheck.Body != string(resp.Body()) {
 		log.Warnf("server <%s, %s, %d> check failed, body <%s>, expect <%s>",
 			svr.meta.Addr,
-			svr.meta.HeathCheck.Path,
+			svr.getCheckURL(),
 			svr.checkFailCount+1,
 			resp.Body(),
 			svr.meta.HeathCheck.Body)
