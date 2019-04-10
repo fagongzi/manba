@@ -1,8 +1,6 @@
 package lb
 
 import (
-	"container/list"
-
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/valyala/fasthttp"
 )
@@ -21,7 +19,7 @@ var (
 
 // LoadBalance loadBalance interface returns selected server's id
 type LoadBalance interface {
-	Select(req *fasthttp.Request, servers *list.List) uint64
+	Select(req *fasthttp.Request, servers []metapb.Server) uint64
 }
 
 // GetSupportLBS return supported loadBalances

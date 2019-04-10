@@ -6,10 +6,8 @@ import (
 	"time"
 
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
-	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
-	"github.com/fagongzi/util/format"
 )
 
 var (
@@ -129,120 +127,16 @@ func (r *dispatcher) loadAPIs() {
 			err)
 		return
 	}
-
-	r.Lock()
-	r.sortAPIs()
-	r.Unlock()
-}
-
-func (r *dispatcher) watch() {
-	log.Info("router start watch meta data")
-
-	go r.readyToReceiveWatchEvent()
-	err := r.store.Watch(r.watchEventC, r.watchStopC)
-	log.Errorf("router watch failed, errors:\n%+v",
-		err)
-}
-
-func (r *dispatcher) readyToReceiveWatchEvent() {
-	for {
-		evt := <-r.watchEventC
-
-		if evt.Src == store.EventSrcCluster {
-			r.doClusterEvent(evt)
-		} else if evt.Src == store.EventSrcServer {
-			r.doServerEvent(evt)
-		} else if evt.Src == store.EventSrcBind {
-			r.doBindEvent(evt)
-		} else if evt.Src == store.EventSrcAPI {
-			r.doAPIEvent(evt)
-		} else if evt.Src == store.EventSrcRouting {
-			r.doRoutingEvent(evt)
-		} else if evt.Src == store.EventSrcProxy {
-			r.doProxyEvent(evt)
-		} else {
-			log.Warnf("unknown event <%+v>", evt)
-		}
-	}
-}
-
-func (r *dispatcher) doRoutingEvent(evt *store.Evt) {
-	routing, _ := evt.Value.(*metapb.Routing)
-
-	if evt.Type == store.EventTypeNew {
-		r.addRouting(routing)
-	} else if evt.Type == store.EventTypeDelete {
-		r.removeRouting(format.MustParseStrUInt64(evt.Key))
-	} else if evt.Type == store.EventTypeUpdate {
-		r.updateRouting(routing)
-	}
-}
-
-func (r *dispatcher) doProxyEvent(evt *store.Evt) {
-	proxy, _ := evt.Value.(*metapb.Proxy)
-
-	if evt.Type == store.EventTypeNew {
-		r.addProxy(proxy)
-	} else if evt.Type == store.EventTypeDelete {
-		r.removeProxy(evt.Key)
-	}
-}
-
-func (r *dispatcher) doAPIEvent(evt *store.Evt) {
-	api, _ := evt.Value.(*metapb.API)
-
-	if evt.Type == store.EventTypeNew {
-		r.addAPI(api)
-	} else if evt.Type == store.EventTypeDelete {
-		r.removeAPI(format.MustParseStrUInt64(evt.Key))
-	} else if evt.Type == store.EventTypeUpdate {
-		r.updateAPI(api)
-	}
-}
-
-func (r *dispatcher) doClusterEvent(evt *store.Evt) {
-	cluster, _ := evt.Value.(*metapb.Cluster)
-
-	if evt.Type == store.EventTypeNew {
-		r.addCluster(cluster)
-	} else if evt.Type == store.EventTypeDelete {
-		r.removeCluster(format.MustParseStrUInt64(evt.Key))
-	} else if evt.Type == store.EventTypeUpdate {
-		r.updateCluster(cluster)
-	}
-}
-
-func (r *dispatcher) doServerEvent(evt *store.Evt) {
-	svr, _ := evt.Value.(*metapb.Server)
-
-	if evt.Type == store.EventTypeNew {
-		r.addServer(svr)
-	} else if evt.Type == store.EventTypeDelete {
-		r.removeServer(format.MustParseStrUInt64(evt.Key))
-	} else if evt.Type == store.EventTypeUpdate {
-		r.updateServer(svr)
-	}
-}
-
-func (r *dispatcher) doBindEvent(evt *store.Evt) {
-	bind, _ := evt.Value.(*metapb.Bind)
-
-	if evt.Type == store.EventTypeNew {
-		r.addBind(bind)
-	} else if evt.Type == store.EventTypeDelete {
-		r.removeBind(bind)
-	}
 }
 
 func (r *dispatcher) addRouting(meta *metapb.Routing) error {
-	r.Lock()
-	defer r.Unlock()
-
 	if _, ok := r.routings[meta.ID]; ok {
 		return errRoutingExists
 	}
 
-	r.routings[meta.ID] = newRoutingRuntime(meta)
+	newValues := r.copyRoutings(0)
+	newValues[meta.ID] = newRoutingRuntime(meta)
+	r.routings = newValues
 	log.Infof("routing <%d> added, data <%s>",
 		meta.ID,
 		meta.String())
@@ -251,41 +145,36 @@ func (r *dispatcher) addRouting(meta *metapb.Routing) error {
 }
 
 func (r *dispatcher) updateRouting(meta *metapb.Routing) error {
-	r.Lock()
-	defer r.Unlock()
-
 	rt, ok := r.routings[meta.ID]
 	if !ok {
 		return errRoutingNotFound
 	}
 
+	newValues := r.copyRoutings(0)
+	rt = newValues[meta.ID]
 	rt.updateMeta(meta)
+	r.routings = newValues
+
 	log.Infof("routing <%d> updated, data <%s>",
 		meta.ID,
 		meta.String())
-
 	return nil
 }
 
 func (r *dispatcher) removeRouting(id uint64) error {
-	r.Lock()
-	defer r.Unlock()
-
 	if _, ok := r.routings[id]; !ok {
 		return errRoutingNotFound
 	}
 
-	delete(r.routings, id)
+	newValues := r.copyRoutings(id)
+	r.routings = newValues
+
 	log.Infof("routing <%d> deleted",
 		id)
-
 	return nil
 }
 
 func (r *dispatcher) addProxy(meta *metapb.Proxy) error {
-	r.Lock()
-	defer r.Unlock()
-
 	key := util.GetAddrFormat(meta.Addr)
 
 	if _, ok := r.proxies[key]; ok {
@@ -300,9 +189,6 @@ func (r *dispatcher) addProxy(meta *metapb.Proxy) error {
 }
 
 func (r *dispatcher) removeProxy(addr string) error {
-	r.Lock()
-	defer r.Unlock()
-
 	if _, ok := r.proxies[addr]; !ok {
 		return errProxyNotFound
 	}
@@ -315,21 +201,21 @@ func (r *dispatcher) removeProxy(addr string) error {
 }
 
 func (r *dispatcher) addAPI(api *metapb.API) error {
-	r.Lock()
-	defer r.Unlock()
-
 	if _, ok := r.apis[api.ID]; ok {
 		return errAPIExists
 	}
 
 	a := newAPIRuntime(api, r.tw, r.refreshQPS(api.MaxQPS))
-	r.apis[api.ID] = a
-	r.sortAPIs()
+	newValues := r.copyAPIs(0)
+	newValues[api.ID] = a
+	newKeys := sortAPIs(newValues)
 
 	if a.cb != nil {
 		r.addAnalysis(api.ID, a.cb)
 	}
 
+	r.apis = newValues
+	r.apiSortedKeys = newKeys
 	log.Infof("api <%d> added, data <%s>",
 		api.ID,
 		api.String())
@@ -338,22 +224,23 @@ func (r *dispatcher) addAPI(api *metapb.API) error {
 }
 
 func (r *dispatcher) updateAPI(api *metapb.API) error {
-	r.Lock()
-	defer r.Unlock()
-
-	rt, ok := r.apis[api.ID]
+	_, ok := r.apis[api.ID]
 	if !ok {
 		return errAPINotFound
 	}
 
+	newValues := r.copyAPIs(0)
+	rt := newValues[api.ID]
 	rt.activeQPS = r.refreshQPS(api.MaxQPS)
 	rt.updateMeta(api)
-	r.sortAPIs()
+	newKeys := sortAPIs(newValues)
 
 	if rt.cb != nil {
 		r.addAnalysis(rt.meta.ID, rt.meta.CircuitBreaker)
 	}
 
+	r.apis = newValues
+	r.apiSortedKeys = newKeys
 	log.Infof("api <%d> updated, data <%s>",
 		api.ID,
 		api.String())
@@ -362,54 +249,18 @@ func (r *dispatcher) updateAPI(api *metapb.API) error {
 }
 
 func (r *dispatcher) removeAPI(id uint64) error {
-	r.Lock()
-	defer r.Unlock()
-
 	if _, ok := r.apis[id]; !ok {
 		return errAPINotFound
 	}
 
-	delete(r.apis, id)
-	// delete sorted keys
-	for i, v := range r.apiSortedKeys {
-		if v == id {
-			r.apiSortedKeys = append(r.apiSortedKeys[:i], r.apiSortedKeys[i+1:]...)
-			break
-		}
-	}
+	newValues := r.copyAPIs(id)
+	newKeys := sortAPIs(newValues)
+
+	r.apiSortedKeys = newKeys
+	r.apis = newValues
 	log.Infof("api <%d> removed", id)
 
 	return nil
-}
-
-// NOTE: MUST Lock on call this function!!
-func (r *dispatcher) sortAPIs() {
-	if len(r.apis) == 0 {
-		return
-	}
-
-	type kv struct {
-		Key   uint64
-		Value uint32
-	}
-
-	ss := make([]kv, len(r.apis))
-
-	var i = 0
-	for k, v := range r.apis {
-		ss[i] = kv{k, v.position()}
-		i++
-	}
-
-	// position升序
-	sort.SliceStable(ss, func(i, j int) bool {
-		return ss[i].Value < ss[j].Value
-	})
-
-	r.apiSortedKeys = make([]uint64, len(ss))
-	for i, v := range ss {
-		r.apiSortedKeys[i] = v.Key
-	}
 }
 
 func (r *dispatcher) refreshAllQPS() {
@@ -433,19 +284,17 @@ func (r *dispatcher) refreshQPS(value int64) int64 {
 }
 
 func (r *dispatcher) addServer(svr *metapb.Server) error {
-	r.Lock()
-	defer r.Unlock()
-
 	if _, ok := r.servers[svr.ID]; ok {
 		return errServerExists
 	}
 
+	newValues := r.copyServers(0)
 	rt := newServerRuntime(svr, r.tw, r.refreshQPS(svr.MaxQPS))
-	r.servers[svr.ID] = rt
-
+	newValues[svr.ID] = rt
 	r.addAnalysis(rt.meta.ID, rt.meta.CircuitBreaker)
 	r.addToCheck(rt)
 
+	r.servers = newValues
 	log.Infof("server <%d> added, data <%s>",
 		svr.ID,
 		svr.String())
@@ -454,20 +303,22 @@ func (r *dispatcher) addServer(svr *metapb.Server) error {
 }
 
 func (r *dispatcher) updateServer(meta *metapb.Server) error {
-	r.Lock()
-	defer r.Unlock()
-
 	rt, ok := r.servers[meta.ID]
 	if !ok {
 		return errServerNotFound
 	}
 
+	// stop old heath check
+	rt.heathTimeout.Stop()
+
+	newValues := r.copyServers(0)
+	rt = newValues[meta.ID]
 	rt.activeQPS = r.refreshQPS(meta.MaxQPS)
 	rt.updateMeta(meta)
-
 	r.addAnalysis(rt.meta.ID, rt.meta.CircuitBreaker)
 	r.addToCheck(rt)
 
+	r.servers = newValues
 	log.Infof("server <%d> updated, data <%s>",
 		meta.ID,
 		meta.String())
@@ -476,22 +327,23 @@ func (r *dispatcher) updateServer(meta *metapb.Server) error {
 }
 
 func (r *dispatcher) removeServer(id uint64) error {
-	r.Lock()
-	defer r.Unlock()
-
-	svr, ok := r.servers[id]
+	rt, ok := r.servers[id]
 	if !ok {
 		return errServerNotFound
 	}
 
-	svr.heathTimeout.Stop()
-	delete(r.servers, id)
-	for _, cluster := range r.clusters {
-		cluster.remove(id)
-	}
+	// stop old heath check
+	rt.heathTimeout.Stop()
 
+	newValues := r.copyServers(id)
+	newBinds := r.copyBinds(metapb.Bind{
+		ServerID: id,
+	})
+
+	r.servers = newValues
+	r.binds = newBinds
 	log.Infof("server <%d> removed",
-		svr.meta.ID)
+		rt.meta.ID)
 	return nil
 }
 
@@ -504,14 +356,14 @@ func (r *dispatcher) addAnalysis(id uint64, cb *metapb.CircuitBreaker) {
 }
 
 func (r *dispatcher) addCluster(cluster *metapb.Cluster) error {
-	r.Lock()
-	defer r.Unlock()
-
 	if _, ok := r.clusters[cluster.ID]; ok {
 		return errClusterExists
 	}
 
-	r.clusters[cluster.ID] = newClusterRuntime(cluster)
+	newValues := r.copyClusters(0)
+	newValues[cluster.ID] = newClusterRuntime(cluster)
+
+	r.clusters = newValues
 	log.Infof("cluster <%d> added, data <%s>",
 		cluster.ID,
 		cluster.String())
@@ -520,15 +372,16 @@ func (r *dispatcher) addCluster(cluster *metapb.Cluster) error {
 }
 
 func (r *dispatcher) updateCluster(meta *metapb.Cluster) error {
-	r.Lock()
-	defer r.Unlock()
-
-	rt, ok := r.clusters[meta.ID]
+	_, ok := r.clusters[meta.ID]
 	if !ok {
 		return errClusterNotFound
 	}
 
+	newValues := r.copyClusters(0)
+	rt := newValues[meta.ID]
 	rt.updateMeta(meta)
+
+	r.clusters = newValues
 	log.Infof("cluster <%d> updated, data <%s>",
 		meta.ID,
 		meta.String())
@@ -537,30 +390,24 @@ func (r *dispatcher) updateCluster(meta *metapb.Cluster) error {
 }
 
 func (r *dispatcher) removeCluster(id uint64) error {
-	r.Lock()
-	defer r.Unlock()
-
-	cluster, ok := r.clusters[id]
+	_, ok := r.clusters[id]
 	if !ok {
 		return errClusterNotFound
 	}
 
-	// TODO: check API node loose cluster
-	for _, clusters := range r.binds {
-		delete(clusters, id)
-	}
+	newValues := r.copyClusters(id)
+	newBinds := r.copyBinds(metapb.Bind{
+		ClusterID: id,
+	})
+	r.binds = newBinds
+	r.clusters = newValues
 
-	delete(r.clusters, cluster.meta.ID)
 	log.Infof("cluster <%d> removed",
-		cluster.meta.ID)
-
+		id)
 	return nil
 }
 
 func (r *dispatcher) addBind(bind *metapb.Bind) error {
-	r.Lock()
-	defer r.Unlock()
-
 	server, ok := r.servers[bind.ServerID]
 	if !ok {
 		log.Warnf("bind failed, server <%d> not found",
@@ -568,51 +415,97 @@ func (r *dispatcher) addBind(bind *metapb.Bind) error {
 		return errServerNotFound
 	}
 
-	cluster, ok := r.clusters[bind.ClusterID]
-	if !ok {
+	if _, ok := r.clusters[bind.ClusterID]; !ok {
 		log.Warnf("add bind failed, cluster <%d> not found",
 			bind.ClusterID)
 		return errClusterNotFound
 	}
 
-	if _, ok := r.binds[bind.ServerID]; !ok {
-		r.binds[bind.ServerID] = make(map[uint64]*clusterRuntime)
+	status := metapb.Unknown
+	if server.meta.HeathCheck == nil {
+		status = metapb.Up
 	}
 
-	clusters := r.binds[bind.ServerID]
-	clusters[bind.ClusterID] = cluster
+	newValues := r.copyBinds(metapb.Bind{})
+	if _, ok := newValues[bind.ClusterID]; !ok {
+		newValues[bind.ClusterID] = &binds{}
+	}
+
+	bindInfos := newValues[bind.ClusterID]
+	bindInfos.servers = append(bindInfos.servers, &bindInfo{
+		svrID:  bind.ServerID,
+		status: status,
+	})
+	if status == metapb.Up {
+		bindInfos.actives = append(bindInfos.actives, *server.meta)
+	}
+
+	newValues[bind.ClusterID] = bindInfos
+	r.binds = newValues
 
 	log.Infof("bind <%d,%d> created", bind.ClusterID, bind.ServerID)
-
-	if server.status == metapb.Up {
-		cluster.add(server.meta)
-	}
 	return nil
 }
 
 func (r *dispatcher) removeBind(bind *metapb.Bind) error {
-	r.Lock()
-	defer r.Unlock()
-
 	if _, ok := r.servers[bind.ServerID]; !ok {
 		log.Errorf("remove bind failed: server <%d> not found",
 			bind.ServerID)
 		return errServerNotFound
 	}
 
-	cluster, ok := r.clusters[bind.ClusterID]
-	if !ok {
+	if _, ok := r.clusters[bind.ClusterID]; !ok {
 		log.Errorf("remove bind failed: cluster <%d> not found",
 			bind.ClusterID)
 		return errClusterNotFound
 	}
 
-	cluster.remove(bind.ServerID)
+	newValues := r.copyBinds(*bind)
+	r.binds = newValues
+	log.Infof("bind <%d,%d> removed", bind.ClusterID, bind.ServerID)
+	return nil
+}
 
-	if clusters, ok := r.binds[bind.ServerID]; ok {
-		delete(clusters, bind.ClusterID)
-		log.Infof("bind <%d,%d> removed", bind.ClusterID, bind.ServerID)
+func (r *dispatcher) getServerStatus(id uint64) metapb.Status {
+	binds := r.binds
+	for _, bindInfos := range binds {
+		for _, info := range bindInfos.servers {
+			if info.svrID == id {
+				return info.status
+			}
+		}
 	}
 
-	return nil
+	return metapb.Unknown
+}
+
+func sortAPIs(apis map[uint64]*apiRuntime) []uint64 {
+	if len(apis) == 0 {
+		return nil
+	}
+
+	type kv struct {
+		Key   uint64
+		Value uint32
+	}
+
+	ss := make([]kv, len(apis))
+
+	var i = 0
+	for k, v := range apis {
+		ss[i] = kv{k, v.position()}
+		i++
+	}
+
+	// position升序
+	sort.SliceStable(ss, func(i, j int) bool {
+		return ss[i].Value < ss[j].Value
+	})
+
+	keys := make([]uint64, len(ss))
+	for i, v := range ss {
+		keys[i] = v.Key
+	}
+
+	return keys
 }

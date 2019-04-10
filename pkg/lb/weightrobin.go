@@ -1,7 +1,6 @@
 package lb
 
 import (
-	"container/list"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/valyala/fasthttp"
 )
@@ -25,11 +24,12 @@ func NewWeightRobin() LoadBalance {
 }
 
 // Select select a server from servers using WeightRobin
-func (w *WeightRobin) Select(req *fasthttp.Request, servers *list.List) (best uint64) {
+func (w *WeightRobin) Select(req *fasthttp.Request, servers []metapb.Server) (best uint64) {
 	var total int64
+	l := len(servers)
 
-	for iter := servers.Back(); iter != nil; iter = iter.Prev() {
-		svr := iter.Value.(*metapb.Server)
+	for i := l - 1; i >= 0; i-- {
+		svr := servers[i]
 
 		id := svr.ID
 		if _, ok := w.opts[id]; !ok {
