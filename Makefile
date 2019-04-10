@@ -66,6 +66,7 @@ docker:
 .PHONY: ui
 ui: ; $(info ======== compile ui:)
 	git clone https://github.com/fagongzi/gateway-ui-vue.git $(DIST_DIR)ui
+	cd $(DIST_DIR)ui && git checkout 3.0.0
 
 .PHONY: darwin
 darwin:
