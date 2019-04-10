@@ -1,28 +1,30 @@
 package lb
 
 import (
-	"container/list"
+	"testing"
+
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/valyala/fasthttp"
-	"testing"
 )
 
 func TestWeightRobin_Select(t *testing.T) {
-	li := list.New()
-
-	li.PushBack(&metapb.Server{
+	var values []metapb.Server
+	values = append(values, metapb.Server{
 		ID:     1,
 		Weight: 20,
 	})
-	li.PushBack(&metapb.Server{
+
+	values = append(values, metapb.Server{
 		ID:     2,
 		Weight: 10,
 	})
-	li.PushBack(&metapb.Server{
+
+	values = append(values, metapb.Server{
 		ID:     3,
 		Weight: 35,
 	})
-	li.PushBack(&metapb.Server{
+
+	values = append(values, metapb.Server{
 		ID:     4,
 		Weight: 5,
 	})
@@ -32,7 +34,7 @@ func TestWeightRobin_Select(t *testing.T) {
 	}
 	type args struct {
 		req     *fasthttp.Request
-		servers *list.List
+		servers []metapb.Server
 	}
 	tests := []struct {
 		name     string
@@ -45,8 +47,8 @@ func TestWeightRobin_Select(t *testing.T) {
 			fields: struct{ opts map[uint64]*weightRobin }{opts: make(map[uint64]*weightRobin, 50)},
 			args: struct {
 				req     *fasthttp.Request
-				servers *list.List
-			}{req: nil, servers: li},
+				servers []metapb.Server
+			}{req: nil, servers: values},
 			wantBest: []int{20, 10, 35, 5},
 		},
 	}

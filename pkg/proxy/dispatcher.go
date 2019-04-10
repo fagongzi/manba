@@ -189,15 +189,13 @@ func (dn *dispathNode) maybeDone() {
 }
 
 type dispatcher struct {
-	sync.RWMutex
-
 	cnf           *Cfg
 	routings      map[uint64]*routingRuntime
 	apis          map[uint64]*apiRuntime
 	apiSortedKeys []uint64
 	clusters      map[uint64]*clusterRuntime
 	servers       map[uint64]*serverRuntime
-	binds         map[uint64]map[uint64]*clusterRuntime
+	binds         map[uint64]*binds
 	proxies       map[string]*metapb.Proxy
 	checkerC      chan uint64
 	watchStopC    chan bool
@@ -223,7 +221,7 @@ func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner) *dispatcher {
 		apis:          make(map[uint64]*apiRuntime),
 		apiSortedKeys: make([]uint64, 0),
 		routings:      make(map[uint64]*routingRuntime),
-		binds:         make(map[uint64]map[uint64]*clusterRuntime),
+		binds:         make(map[uint64]*binds),
 		proxies:       make(map[string]*metapb.Proxy),
 		checkerC:      make(chan uint64, 1024),
 		watchStopC:    make(chan bool),
@@ -234,17 +232,18 @@ func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner) *dispatcher {
 	return rt
 }
 
-func (r *dispatcher) dispatchCompleted() {
-	r.RUnlock()
-}
-
 func (r *dispatcher) dispatch(req *fasthttp.Request, requestTag string) (*apiRuntime, []*dispathNode) {
-	r.RLock()
+	apis := r.apis
+	sortsKeys := r.apiSortedKeys
 
 	var targetAPI *apiRuntime
 	var dispathes []*dispathNode
-	for _, apiKey := range r.apiSortedKeys {
-		api := r.apis[apiKey]
+	for _, apiKey := range sortsKeys {
+		api, ok := apis[apiKey]
+		if !ok {
+			return targetAPI, dispathes
+		}
+
 		if api.matches(req) {
 			targetAPI = api
 			if api.meta.UseDefault {
@@ -275,7 +274,9 @@ func (r *dispatcher) selectServer(req *fasthttp.Request, dn *dispathNode, reques
 }
 
 func (r *dispatcher) adjustByRouting(apiID uint64, req *fasthttp.Request, dn *dispathNode, requestTag string) {
-	for _, routing := range r.routings {
+	routings := r.routings
+
+	for _, routing := range routings {
 		if routing.isUp() && routing.matches(apiID, req, requestTag) {
 			log.Infof("%s: match routing %s, %s traffic to cluster %d",
 				requestTag,
@@ -302,6 +303,9 @@ func (r *dispatcher) selectServerFromCluster(req *fasthttp.Request, id uint64) *
 		return nil
 	}
 
-	sid := cluster.selectServer(req)
-	return r.servers[sid]
+	if bindsInfo, ok := r.binds[id]; ok {
+		return r.servers[cluster.selectServer(req, bindsInfo.actives)]
+	}
+
+	return nil
 }

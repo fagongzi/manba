@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
 	"github.com/valyala/fasthttp"
@@ -29,7 +30,6 @@ func (r *dispatcher) readyToHeathChecker() {
 
 func (r *dispatcher) addToCheck(svr *serverRuntime) {
 	svr.circuit = metapb.Open
-	svr.status = metapb.Unknown
 	if svr.meta.HeathCheck != nil {
 		svr.useCheckDuration = time.Duration(svr.meta.HeathCheck.CheckInterval)
 	}
@@ -39,18 +39,12 @@ func (r *dispatcher) addToCheck(svr *serverRuntime) {
 
 func (r *dispatcher) heathCheckTimeout(arg interface{}) {
 	id := arg.(uint64)
-	r.RLock()
-	_, ok := r.servers[id]
-	r.RUnlock()
-	if ok {
+	if _, ok := r.servers[id]; ok {
 		r.checkerC <- id
 	}
 }
 
 func (r *dispatcher) check(id uint64) {
-	r.RLock()
-	defer r.RUnlock()
-
 	svr, ok := r.servers[id]
 	if !ok {
 		return
@@ -65,41 +59,35 @@ func (r *dispatcher) check(id uint64) {
 		}
 	}()
 
-	prev := svr.status
+	status := metapb.Unknown
+	prev := r.getServerStatus(svr.meta.ID)
 
 	if svr.meta.HeathCheck == nil {
 		log.Warnf("server <%d> heath check not setting", svr.meta.ID)
-		svr.changeTo(metapb.Up)
+		r.watchEventC <- &store.Evt{
+			Src:  eventSrcStatusChanged,
+			Type: eventTypeStatusChanged,
+			Value: statusChanged{
+				meta:   *svr.meta,
+				status: metapb.Up,
+			},
+		}
 	} else {
-
 		if r.doCheck(svr) {
-			svr.changeTo(metapb.Up)
+			status = metapb.Up
 		} else {
-			svr.changeTo(metapb.Down)
+			status = metapb.Down
 		}
 	}
 
-	if prev != svr.status {
-		clusters, ok := r.binds[svr.meta.ID]
-
-		if svr.status == metapb.Up {
-			log.Infof("server <%d> UP",
-				svr.meta.ID)
-
-			if ok {
-				for _, c := range clusters {
-					c.add(svr.meta)
-				}
-			}
-		} else {
-			log.Infof("server <%d> DOWN",
-				svr.meta.ID)
-
-			if ok {
-				for _, c := range clusters {
-					c.remove(svr.meta.ID)
-				}
-			}
+	if prev != status {
+		r.watchEventC <- &store.Evt{
+			Src:  eventSrcStatusChanged,
+			Type: eventTypeStatusChanged,
+			Value: statusChanged{
+				meta:   *svr.meta,
+				status: status,
+			},
 		}
 	}
 }

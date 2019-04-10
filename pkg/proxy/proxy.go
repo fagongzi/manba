@@ -319,7 +319,6 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	if len(dispatches) == 0 &&
 		(nil == api || api.meta.DefaultValue == nil) {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
-		p.dispatcher.dispatchCompleted()
 
 		log.Infof("%s: not match, return with 404",
 			requestTag)
@@ -404,7 +403,6 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	releaseMultiContext(multiCtx)
 
 	p.postRequest(api, dispatches, startAt)
-	p.dispatcher.dispatchCompleted()
 
 	log.Debugf("%s: dispatch complete",
 		requestTag)
