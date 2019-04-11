@@ -72,12 +72,13 @@ func (r *dispatcher) check(id uint64) {
 				status: metapb.Up,
 			},
 		}
+		return
+	}
+
+	if r.doCheck(svr) {
+		status = metapb.Up
 	} else {
-		if r.doCheck(svr) {
-			status = metapb.Up
-		} else {
-			status = metapb.Down
-		}
+		status = metapb.Down
 	}
 
 	if prev != status {
