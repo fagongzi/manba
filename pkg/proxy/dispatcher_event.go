@@ -158,21 +158,22 @@ func (r *dispatcher) doStatusChangedEvent(evt *store.Evt) {
 
 	newValues := r.copyBinds(metapb.Bind{})
 	for _, binds := range newValues {
+		hasServer := false
 		for _, bind := range binds.servers {
 			if bind.svrID == value.meta.ID {
+				hasServer = true
 				bind.status = value.status
 			}
 		}
 
-		if value.status == metapb.Up {
-			binds.actives = append(binds.actives, value.meta)
-		} else {
+		if hasServer {
 			newActives := make([]metapb.Server, len(binds.actives))
 			for _, active := range binds.actives {
-				if active.ID != value.meta.ID {
+				if active.ID != value.meta.ID || value.status == metapb.Up {
 					newActives = append(newActives, active)
 				}
 			}
+
 			binds.actives = newActives
 		}
 	}
