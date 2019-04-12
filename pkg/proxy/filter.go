@@ -12,8 +12,8 @@ import (
 	"golang.org/x/time/rate"
 )
 
-func (f *Proxy) doPreFilters(requestTag string, c filter.Context) (filterName string, statusCode int, err error) {
-	for _, f := range f.filters {
+func (f *Proxy) doPreFilters(requestTag string, c filter.Context, filters ...filter.Filter) (filterName string, statusCode int, err error) {
+	for _, f := range filters {
 		filterName = f.Name()
 
 		statusCode, err = f.Pre(c)
@@ -32,10 +32,10 @@ func (f *Proxy) doPreFilters(requestTag string, c filter.Context) (filterName st
 	return "", http.StatusOK, nil
 }
 
-func (f *Proxy) doPostFilters(requestTag string, c filter.Context) (filterName string, statusCode int, err error) {
-	l := len(f.filters)
+func (f *Proxy) doPostFilters(requestTag string, c filter.Context, filters ...filter.Filter) (filterName string, statusCode int, err error) {
+	l := len(filters)
 	for i := l - 1; i >= 0; i-- {
-		f := f.filters[i]
+		f := filters[i]
 		statusCode, err = f.Post(c)
 		if nil != err {
 			return filterName, statusCode, err
@@ -52,10 +52,10 @@ func (f *Proxy) doPostFilters(requestTag string, c filter.Context) (filterName s
 	return "", http.StatusOK, nil
 }
 
-func (f *Proxy) doPostErrFilters(c filter.Context) {
-	l := len(f.filters)
+func (f *Proxy) doPostErrFilters(c filter.Context, filters ...filter.Filter) {
+	l := len(filters)
 	for i := l - 1; i >= 0; i-- {
-		f := f.filters[i]
+		f := filters[i]
 		f.PostErr(c)
 	}
 }

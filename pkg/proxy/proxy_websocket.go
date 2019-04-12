@@ -48,7 +48,6 @@ func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if len(dispatches) <= 0 &&
 		(nil == api || api.meta.DefaultValue == nil) {
 		rw.WriteHeader(fasthttp.StatusNotFound)
-		p.dispatcher.dispatchCompleted()
 		releaseExprCtx(exprCtx)
 		return
 	}
@@ -66,7 +65,6 @@ func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		c.SetAttr(websocketRspKey, rw)
 	})
 	dispatches[0].release()
-	p.dispatcher.dispatchCompleted()
 	releaseExprCtx(exprCtx)
 }
 

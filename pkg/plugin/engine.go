@@ -3,6 +3,7 @@ package plugin
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
@@ -13,12 +14,23 @@ import (
 type Engine struct {
 	filter.BaseFilter
 
-	applied []*Runtime
+	applied    []*Runtime
+	lastActive time.Time
 }
 
 // NewEngine returns a plugin engine
 func NewEngine() *Engine {
 	return &Engine{}
+}
+
+// LastActive returns the time that last used
+func (eng *Engine) LastActive() time.Time {
+	return eng.lastActive
+}
+
+// Destroy destory all applied plugins
+func (eng *Engine) Destroy() {
+	// TODO: destory
 }
 
 // UpdatePlugin update plugin
@@ -77,6 +89,8 @@ func (eng *Engine) Init(cfg string) error {
 
 // Pre filter pre method
 func (eng *Engine) Pre(c filter.Context) (int, error) {
+	eng.lastActive = time.Now()
+
 	if len(eng.applied) == 0 {
 		return eng.BaseFilter.Pre(c)
 	}
@@ -102,6 +116,8 @@ func (eng *Engine) Pre(c filter.Context) (int, error) {
 
 // Post filter post method
 func (eng *Engine) Post(c filter.Context) (int, error) {
+	eng.lastActive = time.Now()
+
 	if len(eng.applied) == 0 {
 		return eng.BaseFilter.Post(c)
 	}
@@ -131,6 +147,8 @@ func (eng *Engine) Post(c filter.Context) (int, error) {
 
 // PostErr filter post error method
 func (eng *Engine) PostErr(c filter.Context) {
+	eng.lastActive = time.Now()
+
 	if len(eng.applied) == 0 {
 		eng.BaseFilter.PostErr(c)
 		return

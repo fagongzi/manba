@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	"container/list"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -28,18 +27,32 @@ var (
 	dependP = regexp.MustCompile(`\$\w+\.\w+`)
 )
 
+type binds struct {
+	servers []*bindInfo
+	actives []metapb.Server
+}
+
+type bindInfo struct {
+	svrID  uint64
+	status metapb.Status
+}
+
 type clusterRuntime struct {
 	meta *metapb.Cluster
-	svrs *list.List
 	lb   lb.LoadBalance
 }
 
 func newClusterRuntime(meta *metapb.Cluster) *clusterRuntime {
 	return &clusterRuntime{
 		meta: meta,
-		svrs: list.New(),
 		lb:   lb.NewLoadBalance(meta.LoadBalance),
 	}
+}
+
+func (c *clusterRuntime) clone() *clusterRuntime {
+	meta := &metapb.Cluster{}
+	pbutil.MustUnmarshal(meta, pbutil.MustMarshal(c.meta))
+	return newClusterRuntime(meta)
 }
 
 func (c *clusterRuntime) updateMeta(meta *metapb.Cluster) {
@@ -47,57 +60,8 @@ func (c *clusterRuntime) updateMeta(meta *metapb.Cluster) {
 	c.lb = lb.NewLoadBalance(meta.LoadBalance)
 }
 
-func (c *clusterRuntime) foreach(do func(uint64)) {
-	for iter := c.svrs.Back(); iter != nil; iter = iter.Prev() {
-		svr, _ := iter.Value.(*metapb.Server)
-		do(svr.ID)
-	}
-}
-
-func (c *clusterRuntime) remove(id uint64) {
-	remove(c.svrs, id)
-	log.Infof("bind <%d,%d> inactived", c.meta.ID, id)
-}
-
-func remove(l *list.List, id uint64) {
-	var e *list.Element
-
-	for iter := l.Front(); iter != nil; iter = iter.Next() {
-		if iter.Value.(*metapb.Server).ID == id {
-			e = iter
-			break
-		}
-	}
-
-	if nil != e {
-		l.Remove(e)
-	}
-}
-
-func (c *clusterRuntime) add(svr *metapb.Server) {
-	if indexOf(c.svrs, svr.ID) >= 0 {
-		return
-	}
-
-	c.svrs.PushBack(svr)
-	log.Infof("bind <%d,%d> actived", c.meta.ID, svr.ID)
-}
-
-func indexOf(l *list.List, id uint64) int {
-	i := 0
-	for iter := l.Front(); iter != nil; iter = iter.Next() {
-		if iter.Value.(*metapb.Server).ID == id {
-			return i
-		}
-
-		i++
-	}
-
-	return -1
-}
-
-func (c *clusterRuntime) selectServer(req *fasthttp.Request) uint64 {
-	return c.lb.Select(req, c.svrs)
+func (c *clusterRuntime) selectServer(req *fasthttp.Request, svrs []metapb.Server) uint64 {
+	return c.lb.Select(req, svrs)
 }
 
 type abstractSupportProtectedRuntime struct {
@@ -160,7 +124,6 @@ type serverRuntime struct {
 	abstractSupportProtectedRuntime
 
 	meta             *metapb.Server
-	status           metapb.Status
 	heathTimeout     goetty.Timeout
 	checkFailCount   int
 	useCheckDuration time.Duration
@@ -192,7 +155,6 @@ func (s *serverRuntime) updateMeta(meta *metapb.Server) {
 	s.id = meta.ID
 	s.cb = meta.CircuitBreaker
 	s.limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(s.activeQPS)), int(s.activeQPS))
-	s.status = metapb.Down
 	s.circuit = metapb.Open
 	if s.cb != nil {
 		s.barrier = util.NewRateBarrier(int(s.cb.HalfTrafficRate))
@@ -211,10 +173,6 @@ func (s *serverRuntime) fail() {
 func (s *serverRuntime) reset() {
 	s.checkFailCount = 0
 	s.useCheckDuration = time.Duration(s.meta.HeathCheck.CheckInterval)
-}
-
-func (s *serverRuntime) changeTo(status metapb.Status) {
-	s.status = status
 }
 
 type ipSegment struct {
@@ -556,6 +514,12 @@ func newRoutingRuntime(meta *metapb.Routing) *routingRuntime {
 	r.updateMeta(meta)
 
 	return r
+}
+
+func (a *routingRuntime) clone() *routingRuntime {
+	meta := &metapb.Routing{}
+	pbutil.MustUnmarshal(meta, pbutil.MustMarshal(a.meta))
+	return newRoutingRuntime(meta)
 }
 
 func (a *routingRuntime) updateMeta(meta *metapb.Routing) {

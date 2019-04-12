@@ -5,7 +5,7 @@ var (
 )
 
 func init() {
-	builtins["http"] = &HTTPModule{}
+	builtins["http"] = newHTTPModule()
 	builtins["json"] = &JSONModule{}
 	builtins["log"] = &LogModule{}
 	builtins["redis"] = &RedisModule{}

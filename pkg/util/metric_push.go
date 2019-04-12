@@ -20,6 +20,11 @@ import (
 
 const contentTypeHeader = "Content-Type"
 
+var (
+	client         = &http.Client{}
+	defaultTimeout = time.Second * 15
+)
+
 // MetricCfg is the metric configuration.
 type MetricCfg struct {
 	Job          string
@@ -44,6 +49,9 @@ func StartMetricsPush(runner *task.Runner, cfg *MetricCfg) {
 		log.Info("metric: disable prometheus push client")
 		return
 	}
+
+	*client = *http.DefaultClient
+	client.Timeout = defaultTimeout
 
 	log.Info("metric: start prometheus push client")
 	runner.RunCancelableTask(func(ctx context.Context) {
@@ -129,7 +137,7 @@ func doPush(job string, grouping map[string]string, pushURL string, g prometheus
 		return err
 	}
 	req.Header.Set(contentTypeHeader, string(expfmt.FmtProtoDelim))
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/valyala/fasthttp"
 )
@@ -96,6 +97,17 @@ func (res *HTTPResult) Body() string {
 
 // HTTPModule http module
 type HTTPModule struct {
+	client *http.Client
+}
+
+func newHTTPModule() *HTTPModule {
+	client := &http.Client{}
+	*client = *http.DefaultClient
+	client.Timeout = time.Second * 30
+
+	return &HTTPModule{
+		client: client,
+	}
 }
 
 // NewHTTPResponse returns http response
@@ -105,7 +117,7 @@ func (h *HTTPModule) NewHTTPResponse() *FastHTTPResponseAdapter {
 
 // Get go get
 func (h *HTTPModule) Get(url string) *HTTPResult {
-	rsp, err := http.DefaultClient.Get(url)
+	rsp, err := h.client.Get(url)
 	return newHTTPResult(rsp, err)
 }
 
@@ -155,6 +167,6 @@ func (h *HTTPModule) do(method string, url string, body string, header map[strin
 		}
 	}
 
-	rsp, err := http.DefaultClient.Do(req)
+	rsp, err := h.client.Do(req)
 	return newHTTPResult(rsp, err)
 }
