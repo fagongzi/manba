@@ -62,14 +62,15 @@ type Proxy struct {
 	dispatches               []chan *dispathNode
 	copies                   []chan *copyReq
 
-	cfg        *Cfg
-	filtersMap map[string]filter.Filter
-	filters    []filter.Filter
-	client     *util.FastHTTPClient
-	dispatcher *dispatcher
-	jsEngine   *plugin.Engine
-
+	cfg         *Cfg
+	filtersMap  map[string]filter.Filter
+	filters     []filter.Filter
+	client      *util.FastHTTPClient
+	dispatcher  *dispatcher
 	rpcListener net.Listener
+
+	jsEngine    *plugin.Engine
+	gcJSEngines []*plugin.Engine
 
 	runner   *task.Runner
 	stopped  int32
@@ -115,6 +116,7 @@ func (p *Proxy) Start() {
 
 	util.StartMetricsPush(p.runner, p.cfg.Metric)
 
+	p.readyToGCJSEngine()
 	p.readyToCopy()
 	p.readyToDispatch()
 
@@ -232,7 +234,7 @@ func (p *Proxy) initDispatcher() error {
 		return err
 	}
 
-	p.dispatcher = newDispatcher(p.cfg, s, p.runner, p.jsEngine)
+	p.dispatcher = newDispatcher(p.cfg, s, p.runner, p.updateJSEngine)
 	return nil
 }
 
@@ -256,6 +258,20 @@ func (p *Proxy) initFilters() {
 		p.filtersMap[f.Name()] = f
 		log.Infof("filter added, filter=<%s>", f.Name())
 	}
+}
+
+func (p *Proxy) updateJSEngine(jsEngine *plugin.Engine) {
+	var newValues []filter.Filter
+	for _, f := range p.filters {
+		if f.Name() != FilterJSPlugin {
+			newValues = append(newValues, f)
+		} else {
+			p.addGCJSEngine(f.(*plugin.Engine))
+			newValues = append(newValues, jsEngine)
+		}
+	}
+
+	p.filters = newValues
 }
 
 func (p *Proxy) readyToDispatch() {
@@ -324,7 +340,6 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	if len(dispatches) == 0 &&
 		(nil == api || api.meta.DefaultValue == nil) {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
-		p.dispatcher.dispatchCompleted()
 		releaseExprCtx(exprCtx)
 
 		log.Infof("%s: not match, return with 404",
@@ -414,7 +429,6 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	releaseMultiContext(multiCtx)
 
 	p.postRequest(api, dispatches, startAt)
-	p.dispatcher.dispatchCompleted()
 	releaseExprCtx(exprCtx)
 
 	log.Debugf("%s: dispatch complete",
@@ -505,8 +519,10 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 		adjustH(c)
 	}
 
+	filters := p.filters
+
 	// pre filters
-	filterName, code, err := p.doPreFilters(dn.requestTag, c)
+	filterName, code, err := p.doPreFilters(dn.requestTag, c, filters...)
 	if nil != err {
 		dn.err = err
 		dn.code = code
@@ -640,7 +656,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 		}
 
 		if nil == err || !strings.HasPrefix(err.Error(), ErrPrefixRequestCancel) {
-			p.doPostErrFilters(c)
+			p.doPostErrFilters(c, filters...)
 		}
 
 		dn.err = err
@@ -660,7 +676,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 	}
 
 	// post filters
-	filterName, code, err = p.doPostFilters(dn.requestTag, c)
+	filterName, code, err = p.doPostFilters(dn.requestTag, c, filters...)
 	if nil != err {
 		log.Errorf("%s: dipatch node %d call filter %s post failed with error %s",
 			dn.requestTag,

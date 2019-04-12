@@ -4,9 +4,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fagongzi/gateway/pkg/plugin"
+
 	"github.com/fagongzi/gateway/pkg/expr"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
-	"github.com/fagongzi/gateway/pkg/plugin"
 	"github.com/fagongzi/gateway/pkg/route"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
@@ -194,18 +195,17 @@ func (dn *dispathNode) maybeDone() {
 }
 
 type dispatcher struct {
-	sync.RWMutex
-
 	cnf            *Cfg
 	routings       map[uint64]*routingRuntime
 	route          *route.Route
 	apis           map[uint64]*apiRuntime
 	clusters       map[uint64]*clusterRuntime
 	servers        map[uint64]*serverRuntime
-	binds          map[uint64]map[uint64]*clusterRuntime
+	binds          map[uint64]*binds
 	proxies        map[string]*metapb.Proxy
 	plugins        map[uint64]*metapb.Plugin
 	appliedPlugins *metapb.AppliedPlugins
+	jsEngineFunc   func(*plugin.Engine)
 	checkerC       chan uint64
 	watchStopC     chan bool
 	watchEventC    chan *store.Evt
@@ -214,50 +214,44 @@ type dispatcher struct {
 	httpClient     *util.FastHTTPClient
 	tw             *goetty.TimeoutWheel
 	runner         *task.Runner
-	jsEngine       *plugin.Engine
 }
 
-func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner, jsEngine *plugin.Engine) *dispatcher {
+func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner, jsEngineFunc func(*plugin.Engine)) *dispatcher {
 	tw := goetty.NewTimeoutWheel(goetty.WithTickInterval(time.Second))
 	rt := &dispatcher{
-		cnf:         cnf,
-		tw:          tw,
-		store:       db,
-		runner:      runner,
-		analysiser:  util.NewAnalysis(tw),
-		httpClient:  util.NewFastHTTPClient(),
-		clusters:    make(map[uint64]*clusterRuntime),
-		servers:     make(map[uint64]*serverRuntime),
-		route:       route.NewRoute(),
-		apis:        make(map[uint64]*apiRuntime),
-		routings:    make(map[uint64]*routingRuntime),
-		binds:       make(map[uint64]map[uint64]*clusterRuntime),
-		proxies:     make(map[string]*metapb.Proxy),
-		plugins:     make(map[uint64]*metapb.Plugin),
-		checkerC:    make(chan uint64, 1024),
-		watchStopC:  make(chan bool),
-		watchEventC: make(chan *store.Evt),
-		jsEngine:    jsEngine,
+		cnf:          cnf,
+		tw:           tw,
+		store:        db,
+		runner:       runner,
+		analysiser:   util.NewAnalysis(tw),
+		httpClient:   util.NewFastHTTPClient(),
+		clusters:     make(map[uint64]*clusterRuntime),
+		servers:      make(map[uint64]*serverRuntime),
+		route:        route.NewRoute(),
+		apis:         make(map[uint64]*apiRuntime),
+		routings:     make(map[uint64]*routingRuntime),
+		binds:        make(map[uint64]*binds),
+		proxies:      make(map[string]*metapb.Proxy),
+		plugins:      make(map[uint64]*metapb.Plugin),
+		jsEngineFunc: jsEngineFunc,
+		checkerC:     make(chan uint64, 1024),
+		watchStopC:   make(chan bool),
+		watchEventC:  make(chan *store.Evt),
 	}
 
 	rt.readyToHeathChecker()
 	return rt
 }
 
-func (r *dispatcher) dispatchCompleted() {
-	r.RUnlock()
-}
-
 func (r *dispatcher) dispatch(req *fasthttp.Request, requestTag string) (*apiRuntime, []*dispathNode, *expr.Ctx) {
-	r.RLock()
-
+	route := r.route
 	var targetAPI *apiRuntime
 	var dispathes []*dispathNode
 
 	exprCtx := acquireExprCtx()
 	exprCtx.Origin = req
 
-	id, ok := r.route.Find(req.URI().Path(), exprCtx.AddParam)
+	id, ok := route.Find(req.URI().Path(), exprCtx.AddParam)
 	if ok {
 		api := r.apis[id]
 		if api.matches(req) {
@@ -294,7 +288,9 @@ func (r *dispatcher) selectServer(req *fasthttp.Request, dn *dispathNode, reques
 }
 
 func (r *dispatcher) adjustByRouting(apiID uint64, req *fasthttp.Request, dn *dispathNode, requestTag string) {
-	for _, routing := range r.routings {
+	routings := r.routings
+
+	for _, routing := range routings {
 		if routing.isUp() && routing.matches(apiID, req, requestTag) {
 			log.Infof("%s: match routing %s, %s traffic to cluster %d",
 				requestTag,
@@ -321,6 +317,9 @@ func (r *dispatcher) selectServerFromCluster(req *fasthttp.Request, id uint64) *
 		return nil
 	}
 
-	sid := cluster.selectServer(req)
-	return r.servers[sid]
+	if bindsInfo, ok := r.binds[id]; ok {
+		return r.servers[cluster.selectServer(req, bindsInfo.actives)]
+	}
+
+	return nil
 }
