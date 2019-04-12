@@ -251,7 +251,7 @@ func (r *dispatcher) dispatch(req *fasthttp.Request, requestTag string) (*apiRun
 	exprCtx := acquireExprCtx()
 	exprCtx.Origin = req
 
-	id, ok := route.Find(req.URI().Path(), exprCtx.AddParam)
+	id, ok := route.Find(req.URI().Path(), hack.SliceToString(req.Header.Method()), exprCtx.AddParam)
 	if ok {
 		api := r.apis[id]
 		if api.matches(req) {
