@@ -13,25 +13,10 @@ import (
 type routeItem struct {
 	node     node
 	children []*routeItem
-	api      uint64
+	apis     map[string]uint64
 }
 
-func (item *routeItem) removeAPI(api uint64) bool {
-	if item.api == api {
-		item.api = 0
-		return true
-	}
-
-	for _, c := range item.children {
-		if c.removeAPI(api) {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (item *routeItem) addChildren(id uint64, nodes ...node) {
+func (item *routeItem) addChildren(id uint64, method string, nodes ...node) {
 	parent := item
 
 	for _, n := range nodes {
@@ -45,7 +30,11 @@ func (item *routeItem) addChildren(id uint64, nodes ...node) {
 		parent = p
 	}
 
-	parent.api = id
+	if parent.apis == nil {
+		parent.apis = make(map[string]uint64, 4)
+	}
+
+	parent.apis[method] = id
 }
 
 func (item *routeItem) urlMatches(n node) bool {
@@ -140,31 +129,35 @@ func (r *Route) Add(api *metapb.API) error {
 	}
 
 	if matchedIdx == len(nodes)-1 {
-		if parent.api != 0 {
-			return fmt.Errorf("conflict with api %d", parent.api)
+		if parent.apis != nil {
+			if api.Method == "*" && len(parent.apis) > 0 {
+				conflict := uint64(0)
+				for _, id := range parent.apis {
+					conflict = id
+					break
+				}
+				return fmt.Errorf("conflict with api %d", conflict)
+			}
+
+			if parent.apis["*"] != 0 {
+				return fmt.Errorf("conflict with api %d", parent.apis["*"])
+			} else if parent.apis[api.Method] != 0 {
+				return fmt.Errorf("conflict with api %d", parent.apis[api.Method])
+			}
+		} else {
+			parent.apis = make(map[string]uint64, 4)
 		}
 
-		parent.api = api.ID
+		parent.apis[api.Method] = api.ID
 		return nil
 	}
 
-	parent.addChildren(api.ID, nodes[matchedIdx+1:]...)
+	parent.addChildren(api.ID, api.Method, nodes[matchedIdx+1:]...)
 	return nil
 }
 
-// Remove remove api
-func (r *Route) Remove(api uint64) bool {
-	return r.root.removeAPI(api)
-}
-
-// Update update api
-func (r *Route) Update(api *metapb.API) error {
-	r.Remove(api.ID)
-	return r.Add(api)
-}
-
 // Find find matched api for url
-func (r *Route) Find(url []byte, paramsFunc func(name, value []byte)) (uint64, bool) {
+func (r *Route) Find(url []byte, method string, paramsFunc func(name, value []byte)) (uint64, bool) {
 	p := newParser(url)
 	nodes, err := p.parse()
 	if err != nil {
@@ -207,11 +200,17 @@ func (r *Route) Find(url []byte, paramsFunc func(name, value []byte)) (uint64, b
 	}
 
 	if matchedIdx == len(nodes)-1 {
-		if target.api == 0 {
+		if target.apis == nil {
 			return 0, false
 		}
 
-		return target.api, true
+		if id, ok := target.apis[method]; ok {
+			return id, true
+		} else if id, ok := target.apis["*"]; ok {
+			return id, true
+		}
+
+		return 0, false
 	}
 
 	return 0, false

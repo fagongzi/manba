@@ -36,13 +36,15 @@ func (r *dispatcher) copyRoutings(exclude uint64) map[uint64]*routingRuntime {
 	return values
 }
 
-func (r *dispatcher) copyAPIs(exclude uint64) (*route.Route, map[uint64]*apiRuntime) {
+func (r *dispatcher) copyAPIs(exclude uint64, excludeToRoute uint64) (*route.Route, map[uint64]*apiRuntime) {
 	route := route.NewRoute()
 	values := make(map[uint64]*apiRuntime)
 	for key, value := range r.apis {
 		if key != exclude {
 			values[key] = value.clone()
-			route.Add(values[key].meta)
+			if key != excludeToRoute {
+				route.Add(values[key].meta)
+			}
 		}
 	}
 

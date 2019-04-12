@@ -7,11 +7,90 @@ import (
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 )
 
+func TestAddWithMethod(t *testing.T) {
+	r := NewRoute()
+	err := r.Add(&metapb.API{
+		ID:         1,
+		URLPattern: "/users",
+		Method:     "GET",
+	})
+	if err != nil {
+		t.Errorf("add error")
+	}
+	if len(r.root.children) != 1 {
+		t.Errorf("expect 1 children but %d", len(r.root.children))
+	}
+
+	err = r.Add(&metapb.API{
+		ID:         1,
+		URLPattern: "/users",
+		Method:     "PUT",
+	})
+	if err != nil {
+		t.Errorf("add error")
+	}
+	if len(r.root.children) != 1 {
+		t.Errorf("expect 1 children but %d", len(r.root.children))
+	}
+
+	err = r.Add(&metapb.API{
+		ID:         1,
+		URLPattern: "/users",
+		Method:     "DELETE",
+	})
+	if err != nil {
+		t.Errorf("add error")
+	}
+	if len(r.root.children) != 1 {
+		t.Errorf("expect 1 children but %d", len(r.root.children))
+	}
+
+	err = r.Add(&metapb.API{
+		ID:         1,
+		URLPattern: "/users",
+		Method:     "POST",
+	})
+	if err != nil {
+		t.Errorf("add error")
+	}
+	if len(r.root.children) != 1 {
+		t.Errorf("expect 1 children but %d", len(r.root.children))
+	}
+
+	err = r.Add(&metapb.API{
+		ID:         1,
+		URLPattern: "/users",
+		Method:     "*",
+	})
+	if err == nil {
+		t.Errorf("add error, expect error")
+	}
+
+	err = r.Add(&metapb.API{
+		ID:         1,
+		URLPattern: "/v1/users",
+		Method:     "*",
+	})
+	if err != nil {
+		t.Errorf("add error")
+	}
+
+	err = r.Add(&metapb.API{
+		ID:         1,
+		URLPattern: "/v1/users",
+		Method:     "GET",
+	})
+	if err == nil {
+		t.Errorf("add error, expect error")
+	}
+}
+
 func TestAdd(t *testing.T) {
 	r := NewRoute()
 	err := r.Add(&metapb.API{
 		ID:         1,
 		URLPattern: "/users",
+		Method:     "*",
 	})
 	if err != nil {
 		t.Errorf("add error")
@@ -23,6 +102,7 @@ func TestAdd(t *testing.T) {
 	err = r.Add(&metapb.API{
 		ID:         2,
 		URLPattern: "/accounts",
+		Method:     "*",
 	})
 	if err != nil {
 		t.Errorf("add error with 2 const")
@@ -34,6 +114,7 @@ func TestAdd(t *testing.T) {
 	err = r.Add(&metapb.API{
 		ID:         3,
 		URLPattern: "/(string):name",
+		Method:     "*",
 	})
 	if err != nil {
 		t.Errorf("add error with const and string")
@@ -45,6 +126,7 @@ func TestAdd(t *testing.T) {
 	err = r.Add(&metapb.API{
 		ID:         4,
 		URLPattern: "/(number):age",
+		Method:     "*",
 	})
 	if err != nil {
 		t.Errorf("add error with const, string, number")
@@ -56,6 +138,7 @@ func TestAdd(t *testing.T) {
 	err = r.Add(&metapb.API{
 		ID:         5,
 		URLPattern: "/(enum:off|on):action",
+		Method:     "*",
 	})
 	if err != nil {
 		t.Errorf("add error with const, string, number, enum")
@@ -70,22 +153,27 @@ func TestFind(t *testing.T) {
 	r.Add(&metapb.API{
 		ID:         1,
 		URLPattern: "/",
+		Method:     "*",
 	})
 	r.Add(&metapb.API{
 		ID:         2,
 		URLPattern: "/check",
+		Method:     "*",
 	})
 	r.Add(&metapb.API{
 		ID:         3,
 		URLPattern: "/(string):name",
+		Method:     "*",
 	})
 	r.Add(&metapb.API{
 		ID:         4,
 		URLPattern: "/(number):age",
+		Method:     "*",
 	})
 	r.Add(&metapb.API{
 		ID:         5,
 		URLPattern: "/(enum:on|off):action",
+		Method:     "*",
 	})
 
 	params := make(map[string][]byte, 0)
@@ -93,19 +181,19 @@ func TestFind(t *testing.T) {
 		params[string(name)] = value
 	}
 
-	id, _ := r.Find([]byte("/"), paramsFunc)
+	id, _ := r.Find([]byte("/"), "GET", paramsFunc)
 	if id != 1 {
 		t.Errorf("expect matched 1, but %d", id)
 	}
 
 	params = make(map[string][]byte, 0)
-	id, _ = r.Find([]byte("/check"), paramsFunc)
+	id, _ = r.Find([]byte("/check"), "GET", paramsFunc)
 	if id != 2 {
 		t.Errorf("expect matched 2, but %d", id)
 	}
 
 	params = make(map[string][]byte, 0)
-	id, _ = r.Find([]byte("/check2"), paramsFunc)
+	id, _ = r.Find([]byte("/check2"), "GET", paramsFunc)
 	if id != 3 {
 		t.Errorf("expect matched 3, but %d", id)
 	}
@@ -114,7 +202,7 @@ func TestFind(t *testing.T) {
 	}
 
 	params = make(map[string][]byte, 0)
-	id, _ = r.Find([]byte("/123"), paramsFunc)
+	id, _ = r.Find([]byte("/123"), "GET", paramsFunc)
 	if id != 4 {
 		t.Errorf("expect matched 4, but %d", id)
 	}
@@ -123,7 +211,7 @@ func TestFind(t *testing.T) {
 	}
 
 	params = make(map[string][]byte, 0)
-	id, _ = r.Find([]byte("/on"), paramsFunc)
+	id, _ = r.Find([]byte("/on"), "GET", paramsFunc)
 	if id != 5 {
 		t.Errorf("expect matched 5, but %d", id)
 	}
@@ -132,7 +220,7 @@ func TestFind(t *testing.T) {
 	}
 
 	params = make(map[string][]byte, 0)
-	id, _ = r.Find([]byte("/off"), paramsFunc)
+	id, _ = r.Find([]byte("/off"), "GET", paramsFunc)
 	if id != 5 {
 		t.Errorf("expect matched 5, but %d", id)
 	}
@@ -141,7 +229,7 @@ func TestFind(t *testing.T) {
 	}
 
 	params = make(map[string][]byte, 0)
-	id, _ = r.Find([]byte("/on/notmatches"), paramsFunc)
+	id, _ = r.Find([]byte("/on/notmatches"), "GET", paramsFunc)
 	if id != 0 {
 		t.Errorf("expect not matched , but %d", id)
 	}

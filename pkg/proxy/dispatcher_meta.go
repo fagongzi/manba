@@ -241,7 +241,7 @@ func (r *dispatcher) addAPI(api *metapb.API) error {
 	}
 
 	a := newAPIRuntime(api, r.tw, r.refreshQPS(api.MaxQPS))
-	newRoute, newValues := r.copyAPIs(0)
+	newRoute, newValues := r.copyAPIs(0, 0)
 	newValues[api.ID] = a
 	err := newRoute.Add(a.meta)
 	if err != nil {
@@ -267,12 +267,12 @@ func (r *dispatcher) updateAPI(api *metapb.API) error {
 		return errAPINotFound
 	}
 
-	newRoute, newValues := r.copyAPIs(0)
+	newRoute, newValues := r.copyAPIs(0, api.ID)
 	rt := newValues[api.ID]
 	rt.activeQPS = r.refreshQPS(api.MaxQPS)
 	rt.updateMeta(api)
 
-	err := newRoute.Update(rt.meta)
+	err := newRoute.Add(rt.meta)
 	if err != nil {
 		return err
 	}
@@ -295,7 +295,7 @@ func (r *dispatcher) removeAPI(id uint64) error {
 		return errAPINotFound
 	}
 
-	newRoute, newValues := r.copyAPIs(id)
+	newRoute, newValues := r.copyAPIs(id, 0)
 	r.route = newRoute
 	r.apis = newValues
 
