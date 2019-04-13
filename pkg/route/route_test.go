@@ -148,6 +148,26 @@ func TestAdd(t *testing.T) {
 	}
 }
 
+func TestFindWithStar(t *testing.T) {
+	r := NewRoute()
+	r.Add(&metapb.API{
+		ID:         1,
+		URLPattern: "/*",
+		Method:     "*",
+	})
+
+	r.Add(&metapb.API{
+		ID:         2,
+		URLPattern: "/users/1",
+		Method:     "*",
+	})
+
+	id, _ := r.Find([]byte("/users/1"), "GET", nil)
+	if id != 1 {
+		t.Errorf("expect matched 1, but %d", id)
+	}
+}
+
 func TestFind(t *testing.T) {
 	r := NewRoute()
 	r.Add(&metapb.API{
