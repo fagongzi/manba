@@ -37,7 +37,7 @@ func (item *routeItem) addChildren(id uint64, method string, nodes ...node) {
 	parent.apis[method] = id
 }
 
-func (item *routeItem) urlMatches(n node) bool {
+func (item *routeItem) urlMatches(n node, matchAllParam *bytes.Buffer) bool {
 	switch item.node.nt {
 	case slashType:
 		return n.nt == slashType
@@ -46,7 +46,13 @@ func (item *routeItem) urlMatches(n node) bool {
 	case enumType:
 		return item.node.inEnumValue(n.value)
 	case constType:
-		return item.node.isMatchAllConstString() || bytes.Compare(item.node.value, n.value) == 0
+		if item.node.isMatchAllConstString() {
+			matchAllParam.WriteByte('/')
+			matchAllParam.Write(n.value)
+			return true
+		}
+
+		return bytes.Compare(item.node.value, n.value) == 0
 	case stringType:
 		return true
 	default:
@@ -164,23 +170,25 @@ func (r *Route) Find(url []byte, method string, paramsFunc func(name, value []by
 		return 0, false
 	}
 
+	var matchAllParams bytes.Buffer
 	nodes = removeSlash(nodes...)
 	target := r.root
 	matchedIdx := 0
 	for idx, node := range nodes {
-		if target.urlMatches(node) {
+		if target.urlMatches(node, &matchAllParams) {
 			matchedIdx = idx
 			if target.node.hasArg {
 				if paramsFunc != nil {
 					paramsFunc(target.node.argName, node.value)
 				}
 			}
+
 			continue
 		}
 
 		matched := false
 		for _, item := range target.children {
-			if item.urlMatches(node) {
+			if item.urlMatches(node, &matchAllParams) {
 				target = item
 				matched = true
 				matchedIdx = idx
@@ -204,6 +212,9 @@ func (r *Route) Find(url []byte, method string, paramsFunc func(name, value []by
 			return 0, false
 		}
 
+		if paramsFunc != nil && len(matchAllParams.Bytes()) > 0 {
+			paramsFunc(matchAll, matchAllParams.Bytes()[1:])
+		}
 		if id, ok := target.apis[method]; ok {
 			return id, true
 		} else if id, ok := target.apis["*"]; ok {

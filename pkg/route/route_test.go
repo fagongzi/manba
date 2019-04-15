@@ -168,6 +168,36 @@ func TestFindWithStar(t *testing.T) {
 	}
 }
 
+func TestFindMatchAll(t *testing.T) {
+	r := NewRoute()
+	r.Add(&metapb.API{
+		ID:         1,
+		URLPattern: "/*",
+		Method:     "*",
+	})
+
+	params := make(map[string][]byte, 0)
+	paramsFunc := func(name, value []byte) {
+		params[string(name)] = value
+	}
+
+	id, _ := r.Find([]byte("/p1"), "GET", paramsFunc)
+	if id != 1 {
+		t.Errorf("expect matched 1, but %d", id)
+	}
+	if bytes.Compare(params["*"], []byte("p1")) != 0 {
+		t.Errorf("expect params p1, but %s", params["*"])
+	}
+
+	id, _ = r.Find([]byte("/p1/p2"), "GET", paramsFunc)
+	if id != 1 {
+		t.Errorf("expect matched 1, but %d", id)
+	}
+	if bytes.Compare(params["*"], []byte("p1/p2")) != 0 {
+		t.Errorf("expect params p1/p2, but %s", params["*"])
+	}
+}
+
 func TestFind(t *testing.T) {
 	r := NewRoute()
 	r.Add(&metapb.API{

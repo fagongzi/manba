@@ -253,8 +253,7 @@ func (r *dispatcher) dispatch(req *fasthttp.Request, requestTag string) (*apiRun
 
 	id, ok := route.Find(req.URI().Path(), hack.SliceToString(req.Header.Method()), exprCtx.AddParam)
 	if ok {
-		api := r.apis[id]
-		if api.matches(req) {
+		if api, ok := r.apis[id]; ok && api.matches(req) {
 			targetAPI = api
 		}
 	}
