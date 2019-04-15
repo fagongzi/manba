@@ -2,7 +2,7 @@
 github.com/beorn7/perks/quantile
 # github.com/buger/jsonparser v0.0.0-20180318095312-2cac668e8456
 github.com/buger/jsonparser
-# github.com/coreos/etcd v0.0.0-20180615164156-33245c6b5b49
+# github.com/coreos/etcd v3.3.12+incompatible
 github.com/coreos/etcd/clientv3
 github.com/coreos/etcd/mvcc/mvccpb
 github.com/coreos/etcd/auth/authpb
@@ -40,11 +40,11 @@ github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 # github.com/gorilla/websocket v0.0.0-20180816221803-3ff3320c2a17
 github.com/gorilla/websocket
-# github.com/klauspost/compress v0.0.0-20180708153741-b939724e787a
+# github.com/klauspost/compress v1.4.0
 github.com/klauspost/compress/flate
 github.com/klauspost/compress/gzip
 github.com/klauspost/compress/zlib
-# github.com/klauspost/cpuid v0.0.0-20170728055534-ae7887de9fa5
+# github.com/klauspost/cpuid v0.0.0-20180405133222-e7e905edc00e
 github.com/klauspost/cpuid
 # github.com/koding/websocketproxy v0.0.0-20180716164433-0fa3f994f6e7
 github.com/koding/websocketproxy
@@ -88,9 +88,9 @@ github.com/robertkrimen/otto/registry
 github.com/robertkrimen/otto/token
 # github.com/soheilhy/cmux v0.0.0-20180129155001-e09e9389d85d
 github.com/soheilhy/cmux
-# github.com/valyala/bytebufferpool v0.0.0-20160817181652-e746df99fe4a
+# github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
-# github.com/valyala/fasthttp v0.0.0-20171207120941-e5f51c11919d
+# github.com/valyala/fasthttp v1.2.0
 github.com/valyala/fasthttp
 github.com/valyala/fasthttp/fasthttputil
 github.com/valyala/fasthttp/stackless
@@ -99,7 +99,7 @@ github.com/valyala/fasttemplate
 # golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
 golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/acme
-# golang.org/x/net v0.0.0-20180712202826-d0887baf81f4
+# golang.org/x/net v0.0.0-20180911220305-26e67e76b6c3
 golang.org/x/net/context
 golang.org/x/net/http2
 golang.org/x/net/trace

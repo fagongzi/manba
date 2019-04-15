@@ -355,7 +355,6 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		api.meta.Name,
 		len(dispatches))
 
-	incrRequest(api.meta.Name)
 
 	rd := acquireRender()
 	rd.init(requestTag, api, dispatches)
@@ -428,6 +427,7 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	releaseRender(rd)
 	releaseMultiContext(multiCtx)
 
+	incrRequest(api.meta.Name)
 	p.postRequest(api, dispatches, startAt)
 	releaseExprCtx(exprCtx)
 
