@@ -24,6 +24,8 @@ var (
 	numberValue = []byte("number")
 	stringValue = []byte("string")
 	enumValue   = []byte("enum")
+
+	matchAll = []byte("*")
 )
 
 type nodeType int

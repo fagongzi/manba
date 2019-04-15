@@ -74,11 +74,11 @@ darwin:
 
 .PHONY: apiserver
 apiserver: ; $(info ======== compiled apiserver:)
-	env CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) go build -a -installsuffix cgo -o $(DIST_DIR)apiserver $(LD_FLAGS) $(ROOT_DIR)cmd/api/*.go
+	env GO111MODULE=off CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) go build -a -installsuffix cgo -o $(DIST_DIR)apiserver $(LD_FLAGS) $(ROOT_DIR)cmd/api/*.go
 
 .PHONY: proxy
 proxy: ; $(info ======== compiled proxy:)
-	env CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) go build -a -installsuffix cgo -o $(DIST_DIR)proxy $(LD_FLAGS) $(ROOT_DIR)cmd/proxy/*.go
+	env GO111MODULE=off CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) go build -a -installsuffix cgo -o $(DIST_DIR)proxy $(LD_FLAGS) $(ROOT_DIR)cmd/proxy/*.go
 
 .PHONY: download_etcd
 download_etcd:
