@@ -21,7 +21,6 @@ github.com/fagongzi/log
 # github.com/fagongzi/util v0.0.0-20180330021808-4acf02da76a9
 github.com/fagongzi/util/format
 github.com/fagongzi/util/hack
-github.com/fagongzi/util/collection
 github.com/fagongzi/util/protoc
 github.com/fagongzi/util/task
 github.com/fagongzi/util/atomic
@@ -62,9 +61,6 @@ github.com/mattn/go-colorable
 github.com/mattn/go-isatty
 # github.com/matttproud/golang_protobuf_extensions v0.0.0-20160424113007-c12348ce28de
 github.com/matttproud/golang_protobuf_extensions/pbutil
-# github.com/opentracing/opentracing-go v1.0.2
-github.com/opentracing/opentracing-go
-github.com/opentracing/opentracing-go/log
 # github.com/prometheus/client_golang v0.0.0-20160817154824-c5b7fccd2042
 github.com/prometheus/client_golang/prometheus
 # github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910
@@ -99,21 +95,8 @@ github.com/valyala/fasttemplate
 # golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
 golang.org/x/crypto/acme/autocert
 golang.org/x/crypto/acme
-# golang.org/x/net v0.0.0-20180911220305-26e67e76b6c3
-golang.org/x/net/context
-golang.org/x/net/http2
-golang.org/x/net/trace
-golang.org/x/net/http2/hpack
-golang.org/x/net/http/httpguts
-golang.org/x/net/idna
-golang.org/x/net/internal/timeseries
 # golang.org/x/sys v0.0.0-20180905080454-ebe1bf3edb33
 golang.org/x/sys/unix
-# golang.org/x/text v0.0.0-20171214130843-f21a4dfb5e38
-golang.org/x/text/secure/bidirule
-golang.org/x/text/unicode/bidi
-golang.org/x/text/unicode/norm
-golang.org/x/text/transform
 # golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2
 golang.org/x/time/rate
 # google.golang.org/genproto v0.0.0-20180716172848-2731d4fa720b

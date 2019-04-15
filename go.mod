@@ -32,7 +32,6 @@ require (
 	github.com/mattn/go-colorable v0.0.0-20170801030607-167de6bfdfba // indirect
 	github.com/mattn/go-isatty v0.0.0-20170925053441-0360b2af4f38 // indirect
 	github.com/matttproud/golang_protobuf_extensions v0.0.0-20160424113007-c12348ce28de // indirect
-	github.com/opentracing/opentracing-go v1.0.2
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/prometheus/client_golang v0.0.0-20160817154824-c5b7fccd2042
 	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910 // indirect
@@ -49,9 +48,7 @@ require (
 	go.uber.org/atomic v1.3.2 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.9.1 // indirect
-	golang.org/x/net v0.0.0-20180911220305-26e67e76b6c3
 	golang.org/x/sync v0.0.0-20181108010431-42b317875d0f // indirect
-	golang.org/x/text v0.0.0-20171214130843-f21a4dfb5e38 // indirect
 	golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2
 	google.golang.org/genproto v0.0.0-20180716172848-2731d4fa720b // indirect
 	google.golang.org/grpc v0.0.0-20180619221905-168a6198bcb0
