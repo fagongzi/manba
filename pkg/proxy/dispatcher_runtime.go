@@ -220,7 +220,7 @@ func newAPINode(meta *metapb.DispatchNode) *apiNode {
 	}
 
 	if meta.URLRewrite != "" {
-		exprs, err := expr.Parse([]byte(meta.URLRewrite))
+		exprs, err := expr.Parse([]byte(strings.TrimSpace(meta.URLRewrite)))
 		if err != nil {
 			log.Fatalf("bug: parse url rewrite expr failed with error %+v", err)
 		}
