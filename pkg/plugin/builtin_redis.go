@@ -8,6 +8,7 @@ import (
 
 // RedisModule redis module
 type RedisModule struct {
+	rt *Runtime
 }
 
 // CreateRedis create redis
@@ -22,6 +23,8 @@ func (m *RedisModule) CreateRedis(cfg map[string]interface{}) *RedisOp {
 				redis.DialWriteTimeout(time.Second*10))
 		},
 	}
+
+	m.rt.addCloser(p)
 
 	conn := p.Get()
 	_, err := conn.Do("PING")

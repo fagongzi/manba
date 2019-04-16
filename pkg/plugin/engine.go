@@ -30,7 +30,9 @@ func (eng *Engine) LastActive() time.Time {
 
 // Destroy destory all applied plugins
 func (eng *Engine) Destroy() {
-	// TODO: destory
+	for _, rt := range eng.applied {
+		rt.destroy()
+	}
 }
 
 // UpdatePlugin update plugin
