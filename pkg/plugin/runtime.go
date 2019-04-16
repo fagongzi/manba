@@ -3,7 +3,9 @@ package plugin
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"sync"
 
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
@@ -29,19 +31,24 @@ const (
 
 // Runtime plugin runtime
 type Runtime struct {
+	sync.RWMutex
 	filter.BaseFilter
 
 	meta                           *metapb.Plugin
 	vm                             *otto.Otto
 	this                           otto.Value
 	preFunc, postFunc, postErrFunc otto.Value
+
+	closers []io.Closer
 }
 
 // NewRuntime return a runtime
 func NewRuntime(meta *metapb.Plugin) (*Runtime, error) {
+	rt := &Runtime{}
+
 	vm := otto.New()
 	// add require for using go module
-	vm.Set("require", Require)
+	vm.Set("require", rt.Require)
 	vm.Set("BreakFilterChainCode", filter.BreakFilterChainCode)
 	vm.Set("UsingResponse", filter.UsingResponse)
 
@@ -92,14 +99,45 @@ func NewRuntime(meta *metapb.Plugin) (*Runtime, error) {
 		return nil, fmt.Errorf("postErr must function")
 	}
 
-	return &Runtime{
-		meta:        meta,
-		vm:          vm,
-		this:        this,
-		preFunc:     preFunc,
-		postFunc:    postFunc,
-		postErrFunc: postErrFunc,
-	}, nil
+	rt.meta = meta
+	rt.vm = vm
+	rt.this = this
+	rt.preFunc = preFunc
+	rt.postFunc = postFunc
+	rt.postErrFunc = postErrFunc
+	return rt, nil
+}
+
+func (rt *Runtime) destroy() {
+	rt.Lock()
+	defer rt.Unlock()
+
+	for _, closer := range rt.closers {
+		closer.Close()
+	}
+}
+
+func (rt *Runtime) addCloser(closer io.Closer) {
+	rt.Lock()
+	defer rt.Unlock()
+
+	rt.closers = append(rt.closers, closer)
+}
+
+// Require require module
+func (rt *Runtime) Require(name string) interface{} {
+	switch name {
+	case httpModuleName:
+		return httpModule
+	case logModuleName:
+		return logModule
+	case jsonModuleName:
+		return jsonModule
+	case redisModuleName:
+		return &RedisModule{rt: rt}
+	default:
+		return nil
+	}
 }
 
 // Pre filter pre method

@@ -1,17 +1,14 @@
 package plugin
 
-var (
-	builtins = make(map[string]interface{})
+const (
+	httpModuleName  = "http"
+	jsonModuleName  = "json"
+	logModuleName   = "log"
+	redisModuleName = "redis"
 )
 
-func init() {
-	builtins["http"] = newHTTPModule()
-	builtins["json"] = &JSONModule{}
-	builtins["log"] = &LogModule{}
-	builtins["redis"] = &RedisModule{}
-}
-
-// Require require module
-func Require(module string) interface{} {
-	return builtins[module]
-}
+var (
+	httpModule = newHTTPModule()
+	jsonModule = &JSONModule{}
+	logModule  = &LogModule{}
+)
