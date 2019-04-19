@@ -74,10 +74,11 @@ func NewFastHTTPClientOption(defaultOption *HTTPOption) *FastHTTPClient {
 type hostClients struct {
 	sync.Mutex
 
-	option      *HTTPOption
-	lastUseTime uint32
-	connsCount  int
-	conns       []*clientConn
+	startedCleaner uint64
+	option         *HTTPOption
+	lastUseTime    uint32
+	connsCount     int
+	conns          []*clientConn
 }
 
 func (c *hostClients) acquireConn(addr string) (*clientConn, error) {
@@ -122,7 +123,9 @@ func (c *hostClients) acquireConn(addr string) (*clientConn, error) {
 	cc = acquireClientConn(conn)
 
 	if startCleaner {
-		go c.connsCleaner()
+		if atomic.SwapUint64(&c.startedCleaner, 1) == 0 {
+			go c.connsCleaner()
+		}
 	}
 	return cc, nil
 }
@@ -177,6 +180,8 @@ func (c *hostClients) connsCleaner() {
 		}
 		time.Sleep(maxIdleConnDuration)
 	}
+
+	atomic.StoreUint64(&c.startedCleaner, 0)
 }
 
 func (c *hostClients) closeConn(cc *clientConn) {
