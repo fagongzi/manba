@@ -167,7 +167,8 @@ func (r *dispatcher) doStatusChangedEvent(evt *store.Evt) {
 		}
 
 		if hasServer {
-			newActives := make([]metapb.Server, len(binds.actives))
+			binds.actives = append(binds.actives, value.meta)
+			newActives := make([]metapb.Server, 0, len(binds.actives))
 			for _, active := range binds.actives {
 				if active.ID != value.meta.ID || value.status == metapb.Up {
 					newActives = append(newActives, active)
