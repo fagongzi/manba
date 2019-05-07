@@ -277,10 +277,14 @@ func (r *dispatcher) refreshAllQPS() {
 }
 
 func (r *dispatcher) refreshQPS(value int64) int64 {
+	activeQPS := value
 	if len(r.proxies) > 0 {
-		return value / int64(len(r.proxies))
+		activeQPS = value / int64(len(r.proxies))
 	}
-	return value
+	if activeQPS <= 0 {
+		activeQPS = 1
+	}
+	return activeQPS
 }
 
 func (r *dispatcher) addServer(svr *metapb.Server) error {
