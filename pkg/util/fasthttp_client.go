@@ -203,9 +203,6 @@ type clientConn struct {
 // Do do a http request
 func (c *FastHTTPClient) Do(req *fasthttp.Request, addr string, option *HTTPOption) (*fasthttp.Response, error) {
 	resp, err := c.do(req, addr, option)
-	if err == io.EOF {
-		err = fasthttp.ErrConnectionClosed
-	}
 	return resp, err
 }
 
