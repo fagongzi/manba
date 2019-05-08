@@ -202,23 +202,20 @@ type clientConn struct {
 
 // Do do a http request
 func (c *FastHTTPClient) Do(req *fasthttp.Request, addr string, option *HTTPOption) (*fasthttp.Response, error) {
-	resp, retry, err := c.do(req, addr, option)
-	if err != nil && retry && isIdempotent(req) {
-		resp, _, err = c.do(req, addr, option)
-	}
+	resp, err := c.do(req, addr, option)
 	if err == io.EOF {
 		err = fasthttp.ErrConnectionClosed
 	}
 	return resp, err
 }
 
-func (c *FastHTTPClient) do(req *fasthttp.Request, addr string, option *HTTPOption) (*fasthttp.Response, bool, error) {
+func (c *FastHTTPClient) do(req *fasthttp.Request, addr string, option *HTTPOption) (*fasthttp.Response, error) {
 	resp := fasthttp.AcquireResponse()
-	ok, err := c.doNonNilReqResp(req, resp, addr, option)
-	return resp, ok, err
+	err := c.doNonNilReqResp(req, resp, addr, option)
+	return resp, err
 }
 
-func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.Response, addr string, option *HTTPOption) (bool, error) {
+func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.Response, addr string, option *HTTPOption) error {
 	if req == nil {
 		panic("BUG: req cannot be nil")
 	}
@@ -248,7 +245,7 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 
 	cc, err := hc.acquireConn(addr)
 	if err != nil {
-		return false, err
+		return err
 	}
 	conn := cc.c
 
@@ -258,13 +255,11 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 		// of the last write deadline exceeded.
 		// See https://github.com/golang/go/issues/15133 for details.
 		currentTime := time.Now()
-		if currentTime.Sub(cc.lastWriteDeadlineTime) > (opt.WriteTimeout >> 2) {
-			if err = conn.SetWriteDeadline(currentTime.Add(opt.WriteTimeout)); err != nil {
-				hc.closeConn(cc)
-				return true, err
-			}
-			cc.lastWriteDeadlineTime = currentTime
+		if err = conn.SetWriteDeadline(currentTime.Add(opt.WriteTimeout)); err != nil {
+			hc.closeConn(cc)
+			return err
 		}
+		cc.lastWriteDeadlineTime = currentTime
 	}
 
 	resetConnection := false
@@ -286,7 +281,7 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 	if err != nil {
 		c.releaseWriter(bw)
 		hc.closeConn(cc)
-		return true, err
+		return err
 	}
 	c.releaseWriter(bw)
 
@@ -296,13 +291,11 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 		// of the last read deadline exceeded.
 		// See https://github.com/golang/go/issues/15133 for details.
 		currentTime := time.Now()
-		if currentTime.Sub(cc.lastReadDeadlineTime) > (opt.ReadTimeout >> 2) {
-			if err = conn.SetReadDeadline(currentTime.Add(opt.ReadTimeout)); err != nil {
-				hc.closeConn(cc)
-				return true, err
-			}
-			cc.lastReadDeadlineTime = currentTime
+		if err = conn.SetReadDeadline(currentTime.Add(opt.ReadTimeout)); err != nil {
+			hc.closeConn(cc)
+			return err
 		}
+		cc.lastReadDeadlineTime = currentTime
 	}
 
 	if !req.Header.IsGet() && req.Header.IsHead() {
@@ -314,9 +307,9 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 		c.releaseReader(br)
 		hc.closeConn(cc)
 		if err == io.EOF {
-			return true, err
+			return err
 		}
-		return false, err
+		return err
 	}
 	c.releaseReader(br)
 
@@ -326,7 +319,7 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 		hc.releaseConn(cc)
 	}
 
-	return false, err
+	return err
 }
 
 func dialAddr(addr string) (net.Conn, error) {
@@ -367,10 +360,6 @@ func (c *FastHTTPClient) acquireReader(conn net.Conn, opt *HTTPOption) *bufio.Re
 
 func (c *FastHTTPClient) releaseReader(br *bufio.Reader) {
 	c.readerPool.Put(br)
-}
-
-func isIdempotent(req *fasthttp.Request) bool {
-	return req.Header.IsGet() || req.Header.IsHead() || req.Header.IsPut()
 }
 
 func acquireClientConn(conn net.Conn) *clientConn {
