@@ -77,6 +77,11 @@ enum HostType {
     HostCustom        = 2;
 }
 
+enum RateLimitOption {
+    Wait   = 0;
+    Reject = 1;
+}
+
 // Proxy is a meta data of the gateway proxy
 message Proxy {
     optional string addr     = 1 [(gogoproto.nullable) = false];
@@ -109,13 +114,14 @@ message CircuitBreaker {
 
 // Server is a backend server that provide api
 message Server {
-    optional uint64         id             = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
-    optional string         addr           = 2 [(gogoproto.nullable) = false];
-    optional Protocol       protocol       = 3 [(gogoproto.nullable) = false];
-    optional int64          maxQPS         = 4 [(gogoproto.nullable) = false];
-    optional HeathCheck     heathCheck     = 5;
-    optional CircuitBreaker circuitBreaker = 6;
-    optional int64          weight         = 7 [(gogoproto.nullable) = false];
+    optional uint64          id              = 1 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+    optional string          addr            = 2 [(gogoproto.nullable) = false];
+    optional Protocol        protocol        = 3 [(gogoproto.nullable) = false];
+    optional int64           maxQPS          = 4 [(gogoproto.nullable) = false];
+    optional HeathCheck      heathCheck      = 5;
+    optional CircuitBreaker  circuitBreaker  = 6;
+    optional int64           weight          = 7 [(gogoproto.nullable) = false];
+    optional RateLimitOption rateLimitOption = 8 [(gogoproto.nullable) = false];
 }
 
 // Bind is a bind pair with cluster and server
@@ -234,6 +240,7 @@ message API {
     optional WebSocketOptions webSocketOptions = 17;
     optional int64            maxQPS           = 18 [(gogoproto.nullable) = false];
     optional CircuitBreaker   circuitBreaker   = 19;
+    optional RateLimitOption  rateLimitOption  = 20 [(gogoproto.nullable) = false];
 }
 
 // Condition is a condition for routing
