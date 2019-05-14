@@ -9,7 +9,6 @@ import (
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
 	"github.com/valyala/fasthttp"
-	"golang.org/x/time/rate"
 )
 
 func (f *Proxy) doPreFilters(requestTag string, c filter.Context, filters ...filter.Filter) (filterName string, statusCode int, err error) {
@@ -155,7 +154,7 @@ func (c *proxyContext) circuitResourceID() uint64 {
 	return c.result.dest.id
 }
 
-func (c *proxyContext) rateLimiter() *rate.Limiter {
+func (c *proxyContext) rateLimiter() *rateLimiter {
 	if c.result.api.limiter != nil {
 		return c.result.api.limiter
 	}

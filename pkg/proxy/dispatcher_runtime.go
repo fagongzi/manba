@@ -20,7 +20,6 @@ import (
 	"github.com/fagongzi/util/hack"
 	pbutil "github.com/fagongzi/util/protoc"
 	"github.com/valyala/fasthttp"
-	"golang.org/x/time/rate"
 )
 
 var (
@@ -70,7 +69,7 @@ type abstractSupportProtectedRuntime struct {
 	id        uint64
 	tw        *goetty.TimeoutWheel
 	activeQPS int64
-	limiter   *rate.Limiter
+	limiter   *rateLimiter
 	circuit   metapb.CircuitStatus
 	cb        *metapb.CircuitBreaker
 	barrier   *util.RateBarrier
@@ -154,7 +153,7 @@ func (s *serverRuntime) updateMeta(meta *metapb.Server) {
 	s.meta = meta
 	s.id = meta.ID
 	s.cb = meta.CircuitBreaker
-	s.limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(s.activeQPS)), int(s.activeQPS))
+	s.limiter = newRateLimiter(s.activeQPS, s.meta.RateLimitOption)
 	s.circuit = metapb.Open
 	if s.cb != nil {
 		s.barrier = util.NewRateBarrier(int(s.cb.HalfTrafficRate))
@@ -394,7 +393,7 @@ func (a *apiRuntime) init() {
 		a.barrier = util.NewRateBarrier(int(a.cb.HalfTrafficRate))
 	}
 	if a.meta.MaxQPS > 0 {
-		a.limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(a.activeQPS)), int(a.activeQPS))
+		a.limiter = newRateLimiter(a.activeQPS, a.meta.RateLimitOption)
 	}
 
 	return
