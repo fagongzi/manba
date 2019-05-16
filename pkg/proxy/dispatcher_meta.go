@@ -243,9 +243,12 @@ func (r *dispatcher) addAPI(api *metapb.API) error {
 	a := newAPIRuntime(api, r.tw, r.refreshQPS(api.MaxQPS))
 	newRoute, newValues := r.copyAPIs(0, 0)
 	newValues[api.ID] = a
-	err := newRoute.Add(a.meta)
-	if err != nil {
-		return err
+
+	if a.isUp() {
+		err := newRoute.Add(a.meta)
+		if err != nil {
+			return err
+		}
 	}
 
 	if a.cb != nil {
