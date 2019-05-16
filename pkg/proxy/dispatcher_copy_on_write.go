@@ -42,7 +42,7 @@ func (r *dispatcher) copyAPIs(exclude uint64, excludeToRoute uint64) (*route.Rou
 	for key, value := range r.apis {
 		if key != exclude {
 			values[key] = value.clone()
-			if key != excludeToRoute {
+			if key != excludeToRoute && value.isUp() {
 				route.Add(values[key].meta)
 			}
 		}
