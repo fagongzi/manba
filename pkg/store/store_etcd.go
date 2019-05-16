@@ -433,15 +433,17 @@ func (e *EtcdStore) PutAPI(value *metapb.API) (uint64, error) {
 	apiRoute := route.NewRoute()
 	e.getValues(e.apisDir, 64, func() pb { return &metapb.API{} }, func(data interface{}) error {
 		v := data.(*metapb.API)
-		if v.ID != value.ID {
+		if v.ID != value.ID && v.Status == metapb.Up {
 			apiRoute.Add(v)
 		}
 		return nil
 	})
 
-	err = apiRoute.Add(value)
-	if err != nil {
-		return 0, err
+	if value.Status == metapb.Up {
+		err = apiRoute.Add(value)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	return e.putPB(e.apisDir, value, func(id uint64) {
