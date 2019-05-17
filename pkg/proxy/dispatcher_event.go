@@ -44,6 +44,10 @@ func (r *dispatcher) readyToReceiveWatchEvent() {
 			r.doRoutingEvent(evt)
 		} else if evt.Src == store.EventSrcProxy {
 			r.doProxyEvent(evt)
+		} else if evt.Src == store.EventSrcPlugin {
+			r.doPluginEvent(evt)
+		} else if evt.Src == store.EventSrcApplyPlugin {
+			r.doApplyPluginEvent(evt)
 		} else if evt.Src == eventSrcStatusChanged {
 			r.doStatusChangedEvent(evt)
 		} else {
@@ -117,6 +121,30 @@ func (r *dispatcher) doBindEvent(evt *store.Evt) {
 		r.addBind(bind)
 	} else if evt.Type == store.EventTypeDelete {
 		r.removeBind(bind)
+	}
+}
+
+func (r *dispatcher) doPluginEvent(evt *store.Evt) {
+	value, _ := evt.Value.(*metapb.Plugin)
+
+	if evt.Type == store.EventTypeNew {
+		r.addPlugin(value)
+	} else if evt.Type == store.EventTypeDelete {
+		r.removePlugin(format.MustParseStrUInt64(evt.Key))
+	} else if evt.Type == store.EventTypeUpdate {
+		r.updatePlugin(value)
+	}
+}
+
+func (r *dispatcher) doApplyPluginEvent(evt *store.Evt) {
+	value, _ := evt.Value.(*metapb.AppliedPlugins)
+
+	if evt.Type == store.EventTypeNew {
+		r.updateAppliedPlugin(value)
+	} else if evt.Type == store.EventTypeDelete {
+		r.removeAppliedPlugin()
+	} else if evt.Type == store.EventTypeUpdate {
+		r.updateAppliedPlugin(value)
 	}
 }
 

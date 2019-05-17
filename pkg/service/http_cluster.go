@@ -26,7 +26,7 @@ func postClusterHandler(value interface{}) (*grpcx.JSONResult, error) {
 	id, err := Store.PutCluster(value.(*metapb.Cluster))
 	if err != nil {
 		log.Errorf("api-cluster-put: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: id}, nil
@@ -36,7 +36,7 @@ func deleteClusterHandler(value interface{}) (*grpcx.JSONResult, error) {
 	err := Store.RemoveCluster(value.(uint64))
 	if err != nil {
 		log.Errorf("api-cluster-delete: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{}, nil
@@ -46,7 +46,7 @@ func deleteClusterBindsHandler(value interface{}) (*grpcx.JSONResult, error) {
 	err := Store.RemoveClusterBind(value.(uint64))
 	if err != nil {
 		log.Errorf("api-cluster-binds-delete: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{}, nil
@@ -56,7 +56,7 @@ func getClusterHandler(value interface{}) (*grpcx.JSONResult, error) {
 	value, err := Store.GetCluster(value.(uint64))
 	if err != nil {
 		log.Errorf("api-cluster-get: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: value}, nil
@@ -66,7 +66,7 @@ func bindsClusterHandler(value interface{}) (*grpcx.JSONResult, error) {
 	values, err := Store.GetBindServers(value.(uint64))
 	if err != nil {
 		log.Errorf("api-cluster-binds-get: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: values}, nil
@@ -85,7 +85,7 @@ func listClusterHandler(value interface{}) (*grpcx.JSONResult, error) {
 	})
 	if err != nil {
 		log.Errorf("api-cluster-list-get: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: values}, nil

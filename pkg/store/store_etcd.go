@@ -13,6 +13,8 @@ import (
 	pbutil "github.com/fagongzi/gateway/pkg/pb"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/pb/rpcpb"
+	"github.com/fagongzi/gateway/pkg/plugin"
+	"github.com/fagongzi/gateway/pkg/route"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/util/format"
 	"golang.org/x/net/context"
@@ -41,14 +43,16 @@ const (
 type EtcdStore struct {
 	sync.RWMutex
 
-	prefix      string
-	clustersDir string
-	serversDir  string
-	bindsDir    string
-	apisDir     string
-	proxiesDir  string
-	routingsDir string
-	idPath      string
+	prefix           string
+	clustersDir      string
+	serversDir       string
+	bindsDir         string
+	apisDir          string
+	proxiesDir       string
+	routingsDir      string
+	pluginsDir       string
+	appliedPluginDir string
+	idPath           string
 
 	idLock sync.Mutex
 	base   uint64
@@ -70,6 +74,8 @@ func NewEtcdStore(etcdAddrs []string, prefix string, basicAuth BasicAuth) (Store
 		apisDir:            fmt.Sprintf("%s/apis", prefix),
 		proxiesDir:         fmt.Sprintf("%s/proxies", prefix),
 		routingsDir:        fmt.Sprintf("%s/routings", prefix),
+		pluginsDir:         fmt.Sprintf("%s/plugins", prefix),
+		appliedPluginDir:   fmt.Sprintf("%s/applied/plugins", prefix),
 		idPath:             fmt.Sprintf("%s/id", prefix),
 		watchMethodMapping: make(map[EvtSrc]func(EvtType, *mvccpb.KeyValue) *Evt),
 		base:               100,
@@ -244,6 +250,40 @@ func (e *EtcdStore) Batch(batch *rpcpb.BatchReq) (*rpcpb.BatchRsp, error) {
 		return nil, err
 	}
 
+	ops = make([]clientv3.Op, 0, len(batch.PutPlugins))
+	for _, req := range batch.PutPlugins {
+		value := &req.Plugin
+		_, err := plugin.NewRuntime(value)
+		if err != nil {
+			return nil, err
+		}
+
+		op, err := e.putPBWithOp(e.pluginsDir, value, func(id uint64) {
+			value.ID = id
+			rsp.PutPlugins = append(rsp.PutPlugins, &rpcpb.PutPluginRsp{
+				ID: id,
+			})
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		ops = append(ops, op)
+	}
+	if batch.ApplyPlugins != nil {
+		op, err := e.putPBKeyWithOp(e.appliedPluginDir, &batch.ApplyPlugins.Applied)
+		if err != nil {
+			return nil, err
+		}
+
+		ops = append(ops, op)
+	}
+
+	err = e.putBatch(ops...)
+	if err != nil {
+		return nil, err
+	}
+
 	return rsp, nil
 }
 
@@ -380,12 +420,30 @@ func (e *EtcdStore) GetServer(id uint64) (*metapb.Server, error) {
 
 // PutAPI add or update a API
 func (e *EtcdStore) PutAPI(value *metapb.API) (uint64, error) {
-	e.Lock()
-	defer e.Unlock()
-
 	err := pbutil.ValidateAPI(value)
 	if err != nil {
 		return 0, err
+	}
+
+	e.Lock()
+	defer e.Unlock()
+
+	// load all api every times for validate
+	// TODO: maybe need optimization if there are too much apis
+	apiRoute := route.NewRoute()
+	e.getValues(e.apisDir, 64, func() pb { return &metapb.API{} }, func(data interface{}) error {
+		v := data.(*metapb.API)
+		if v.ID != value.ID && v.Status == metapb.Up {
+			apiRoute.Add(v)
+		}
+		return nil
+	})
+
+	if value.Status == metapb.Up {
+		err = apiRoute.Add(value)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	return e.putPB(e.apisDir, value, func(id uint64) {
@@ -456,6 +514,84 @@ func (e *EtcdStore) GetRouting(id uint64) (*metapb.Routing, error) {
 
 	value := &metapb.Routing{}
 	return value, e.getPB(e.routingsDir, id, value)
+}
+
+// PutPlugin add or update the plugin
+func (e *EtcdStore) PutPlugin(value *metapb.Plugin) (uint64, error) {
+	e.Lock()
+	defer e.Unlock()
+
+	err := pbutil.ValidatePlugin(value)
+	if err != nil {
+		return 0, err
+	}
+
+	value.UpdateAt = util.NowWithMillisecond()
+	return e.putPB(e.pluginsDir, value, func(id uint64) {
+		value.ID = id
+	})
+}
+
+// RemovePlugin remove the plugin
+func (e *EtcdStore) RemovePlugin(id uint64) error {
+	e.Lock()
+	defer e.Unlock()
+
+	applied, err := e.doGetAppliedPlugins()
+	if err != nil {
+		return err
+	}
+
+	for _, appliedID := range applied.AppliedIDs {
+		if id == appliedID {
+			return fmt.Errorf("%d is already applied", id)
+		}
+	}
+
+	return e.delete(getKey(e.pluginsDir, id))
+}
+
+// GetPlugins returns plugins in store
+func (e *EtcdStore) GetPlugins(limit int64, fn func(interface{}) error) error {
+	e.RLock()
+	defer e.RUnlock()
+
+	return e.getValues(e.pluginsDir, limit, func() pb { return &metapb.Plugin{} }, fn)
+}
+
+// GetPlugin returns the plugin
+func (e *EtcdStore) GetPlugin(id uint64) (*metapb.Plugin, error) {
+	e.RLock()
+	defer e.RUnlock()
+
+	value := &metapb.Plugin{}
+	return value, e.getPB(e.pluginsDir, id, value)
+}
+
+// ApplyPlugins apply plugins
+func (e *EtcdStore) ApplyPlugins(value *metapb.AppliedPlugins) error {
+	e.Lock()
+	defer e.Unlock()
+
+	data, err := value.Marshal()
+	if err != nil {
+		return err
+	}
+
+	return e.put(e.appliedPluginDir, string(data))
+}
+
+// GetAppliedPlugins returns applied plugins
+func (e *EtcdStore) GetAppliedPlugins() (*metapb.AppliedPlugins, error) {
+	e.RLock()
+	defer e.RUnlock()
+
+	return e.doGetAppliedPlugins()
+}
+
+func (e *EtcdStore) doGetAppliedPlugins() (*metapb.AppliedPlugins, error) {
+	value := &metapb.AppliedPlugins{}
+	return value, e.getPBWithKey(e.appliedPluginDir, value, true)
 }
 
 // RegistryProxy registry
@@ -722,6 +858,45 @@ func (e *EtcdStore) BackupTo(to string) error {
 		}
 	}
 
+	// backup plugin
+	batch = &rpcpb.BatchReq{}
+	err = e.getValues(e.pluginsDir, limit, func() pb { return &metapb.Plugin{} }, func(value interface{}) error {
+		batch.PutPlugins = append(batch.PutPlugins, &rpcpb.PutPluginReq{
+			Plugin: *value.(*metapb.Plugin),
+		})
+
+		if int64(len(batch.PutPlugins)) == limit {
+			_, err := targetC.Batch(batch)
+			if err != nil {
+				return err
+			}
+
+			batch = &rpcpb.BatchReq{}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	applied, err := e.doGetAppliedPlugins()
+	if err != nil {
+		return err
+	}
+	if applied != nil {
+		batch.ApplyPlugins = &rpcpb.ApplyPluginsReq{
+			Applied: *applied,
+		}
+	}
+
+	if int64(len(batch.PutPlugins)) > 0 {
+		_, err := targetC.Batch(batch)
+		if err != nil {
+			return err
+		}
+	}
+
 	// backup id
 	currID, err := e.getID()
 	if err != nil {
@@ -760,6 +935,18 @@ func (e *EtcdStore) System() (*metapb.System, error) {
 		return nil, err
 	}
 	value.Count.Routing = rsp.Count
+
+	rsp, err = e.get(e.pluginsDir, clientv3.WithPrefix(), clientv3.WithCountOnly())
+	if err != nil {
+		return nil, err
+	}
+	value.Count.Plugin = rsp.Count
+
+	applied, err := e.doGetAppliedPlugins()
+	if err != nil {
+		return nil, err
+	}
+	value.Count.AppliedPlugin = int64(len(applied.AppliedIDs))
 
 	return value, nil
 }
@@ -837,12 +1024,16 @@ func (e *EtcdStore) putPBWithOp(prefix string, value pb, do func(uint64)) (clien
 		do(id)
 	}
 
+	return e.putPBKeyWithOp(getKey(prefix, value.GetID()), value)
+}
+
+func (e *EtcdStore) putPBKeyWithOp(key string, value pb) (clientv3.Op, error) {
 	data, err := value.Marshal()
 	if err != nil {
 		return clientv3.Op{}, err
 	}
 
-	return e.op(getKey(prefix, value.GetID()), string(data)), nil
+	return e.op(key, string(data)), nil
 }
 
 func (e *EtcdStore) getValues(prefix string, limit int64, factory func() pb, fn func(interface{}) error) error {
@@ -886,12 +1077,20 @@ func (e *EtcdStore) get(key string, opts ...clientv3.OpOption) (*clientv3.GetRes
 }
 
 func (e *EtcdStore) getPB(prefix string, id uint64, value pb) error {
-	data, err := e.getValue(getKey(prefix, id))
+	return e.getPBWithKey(getKey(prefix, id), value, false)
+}
+
+func (e *EtcdStore) getPBWithKey(key string, value pb, allowNotFound bool) error {
+	data, err := e.getValue(key)
 	if err != nil {
 		return err
 	}
 	if len(data) == 0 {
-		return fmt.Errorf("<%d> not found", id)
+		if allowNotFound {
+			return nil
+		}
+
+		return fmt.Errorf("<%s> not found", key)
 	}
 
 	err = value.Unmarshal(data)

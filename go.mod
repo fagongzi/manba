@@ -11,7 +11,7 @@ require (
 	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
 	github.com/dgrijalva/jwt-go v0.0.0-20180308231308-06ea1031745c
 	github.com/fagongzi/goetty v0.0.0-20180427060148-8f06d410550f
-	github.com/fagongzi/grpcx v1.1.0
+	github.com/fagongzi/grpcx v0.0.0-20190226052515-f1ec50ae76bf
 	github.com/fagongzi/log v0.0.0-20170831135209-9a647df25e0e
 	github.com/fagongzi/util v0.0.0-20180330021808-4acf02da76a9
 	github.com/garyburd/redigo v0.0.0-20180228092057-a69d19351219
@@ -26,6 +26,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.6.2 // indirect
 	github.com/jonboulle/clockwork v0.1.0 // indirect
+	github.com/juju/ratelimit v1.0.1
 	github.com/koding/websocketproxy v0.0.0-20180716164433-0fa3f994f6e7
 	github.com/labstack/echo v0.0.0-20180412143600-6d227dfea4d2
 	github.com/labstack/gommon v0.0.0-20180613044413-d6898124de91 // indirect
@@ -37,6 +38,7 @@ require (
 	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910 // indirect
 	github.com/prometheus/common v0.0.0-20180518154759-7600349dcfe1
 	github.com/prometheus/procfs v0.0.0-20180705121852-ae68e2d4c00f // indirect
+	github.com/robertkrimen/otto v0.0.0-20180617131154-15f95af6e78d
 	github.com/sirupsen/logrus v1.2.0 // indirect
 	github.com/soheilhy/cmux v0.0.0-20180129155001-e09e9389d85d
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20171017195756-830351dc03c6 // indirect
@@ -49,9 +51,10 @@ require (
 	go.uber.org/zap v1.9.1 // indirect
 	golang.org/x/net v0.0.0-20180911220305-26e67e76b6c3
 	golang.org/x/sync v0.0.0-20181108010431-42b317875d0f // indirect
-	golang.org/x/text v0.0.0-20171214130843-f21a4dfb5e38 // indirect
-	golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2
+	golang.org/x/text v0.3.2 // indirect
+	golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2 // indirect
 	google.golang.org/genproto v0.0.0-20180716172848-2731d4fa720b // indirect
 	google.golang.org/grpc v0.0.0-20180619221905-168a6198bcb0
+	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 	gopkg.in/yaml.v2 v2.2.2 // indirect
 )

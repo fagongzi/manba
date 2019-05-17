@@ -7,29 +7,23 @@ import (
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 	"github.com/fagongzi/gateway/pkg/util"
+	"github.com/fagongzi/log"
 	"github.com/valyala/fasthttp"
-	"golang.org/x/time/rate"
 )
 
-func (f *Proxy) doPreFilters(c filter.Context) (filterName string, statusCode int, err error) {
-	for _, f := range f.filters {
+func (f *Proxy) doPreFilters(requestTag string, c filter.Context, filters ...filter.Filter) (filterName string, statusCode int, err error) {
+	for _, f := range filters {
 		filterName = f.Name()
 
 		statusCode, err = f.Pre(c)
 		if nil != err {
 			return filterName, statusCode, err
 		}
-	}
 
-	return "", http.StatusOK, nil
-}
-
-func (f *Proxy) doPostFilters(c filter.Context) (filterName string, statusCode int, err error) {
-	l := len(f.filters)
-	for i := l - 1; i >= 0; i-- {
-		f := f.filters[i]
-		statusCode, err = f.Post(c)
-		if nil != err {
+		if statusCode == filter.BreakFilterChainCode {
+			log.Debugf("%s: break pre filter chain by filter %s",
+				requestTag,
+				filterName)
 			return filterName, statusCode, err
 		}
 	}
@@ -37,10 +31,30 @@ func (f *Proxy) doPostFilters(c filter.Context) (filterName string, statusCode i
 	return "", http.StatusOK, nil
 }
 
-func (f *Proxy) doPostErrFilters(c filter.Context) {
-	l := len(f.filters)
+func (f *Proxy) doPostFilters(requestTag string, c filter.Context, filters ...filter.Filter) (filterName string, statusCode int, err error) {
+	l := len(filters)
 	for i := l - 1; i >= 0; i-- {
-		f := f.filters[i]
+		f := filters[i]
+		statusCode, err = f.Post(c)
+		if nil != err {
+			return filterName, statusCode, err
+		}
+
+		if statusCode == filter.BreakFilterChainCode {
+			log.Debugf("%s: break post filter chain by filter %s",
+				requestTag,
+				filterName)
+			return filterName, statusCode, err
+		}
+	}
+
+	return "", http.StatusOK, nil
+}
+
+func (f *Proxy) doPostErrFilters(c filter.Context, filters ...filter.Filter) {
+	l := len(filters)
+	for i := l - 1; i >= 0; i-- {
+		f := filters[i]
 		f.PostErr(c)
 	}
 }
@@ -140,7 +154,7 @@ func (c *proxyContext) circuitResourceID() uint64 {
 	return c.result.dest.id
 }
 
-func (c *proxyContext) rateLimiter() *rate.Limiter {
+func (c *proxyContext) rateLimiter() *rateLimiter {
 	if c.result.api.limiter != nil {
 		return c.result.api.limiter
 	}

@@ -4,11 +4,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fagongzi/gateway/pkg/plugin"
+
+	"github.com/fagongzi/gateway/pkg/expr"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/route"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/goetty"
 	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/hack"
 	"github.com/fagongzi/util/task"
 	"github.com/valyala/fasthttp"
 )
@@ -18,6 +23,7 @@ type copyReq struct {
 	api        *apiRuntime
 	node       *apiNode
 	to         *serverRuntime
+	params     map[string][]byte
 	idx        int
 	requestTag string
 }
@@ -43,13 +49,17 @@ func (req *copyReq) needRewrite() bool {
 }
 
 func (req *copyReq) rewiteURL() string {
-	return req.api.rewriteURL(req.origin, req.node, nil)
+	ctx := &expr.Ctx{}
+	ctx.Origin = req.origin
+	ctx.Params = req.params
+	return hack.SliceToString(expr.Exec(ctx, req.node.parsedExprs...))
 }
 
 type dispathNode struct {
 	rd       *render
 	ctx      *fasthttp.RequestCtx
 	multiCtx *multiContext
+	exprCtx  *expr.Ctx
 	wg       *sync.WaitGroup
 
 	requestTag           string
@@ -127,10 +137,6 @@ func (dn *dispathNode) needRewrite() bool {
 	return dn.node.meta.URLRewrite != ""
 }
 
-func (dn *dispathNode) rewiteURL(req *fasthttp.Request) string {
-	return dn.api.rewriteURL(req, dn.node, dn.multiCtx)
-}
-
 func (dn *dispathNode) getResponseContentType() []byte {
 	if len(dn.cachedCT) > 0 {
 		return dn.cachedCT
@@ -189,83 +195,90 @@ func (dn *dispathNode) maybeDone() {
 }
 
 type dispatcher struct {
-	cnf           *Cfg
-	routings      map[uint64]*routingRuntime
-	apis          map[uint64]*apiRuntime
-	apiSortedKeys []uint64
-	clusters      map[uint64]*clusterRuntime
-	servers       map[uint64]*serverRuntime
-	binds         map[uint64]*binds
-	proxies       map[string]*metapb.Proxy
-	checkerC      chan uint64
-	watchStopC    chan bool
-	watchEventC   chan *store.Evt
-	analysiser    *util.Analysis
-	store         store.Store
-	httpClient    *util.FastHTTPClient
-	tw            *goetty.TimeoutWheel
-	runner        *task.Runner
+	cnf            *Cfg
+	routings       map[uint64]*routingRuntime
+	route          *route.Route
+	apis           map[uint64]*apiRuntime
+	clusters       map[uint64]*clusterRuntime
+	servers        map[uint64]*serverRuntime
+	binds          map[uint64]*binds
+	proxies        map[string]*metapb.Proxy
+	plugins        map[uint64]*metapb.Plugin
+	appliedPlugins *metapb.AppliedPlugins
+	jsEngineFunc   func(*plugin.Engine)
+	checkerC       chan uint64
+	watchStopC     chan bool
+	watchEventC    chan *store.Evt
+	analysiser     *util.Analysis
+	store          store.Store
+	httpClient     *util.FastHTTPClient
+	tw             *goetty.TimeoutWheel
+	runner         *task.Runner
 }
 
-func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner) *dispatcher {
+func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner, jsEngineFunc func(*plugin.Engine)) *dispatcher {
 	tw := goetty.NewTimeoutWheel(goetty.WithTickInterval(time.Second))
 	rt := &dispatcher{
-		cnf:           cnf,
-		tw:            tw,
-		store:         db,
-		runner:        runner,
-		analysiser:    util.NewAnalysis(tw),
-		httpClient:    util.NewFastHTTPClient(),
-		clusters:      make(map[uint64]*clusterRuntime),
-		servers:       make(map[uint64]*serverRuntime),
-		apis:          make(map[uint64]*apiRuntime),
-		apiSortedKeys: make([]uint64, 0),
-		routings:      make(map[uint64]*routingRuntime),
-		binds:         make(map[uint64]*binds),
-		proxies:       make(map[string]*metapb.Proxy),
-		checkerC:      make(chan uint64, 1024),
-		watchStopC:    make(chan bool),
-		watchEventC:   make(chan *store.Evt),
+		cnf:          cnf,
+		tw:           tw,
+		store:        db,
+		runner:       runner,
+		analysiser:   util.NewAnalysis(tw),
+		httpClient:   util.NewFastHTTPClient(),
+		clusters:     make(map[uint64]*clusterRuntime),
+		servers:      make(map[uint64]*serverRuntime),
+		route:        route.NewRoute(),
+		apis:         make(map[uint64]*apiRuntime),
+		routings:     make(map[uint64]*routingRuntime),
+		binds:        make(map[uint64]*binds),
+		proxies:      make(map[string]*metapb.Proxy),
+		plugins:      make(map[uint64]*metapb.Plugin),
+		jsEngineFunc: jsEngineFunc,
+		checkerC:     make(chan uint64, 1024),
+		watchStopC:   make(chan bool),
+		watchEventC:  make(chan *store.Evt),
 	}
 
 	rt.readyToHeathChecker()
 	return rt
 }
 
-func (r *dispatcher) dispatch(req *fasthttp.Request, requestTag string) (*apiRuntime, []*dispathNode) {
-	apis := r.apis
-	sortsKeys := r.apiSortedKeys
-
+func (r *dispatcher) dispatch(req *fasthttp.Request, requestTag string) (*apiRuntime, []*dispathNode, *expr.Ctx) {
+	route := r.route
 	var targetAPI *apiRuntime
 	var dispathes []*dispathNode
-	for _, apiKey := range sortsKeys {
-		api, ok := apis[apiKey]
-		if !ok {
-			return targetAPI, dispathes
-		}
 
-		if api.matches(req) {
+	exprCtx := acquireExprCtx()
+	exprCtx.Origin = req
+
+	id, ok := route.Find(req.URI().Path(), hack.SliceToString(req.Header.Method()), exprCtx.AddParam)
+	if ok {
+		if api, ok := r.apis[id]; ok && api.matches(req) {
 			targetAPI = api
-			if api.meta.UseDefault {
-				log.Debugf("%s: match api %s, and use default force",
-					requestTag,
-					api.meta.Name)
-				break
-			}
-
-			for idx, node := range api.nodes {
-				dn := acquireDispathNode()
-				dn.idx = idx
-				dn.api = api
-				dn.node = node
-				r.selectServer(req, dn, requestTag)
-				dispathes = append(dispathes, dn)
-			}
-			break
 		}
 	}
 
-	return targetAPI, dispathes
+	if targetAPI == nil {
+		return targetAPI, dispathes, exprCtx
+	}
+
+	if targetAPI.meta.UseDefault {
+		log.Debugf("%s: match api %s, and use default force",
+			requestTag,
+			targetAPI.meta.Name)
+	} else {
+		for idx, node := range targetAPI.nodes {
+			dn := acquireDispathNode()
+			dn.idx = idx
+			dn.api = targetAPI
+			dn.node = node
+			dn.exprCtx = exprCtx
+			r.selectServer(req, dn, requestTag)
+			dispathes = append(dispathes, dn)
+		}
+	}
+
+	return targetAPI, dispathes, exprCtx
 }
 
 func (r *dispatcher) selectServer(req *fasthttp.Request, dn *dispathNode, requestTag string) {

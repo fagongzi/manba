@@ -1,10 +1,14 @@
 package proxy
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/fagongzi/gateway/pkg/filter"
-	"golang.org/x/net/context"
+)
+
+var (
+	errOverLimit = errors.New("too many requests")
 )
 
 // RateLimitingFilter RateLimitingFilter
@@ -28,9 +32,8 @@ func (f *RateLimitingFilter) Name() string {
 
 // Pre execute before proxy
 func (f *RateLimitingFilter) Pre(c filter.Context) (statusCode int, err error) {
-	err = c.(*proxyContext).rateLimiter().Wait(context.Background())
-	if err != nil {
-		return http.StatusInternalServerError, err
+	if !c.(*proxyContext).rateLimiter().do(1) {
+		return http.StatusTooManyRequests, errOverLimit
 	}
 
 	return f.BaseFilter.Pre(c)

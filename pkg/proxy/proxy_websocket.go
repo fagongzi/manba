@@ -44,10 +44,11 @@ func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 	ctx.Request.SetRequestURI(req.RequestURI)
 
-	api, dispatches := p.dispatcher.dispatch(&ctx.Request, requestTag)
+	api, dispatches, exprCtx := p.dispatcher.dispatch(&ctx.Request, requestTag)
 	if len(dispatches) <= 0 &&
 		(nil == api || api.meta.DefaultValue == nil) {
 		rw.WriteHeader(fasthttp.StatusNotFound)
+		releaseExprCtx(exprCtx)
 		return
 	}
 
@@ -64,6 +65,7 @@ func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		c.SetAttr(websocketRspKey, rw)
 	})
 	dispatches[0].release()
+	releaseExprCtx(exprCtx)
 }
 
 func (p *Proxy) onWebsocket(c *proxyContext, addr string) (*fasthttp.Response, error) {

@@ -60,6 +60,7 @@ func main() {
 		user["name"] = fmt.Sprintf("v1-name-%s", c.Param("id"))
 		data["user"] = user
 		data["source"] = *addr
+		data["query"] = c.QueryString()
 
 		value["code"] = "0"
 		value["data"] = data
@@ -70,6 +71,8 @@ func main() {
 		user["id"] = c.Param("id")
 		user["name"] = fmt.Sprintf("v1-name-%s", c.Param("id"))
 		user["source"] = *addr
+		user["query"] = c.QueryString()
+		user["header"] = c.QueryParam(c.Request().Header.Get("header"))
 		return c.JSON(http.StatusOK, user)
 	})
 	server.GET("/v1/account/:id", func(c echo.Context) error {
@@ -77,6 +80,7 @@ func main() {
 		account["id"] = c.Param("id")
 		account["source"] = *addr
 		account["account"] = fmt.Sprintf("v1-account-%s", c.Param("id"))
+		account["query"] = c.QueryString()
 		return c.JSON(http.StatusOK, account)
 	})
 
@@ -85,6 +89,7 @@ func main() {
 		user["id"] = c.Param("id")
 		user["source"] = *addr
 		user["name"] = fmt.Sprintf("v2-name-%s", c.Param("id"))
+		user["query"] = c.QueryString()
 		return c.JSON(http.StatusOK, user)
 	})
 	server.GET("/v2/account/:id", func(c echo.Context) error {
@@ -92,6 +97,7 @@ func main() {
 		account["id"] = c.Param("id")
 		account["source"] = *addr
 		account["account"] = fmt.Sprintf("v2-account-%s", c.Param("id"))
+		account["query"] = c.QueryString()
 		return c.JSON(http.StatusOK, account)
 	})
 

@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"syscall"
 	"time"
-
 	"github.com/fagongzi/gateway/pkg/proxy"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
@@ -79,6 +78,7 @@ func init() {
 	defaultFilters.Set(proxy.FilterHeader)
 	defaultFilters.Set(proxy.FilterXForward)
 	defaultFilters.Set(proxy.FilterValidation)
+	defaultFilters.Set(proxy.FilterJSPlugin)
 }
 
 func main() {

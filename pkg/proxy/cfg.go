@@ -27,6 +27,7 @@ type Option struct {
 	JWTCfgFile string
 
 	EnableWebSocket bool
+	EnableJSPlugin  bool
 }
 
 // Cfg proxy config

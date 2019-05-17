@@ -22,7 +22,7 @@ func postAPIHandler(value interface{}) (*grpcx.JSONResult, error) {
 	id, err := Store.PutAPI(value.(*metapb.API))
 	if err != nil {
 		log.Errorf("api-api-put: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: id}, nil
@@ -32,7 +32,7 @@ func deleteAPIHandler(value interface{}) (*grpcx.JSONResult, error) {
 	err := Store.RemoveAPI(value.(uint64))
 	if err != nil {
 		log.Errorf("api-api-delete: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{}, nil
@@ -42,7 +42,7 @@ func getAPIHandler(value interface{}) (*grpcx.JSONResult, error) {
 	value, err := Store.GetAPI(value.(uint64))
 	if err != nil {
 		log.Errorf("api-api-get: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: value}, nil
@@ -61,7 +61,7 @@ func listAPIHandler(value interface{}) (*grpcx.JSONResult, error) {
 	})
 	if err != nil {
 		log.Errorf("api-api-list-get: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: values}, nil

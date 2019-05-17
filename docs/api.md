@@ -10,13 +10,36 @@ API的ID，唯一标识一个API。
 API的名称。
 
 ## URLPattern
-URL匹配模式，使用正则表达式表示。Gateway使用该字段来匹配原始请求的URL。该字段必须和`Method`配合使用，同时满足才算这个请求匹配了这个API。
+URL匹配表达式，Gateway使用该字段来匹配原始请求的URL。该字段必须和`Method`配合使用，同时满足才算这个请求匹配了这个API。
 
-## Method
-HTTP Method， `*` 匹配所有的HTTP Method（GET,PUT,POST,DELETE）。该字段必须和`URLPattern`配合使用，同时满足才算这个请求匹配了这个API。
+### URLPattern表达式
+定义API的`URL`，使用`/`来分割URL Path的每个部分，每个部分可以这些类型：
+
+* 常量字符串 任意URL合法的字符串，可以使用`*`匹配任何字符串
+* (number):argeName 指定这个部分是一个数字变量
+* (string) 指定这个部分是一个字符串变量
+* (enum:enum1|enum1|enum1) 指定这部分是一个枚举变量，可选的枚举值使用|分割
+* 如果需要使用这些变量（例如在URL Rewrite的时候）可以使用:
+    * (number):id    变量名称为id
+    * (string):name  变量名称为name
+    * (enum:on|off):action  变量名称为action 
+
+一些例子：
+* `/api/v1/product/(number):id`
+* `/api/v1/product/(number):id/(enum:online|offline):action`
+* `/api/v1/*`
+
+## Method（可选）
+匹配请求的`HTTP Method`字段， `*` 匹配所有的HTTP Method（GET,PUT,POST,DELETE）。
 
 ## Domain（可选）
-host，当原始请求的host等于该值，则认为匹配了当前的API，同时忽略`URLPattern`和`Method`。
+匹配请求的HOST字段。
+
+## MatchRule
+`URLPattern`,`Method`,`Domain`的匹配规则
+* MatchDefault `URLPattern` && (`Method` || `Domain`)
+* MatchAll `URLPattern` && (`Method` && `Domain`)
+* MatchAny `URLPattern` && (`Method` || `Domain`)
 
 ## Status
 API 状态枚举, 有2个值组成： `UP` 和 `Down`。只有`UP`状态才能生效。
@@ -27,24 +50,76 @@ IP的访问控制，有黑白名单2个部门组成。
 ## DefaultValue（可选）
 API的默认返回值，当后端Cluster无可用Server的时候，Gateway将返回这个默认值，默认值由Code、HTTP Body、Header、Cookie组成。可以用来做Mock或者后端服务故障时候的默认返回。
 
+## 聚合请求
+聚合请求是原始请求转发到多个后端Server，并且把多个返回结果合并成一个JSON返回，并且可以指定每个转发请求的结果在最终JSON对象中的属性名称。多个转发请求可以同时发送，也可以按批次发送(后面请求参数依赖前面请求的返回值)。使用`BatchIndex`来设置每个转发请求的顺序。
+
+例子
+* 原始请求: `/api/v1/aggregation/1`
+* 转发请求: `/api/v1/users/1`，返回：`{"name":"zhangsan"}`，属性名为`user`
+* 转发请求: `/api/v1/accounts/1`，返回：`{"type":"test", "accountId":"123"}`，属性名为`account`
+* 最终返回结果为：`{"user":{"name":"zhangsan"}, "account":{"type":"test", "accountId":"123"}}`
+
 ## Nodes
 请求被转发到的后端Cluster。至少设置一个转发Cluster，一个请求可以被同时转发到多个后端Cluster（目前仅支持GET请求设置多个转发）。在转发的时候，针对每一个转发支持以下特性：
 
-* 支持URL重写
+### 支持URL重写
+使用URL重写表达式来重构转发到后端Server的真实URL
 
-  例如，API对外提供的URL是`/api/users/1`，后端真实server提供的URL是`/users?id=1`，类似这种情况需要对原始URL进行重写。
-  对于这个重写，我们需要配置API的`URLPattern`属性为`/api/users/(\d+)`，并且配置转发的URL重写规则为：`users?id=$1`
-* 支持对原始请求的参数校验
+#### URL重写表达式
+定义重写的`URL`，支持在表达式中使用变量，并且使用运行期用真实的值替换这些变量，变量使用`$()`包裹，用`.`来表示变量的属性
 
+##### origin变量
+origin变量用来提取原始请求的`query string`,`header`,`cookie`,`body`中的数据，对于query中的多个同名参数，不支持独立获取
+
+假设原始请求
+* URL: `/api/v1/users?id=1&name=fagongzi&page=1&pageSize=100`,
+* Header: `x-test-token: token1, x-test-id: 100`
+* Cookie: `x-cookie-token: token2, x-cookie-id: 200`
+* Body: `{"type":1, "value":{"id":100, "name":"zhangsan"}}`
+
+变量例子
+* $(origin.query) = `?id=1&name=fagongzi&page=1&pageSize=100`
+* $(origin.path) = `/api/v1/users`
+* $(origin.query.id) = `1`, $(origin.query.name) = `fagongzi`, $(origin.query.page) = `1`, $(origin.query.pageSize) = `100`
+* $(origin.header.x-test-token) = `token1`, $(origin.header.x-test-id) = `100`
+* $(origin.cookie.x-cookie-token) = `token2`, $(origin.cookie.x-cookie-id) = `200`
+* $(origin.body.type) = `1`, $(origin.body.value.id) = `100`, $(origin.body.value.name) = `zhangsan`
+
+#### param变量
+param变量用来提取API的`URLPattern`中定义的变量
+
+假设:
+* API的`URLPattern`为`/api/v1/users/(number):id/(enum:on|off):action`
+* 请求的URL为`/api/v1/users/100/on`
+
+变量例子
+* $(param.id) = `100`
+* $(param.action) = `on`
+
+#### depend变量
+depend变量用来提取依赖聚合请求返回值中的数据
+
+假设聚合请求有2个,分别为user和account
+* user: {"name":"zhangsan"}
+* account: {"id":"123456"}
+
+变量例子
+* $(depend.user.name) = `zhangsan`
+* $(depend.account.id) = `123456`
+
+#### 一些URL重写的表达式例子
+* `/api/v1/users$(origin.query)`
+* `$(origin.path)?name=$(origin.header.x-user-name)&id=$(origin.body.user.id)`
+* `/api/v1/users?id=$(param.id)&action=$(param.action)`
+* `/api/v1/accounts?id=$(depend.user.accountId)`
+
+### 支持对原始请求的参数校验
   支持针对`querystring`、`json body`、`cookie`、`header`、`path value`中的任意属性配置正则表达式的校验规则
-* 聚合多个后端Cluster的响应，统一返回
 
-  支持一个请求被同时分发到多个后端Cluster，并且为每一个后端Cluster返回的数据设置一个属性名，并且聚合所有的返回值作为一个JSON统一返回。例如：一个前端APP的页面需要显示用户账户信息以及用户的基本信息，可以使用这个特性，定制一个API`/api/users/(\d+)`，同时配置分发到2个后端Cluster，并且配置URL的重写规则为`/users/base/$1`和`/users/account/$1`，这样聚合2个信息返回。并且支持依赖转发，首先请求一个后端api得到返回的结果，并且使用返回结果的某一属性作为下次请求的参数。例如定制一个API`/api/users/(\d+)`，聚合后端2个服务`/users/base/$1`和`/users/account/$user.accountId`，那么可以设置`/users/account/$user.accountId`转发的`BatchIndex`为`1`，那么`/users/account/$user.accountId`会在`/users/base/$1`返回之后再转发，并且替换`$user.accountId`为返回的值。
-* 支持失败重试
+###  支持失败重试
+  可以设置`retryStrategy`指定根据http返回码重试请求，可以设置重试最大次数以及重试间隔。
 
-  可以设置`retryStrategy`指定根据http返回码重试请求，可以设置重试最大次数以及重试间隔。 
-* 支持API级别的超时时间覆盖全局设置
-
+### 支持API级别的超时时间覆盖全局设置
   可以设置`ReadTimeout`和`WriteTimeout`来指定请求的读写超时时间，不设置默认使用全局设置。
 
 ## Perms（可选）
