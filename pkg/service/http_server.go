@@ -22,7 +22,7 @@ func postServerHandler(value interface{}) (*grpcx.JSONResult, error) {
 	id, err := Store.PutServer(value.(*metapb.Server))
 	if err != nil {
 		log.Errorf("api-server-put: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: id}, nil
@@ -32,7 +32,7 @@ func deleteServerHandler(value interface{}) (*grpcx.JSONResult, error) {
 	err := Store.RemoveServer(value.(uint64))
 	if err != nil {
 		log.Errorf("api-server-delete: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{}, nil
@@ -42,7 +42,7 @@ func getServerHandler(value interface{}) (*grpcx.JSONResult, error) {
 	value, err := Store.GetServer(value.(uint64))
 	if err != nil {
 		log.Errorf("api-server-get: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: value}, nil
@@ -61,7 +61,7 @@ func listServerHandler(value interface{}) (*grpcx.JSONResult, error) {
 	})
 	if err != nil {
 		log.Errorf("api-server-list-get: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: values}, nil

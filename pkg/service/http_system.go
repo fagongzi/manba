@@ -22,7 +22,7 @@ func getSystemHandler(value interface{}) (*grpcx.JSONResult, error) {
 	info, err := Store.System()
 	if err != nil {
 		log.Errorf("api-system-get: errors:%+v", err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{Data: info}, nil
@@ -32,7 +32,7 @@ func postBackupHandler(value interface{}) (*grpcx.JSONResult, error) {
 	err := Store.BackupTo(value.(*backup).ToAddr)
 	if err != nil {
 		log.Errorf("api-system-backup: errors:%+v", err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{}, nil

@@ -19,7 +19,7 @@ func postBindHandler(value interface{}) (*grpcx.JSONResult, error) {
 	err := Store.AddBind(value.(*metapb.Bind))
 	if err != nil {
 		log.Errorf("api-bind-put: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{}, nil
@@ -29,7 +29,7 @@ func deleteBindHandler(value interface{}) (*grpcx.JSONResult, error) {
 	err := Store.RemoveBind(value.(*metapb.Bind))
 	if err != nil {
 		log.Errorf("api-bind-delete: req %+v, errors:%+v", value, err)
-		return nil, err
+		return &grpcx.JSONResult{Code: -1, Data: err.Error()}, nil
 	}
 
 	return &grpcx.JSONResult{}, nil

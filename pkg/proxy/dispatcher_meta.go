@@ -2,10 +2,10 @@ package proxy
 
 import (
 	"errors"
-	"sort"
 	"time"
 
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/plugin"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
 )
@@ -16,6 +16,7 @@ var (
 	errBindExists      = errors.New("Bind already exist")
 	errAPIExists       = errors.New("API already exist")
 	errProxyExists     = errors.New("Proxy already exist")
+	errPluginExists    = errors.New("Plugin already exist")
 	errRoutingExists   = errors.New("Routing already exist")
 	errServerNotFound  = errors.New("Server not found")
 	errClusterNotFound = errors.New("Cluster not found")
@@ -23,6 +24,7 @@ var (
 	errProxyNotFound   = errors.New("Proxy not found")
 	errAPINotFound     = errors.New("API not found")
 	errRoutingNotFound = errors.New("Routing not found")
+	errPluginNotFound  = errors.New("Plugin not found")
 
 	limit = int64(32)
 )
@@ -36,6 +38,8 @@ func (r *dispatcher) load() {
 	r.loadBinds()
 	r.loadAPIs()
 	r.loadRoutings()
+	r.loadPlugins()
+	r.loadAppliedPlugins()
 }
 
 func (r *dispatcher) loadProxies() {
@@ -129,6 +133,37 @@ func (r *dispatcher) loadAPIs() {
 	}
 }
 
+func (r *dispatcher) loadPlugins() {
+	log.Infof("load plugins")
+
+	err := r.store.GetPlugins(limit, func(value interface{}) error {
+		return r.addPlugin(value.(*metapb.Plugin))
+	})
+	if nil != err {
+		log.Errorf("load plugins failed, errors:\n%+v",
+			err)
+		return
+	}
+}
+
+func (r *dispatcher) loadAppliedPlugins() {
+	log.Infof("load applied plugins")
+
+	applied, err := r.store.GetAppliedPlugins()
+	if nil != err {
+		log.Errorf("load applied plugins failed, errors:\n%+v",
+			err)
+		return
+	}
+
+	err = r.updateAppliedPlugin(applied)
+	if nil != err {
+		log.Errorf("updated applied plugins failed, errors:\n%+v",
+			err)
+		return
+	}
+}
+
 func (r *dispatcher) addRouting(meta *metapb.Routing) error {
 	if _, ok := r.routings[meta.ID]; ok {
 		return errRoutingExists
@@ -206,16 +241,22 @@ func (r *dispatcher) addAPI(api *metapb.API) error {
 	}
 
 	a := newAPIRuntime(api, r.tw, r.refreshQPS(api.MaxQPS))
-	newValues := r.copyAPIs(0)
+	newRoute, newValues := r.copyAPIs(0, 0)
 	newValues[api.ID] = a
-	newKeys := sortAPIs(newValues)
+
+	if a.isUp() {
+		err := newRoute.Add(a.meta)
+		if err != nil {
+			return err
+		}
+	}
 
 	if a.cb != nil {
 		r.addAnalysis(api.ID, a.cb)
 	}
 
 	r.apis = newValues
-	r.apiSortedKeys = newKeys
+	r.route = newRoute
 	log.Infof("api <%d> added, data <%s>",
 		api.ID,
 		api.String())
@@ -229,18 +270,22 @@ func (r *dispatcher) updateAPI(api *metapb.API) error {
 		return errAPINotFound
 	}
 
-	newValues := r.copyAPIs(0)
+	newRoute, newValues := r.copyAPIs(0, api.ID)
 	rt := newValues[api.ID]
 	rt.activeQPS = r.refreshQPS(api.MaxQPS)
 	rt.updateMeta(api)
-	newKeys := sortAPIs(newValues)
+
+	err := newRoute.Add(rt.meta)
+	if err != nil {
+		return err
+	}
 
 	if rt.cb != nil {
 		r.addAnalysis(rt.meta.ID, rt.meta.CircuitBreaker)
 	}
 
 	r.apis = newValues
-	r.apiSortedKeys = newKeys
+	r.route = newRoute
 	log.Infof("api <%d> updated, data <%s>",
 		api.ID,
 		api.String())
@@ -253,13 +298,11 @@ func (r *dispatcher) removeAPI(id uint64) error {
 		return errAPINotFound
 	}
 
-	newValues := r.copyAPIs(id)
-	newKeys := sortAPIs(newValues)
-
-	r.apiSortedKeys = newKeys
+	newRoute, newValues := r.copyAPIs(id, 0)
+	r.route = newRoute
 	r.apis = newValues
-	log.Infof("api <%d> removed", id)
 
+	log.Infof("api <%d> removed", id)
 	return nil
 }
 
@@ -483,33 +526,128 @@ func (r *dispatcher) getServerStatus(id uint64) metapb.Status {
 	return metapb.Unknown
 }
 
-func sortAPIs(apis map[uint64]*apiRuntime) []uint64 {
-	if len(apis) == 0 {
-		return nil
+func (r *dispatcher) addPlugin(value *metapb.Plugin) error {
+	if _, ok := r.plugins[value.ID]; ok {
+		return errPluginExists
 	}
 
-	type kv struct {
-		Key   uint64
-		Value uint32
+	r.plugins[value.ID] = value
+
+	log.Infof("plugin <%d/%s:%d> added",
+		value.ID,
+		value.Name,
+		value.Version)
+
+	return nil
+}
+
+func (r *dispatcher) updatePlugin(value *metapb.Plugin) error {
+	_, ok := r.plugins[value.ID]
+	if !ok {
+		return errPluginNotFound
 	}
 
-	ss := make([]kv, len(apis))
-
-	var i = 0
-	for k, v := range apis {
-		ss[i] = kv{k, v.position()}
-		i++
+	err := r.maybeUpdateJSEngine(value.ID)
+	if err != nil {
+		return err
 	}
 
-	// position升序
-	sort.SliceStable(ss, func(i, j int) bool {
-		return ss[i].Value < ss[j].Value
-	})
+	r.plugins[value.ID] = value
+	log.Infof("plugin <%d/%s:%d> updated",
+		value.ID,
+		value.Name,
+		value.Version)
 
-	keys := make([]uint64, len(ss))
-	for i, v := range ss {
-		keys[i] = v.Key
+	return nil
+}
+
+func (r *dispatcher) removePlugin(id uint64) error {
+	value, ok := r.plugins[id]
+	if !ok {
+		return errPluginNotFound
 	}
 
-	return keys
+	if r.inAppliedPlugins(id) {
+		log.Fatalf("bug: plugin <%d/%s:%d> is applied, can not remove",
+			value.ID,
+			value.Name,
+			value.Version)
+	}
+
+	delete(r.plugins, id)
+	log.Infof("plugin <%d/%s:%d> removed",
+		value.ID,
+		value.Name,
+		value.Version)
+	return nil
+}
+
+func (r *dispatcher) updateAppliedPlugin(value *metapb.AppliedPlugins) error {
+	var plugins []*metapb.Plugin
+	for _, id := range value.AppliedIDs {
+		plugin, ok := r.plugins[id]
+		if !ok {
+			return errPluginNotFound
+		}
+
+		plugins = append(plugins, plugin)
+	}
+
+	r.appliedPlugins = value
+	err := r.updateJSEngine()
+	if err != nil {
+		return err
+	}
+
+	log.Infof("plugins applied with %+v",
+		value.AppliedIDs)
+	return nil
+}
+
+func (r *dispatcher) removeAppliedPlugin() error {
+	r.appliedPlugins = &metapb.AppliedPlugins{}
+	err := r.updateJSEngine()
+	if err != nil {
+		return err
+	}
+
+	log.Infof("plugins applied removed")
+	return nil
+}
+
+func (r *dispatcher) maybeUpdateJSEngine(id uint64) error {
+	if r.inAppliedPlugins(id) {
+		return r.updateJSEngine()
+	}
+
+	return nil
+}
+
+func (r *dispatcher) updateJSEngine() error {
+	var plugins []*metapb.Plugin
+	newEngine := plugin.NewEngine()
+	for _, id := range r.appliedPlugins.AppliedIDs {
+		p := r.plugins[id]
+		plugins = append(plugins, p)
+	}
+
+	err := newEngine.ApplyPlugins(plugins...)
+	if err != nil {
+		return err
+	}
+
+	r.jsEngineFunc(newEngine)
+	return nil
+}
+
+func (r *dispatcher) inAppliedPlugins(id uint64) bool {
+	if len(r.appliedPlugins.AppliedIDs) > 0 {
+		for _, appliedID := range r.appliedPlugins.AppliedIDs {
+			if id == appliedID {
+				return true
+			}
+		}
+	}
+
+	return false
 }

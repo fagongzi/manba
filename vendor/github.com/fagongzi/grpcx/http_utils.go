@@ -20,7 +20,9 @@ func NewJSONBodyHTTPHandle(factory func() interface{}, handler func(interface{})
 		value := factory()
 		err := ReadJSONFromBody(ctx, value)
 		if err != nil {
-			return ctx.NoContent(http.StatusBadRequest)
+			return ctx.JSON(http.StatusBadRequest, &JSONResult{
+				Data: err.Error(),
+			})
 		}
 
 		result, err := handler(value)
@@ -37,7 +39,9 @@ func NewGetHTTPHandle(factory func(echo.Context) (interface{}, error), handler f
 	return func(ctx echo.Context) error {
 		value, err := factory(ctx)
 		if err != nil {
-			return ctx.NoContent(http.StatusBadRequest)
+			return ctx.JSON(http.StatusBadRequest, &JSONResult{
+				Data: err.Error(),
+			})
 		}
 
 		result, err := handler(value)

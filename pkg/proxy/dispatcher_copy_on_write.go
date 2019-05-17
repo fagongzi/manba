@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/route"
 )
 
 func (r *dispatcher) copyServers(exclude uint64) map[uint64]*serverRuntime {
@@ -35,15 +36,19 @@ func (r *dispatcher) copyRoutings(exclude uint64) map[uint64]*routingRuntime {
 	return values
 }
 
-func (r *dispatcher) copyAPIs(exclude uint64) map[uint64]*apiRuntime {
+func (r *dispatcher) copyAPIs(exclude uint64, excludeToRoute uint64) (*route.Route, map[uint64]*apiRuntime) {
+	route := route.NewRoute()
 	values := make(map[uint64]*apiRuntime)
 	for key, value := range r.apis {
 		if key != exclude {
 			values[key] = value.clone()
+			if key != excludeToRoute && value.isUp() {
+				route.Add(values[key].meta)
+			}
 		}
 	}
 
-	return values
+	return route, values
 }
 
 func (r *dispatcher) copyBinds(exclude metapb.Bind) map[uint64]*binds {

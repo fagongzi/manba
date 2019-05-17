@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -11,8 +12,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/fagongzi/gateway/pkg/expr"
 	"github.com/fagongzi/gateway/pkg/filter"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/plugin"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
@@ -59,13 +62,15 @@ type Proxy struct {
 	dispatches               []chan *dispathNode
 	copies                   []chan *copyReq
 
-	cfg        *Cfg
-	filtersMap map[string]filter.Filter
-	filters    []filter.Filter
-	client     *util.FastHTTPClient
-	dispatcher *dispatcher
-
+	cfg         *Cfg
+	filtersMap  map[string]filter.Filter
+	filters     []filter.Filter
+	client      *util.FastHTTPClient
+	dispatcher  *dispatcher
 	rpcListener net.Listener
+
+	jsEngine    *plugin.Engine
+	gcJSEngines []*plugin.Engine
 
 	runner   *task.Runner
 	stopped  int32
@@ -97,6 +102,7 @@ func NewProxy(cfg *Cfg) *Proxy {
 		dispatches:    make([]chan *dispathNode, cfg.Option.LimitCountDispatchWorker, cfg.Option.LimitCountDispatchWorker),
 		dispatchIndex: 0,
 		copyIndex:     0,
+		jsEngine:      plugin.NewEngine(),
 	}
 
 	p.init()
@@ -110,6 +116,7 @@ func (p *Proxy) Start() {
 
 	util.StartMetricsPush(p.runner, p.cfg.Metric)
 
+	p.readyToGCJSEngine()
 	p.readyToCopy()
 	p.readyToDispatch()
 
@@ -227,7 +234,7 @@ func (p *Proxy) initDispatcher() error {
 		return err
 	}
 
-	p.dispatcher = newDispatcher(p.cfg, s, p.runner)
+	p.dispatcher = newDispatcher(p.cfg, s, p.runner, p.updateJSEngine)
 	return nil
 }
 
@@ -235,7 +242,7 @@ func (p *Proxy) initFilters() {
 	for _, filter := range p.cfg.Filers {
 		f, err := p.newFilter(filter)
 		if nil != err {
-			log.Fatalf("init filter failed, filter=<%+v> errors:\n%+v",
+			log.Fatalf("create filter failed, filter=<%+v> errors:\n%+v",
 				filter,
 				err)
 		}
@@ -247,10 +254,24 @@ func (p *Proxy) initFilters() {
 				err)
 		}
 
-		log.Infof("filter added, filter=<%+v>", filter)
 		p.filters = append(p.filters, f)
 		p.filtersMap[f.Name()] = f
+		log.Infof("filter added, filter=<%s>", f.Name())
 	}
+}
+
+func (p *Proxy) updateJSEngine(jsEngine *plugin.Engine) {
+	var newValues []filter.Filter
+	for _, f := range p.filters {
+		if f.Name() != FilterJSPlugin {
+			newValues = append(newValues, f)
+		} else {
+			p.addGCJSEngine(f.(*plugin.Engine))
+			newValues = append(newValues, jsEngine)
+		}
+	}
+
+	p.filters = newValues
 }
 
 func (p *Proxy) readyToDispatch() {
@@ -315,10 +336,11 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	}
 
 	startAt := time.Now()
-	api, dispatches := p.dispatcher.dispatch(&ctx.Request, requestTag)
+	api, dispatches, exprCtx := p.dispatcher.dispatch(&ctx.Request, requestTag)
 	if len(dispatches) == 0 &&
 		(nil == api || api.meta.DefaultValue == nil) {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
+		releaseExprCtx(exprCtx)
 
 		log.Infof("%s: not match, return with 404",
 			requestTag)
@@ -364,6 +386,9 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 			wg.Add(1)
 		}
 
+		if nil != multiCtx {
+			exprCtx.Depend = multiCtx.data
+		}
 		dn.multiCtx = multiCtx
 		dn.requestTag = requestTag
 		dn.rd = rd
@@ -380,6 +405,7 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 				api:        dn.api.clone(),
 				node:       dn.node.clone(),
 				idx:        idx,
+				params:     exprCtx.CopyParams(),
 				requestTag: requestTag,
 			}
 		}
@@ -403,6 +429,7 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 
 	incrRequest(api.meta.Name)
 	p.postRequest(api, dispatches, startAt)
+	releaseExprCtx(exprCtx)
 
 	log.Debugf("%s: dispatch complete",
 		requestTag)
@@ -466,14 +493,14 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 	// change url
 	if dn.needRewrite() {
 		// if not use rewrite, it only change uri path and query string
-		realPath := dn.rewiteURL(&ctx.Request)
-		if "" != realPath {
+		realPath := expr.Exec(dn.exprCtx, dn.node.parsedExprs...)
+		if len(realPath) != 0 {
 			log.Infof("%s: dipatch node %d rewrite url to %s",
 				dn.requestTag,
 				dn.idx,
-				realPath)
+				hack.SliceToString(realPath))
 
-			forwardReq.SetRequestURI(realPath)
+			forwardReq.SetRequestURIBytes(realPath)
 		} else {
 			dn.err = ErrRewriteNotMatch
 			dn.code = fasthttp.StatusBadRequest
@@ -492,8 +519,10 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 		adjustH(c)
 	}
 
+	filters := p.filters
+
 	// pre filters
-	filterName, code, err := p.doPreFilters(c)
+	filterName, code, err := p.doPreFilters(dn.requestTag, c, filters...)
 	if nil != err {
 		dn.err = err
 		dn.code = code
@@ -505,6 +534,32 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 			dn.idx,
 			filterName,
 			err)
+		return
+	}
+
+	// using spec response
+	if value := c.GetAttr(filter.UsingResponse); nil != value {
+		res, ok := value.(*fasthttp.Response)
+		if !ok {
+			dn.err = fmt.Errorf("not support using response attr %T", value)
+			dn.code = fasthttp.StatusInternalServerError
+			dn.maybeDone()
+			releaseContext(c)
+
+			log.Errorf("%s: dipatch node %d using response attr with error %s",
+				dn.requestTag,
+				dn.idx,
+				dn.err)
+			return
+		}
+
+		dn.res = res
+		dn.maybeDone()
+		releaseContext(c)
+
+		log.Infof("%s: dipatch node %d using response attr",
+			dn.requestTag,
+			dn.idx)
 		return
 	}
 
@@ -601,7 +656,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 		}
 
 		if nil == err || !strings.HasPrefix(err.Error(), ErrPrefixRequestCancel) {
-			p.doPostErrFilters(c)
+			p.doPostErrFilters(c, filters...)
 		}
 
 		dn.err = err
@@ -621,7 +676,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 	}
 
 	// post filters
-	filterName, code, err = p.doPostFilters(c)
+	filterName, code, err = p.doPostFilters(dn.requestTag, c, filters...)
 	if nil != err {
 		log.Errorf("%s: dipatch node %d call filter %s post failed with error %s",
 			dn.requestTag,
