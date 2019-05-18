@@ -23,7 +23,7 @@ func NewRoundRobin() LoadBalance {
 }
 
 // Select select a server from servers using RoundRobin
-func (rr RoundRobin) Select(req *fasthttp.Request, servers []metapb.Server) uint64 {
+func (rr RoundRobin) Select(req *fasthttp.RequestCtx, servers []metapb.Server) uint64 {
 	l := uint64(len(servers))
 
 	if 0 >= l {
