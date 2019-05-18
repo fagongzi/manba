@@ -113,17 +113,20 @@ const (
 	RoundRobin LoadBalance = 0
 	IPHash     LoadBalance = 1
 	WightRobin LoadBalance = 2
+	Rand       LoadBalance = 3
 )
 
 var LoadBalance_name = map[int32]string{
 	0: "RoundRobin",
 	1: "IPHash",
 	2: "WightRobin",
+	3: "Rand",
 }
 var LoadBalance_value = map[string]int32{
 	"RoundRobin": 0,
 	"IPHash":     1,
 	"WightRobin": 2,
+	"Rand":       3,
 }
 
 func (x LoadBalance) Enum() *LoadBalance {

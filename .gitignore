@@ -28,3 +28,4 @@ _testmain.go
 cmd/api/api_server
 cmd/backend/backend
 cmd/proxy/proxy
+.idea/

@@ -243,7 +243,8 @@ func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner, jsEngineFunc f
 	return rt
 }
 
-func (r *dispatcher) dispatch(req *fasthttp.Request, requestTag string) (*apiRuntime, []*dispathNode, *expr.Ctx) {
+func (r *dispatcher) dispatch(reqCtx *fasthttp.RequestCtx, requestTag string) (*apiRuntime, []*dispathNode, *expr.Ctx) {
+	req:=&reqCtx.Request
 	route := r.route
 	var targetAPI *apiRuntime
 	var dispathes []*dispathNode
@@ -273,7 +274,7 @@ func (r *dispatcher) dispatch(req *fasthttp.Request, requestTag string) (*apiRun
 			dn.api = targetAPI
 			dn.node = node
 			dn.exprCtx = exprCtx
-			r.selectServer(req, dn, requestTag)
+			r.selectServer(reqCtx, dn, requestTag)
 			dispathes = append(dispathes, dn)
 		}
 	}
@@ -281,23 +282,23 @@ func (r *dispatcher) dispatch(req *fasthttp.Request, requestTag string) (*apiRun
 	return targetAPI, dispathes, exprCtx
 }
 
-func (r *dispatcher) selectServer(req *fasthttp.Request, dn *dispathNode, requestTag string) {
-	dn.dest = r.selectServerFromCluster(req, dn.node.meta.ClusterID)
-	r.adjustByRouting(dn.api.meta.ID, req, dn, requestTag)
+func (r *dispatcher) selectServer(reqCtx *fasthttp.RequestCtx, dn *dispathNode, requestTag string) {
+	dn.dest = r.selectServerFromCluster(reqCtx, dn.node.meta.ClusterID)
+	r.adjustByRouting(dn.api.meta.ID, reqCtx, dn, requestTag)
 }
 
-func (r *dispatcher) adjustByRouting(apiID uint64, req *fasthttp.Request, dn *dispathNode, requestTag string) {
+func (r *dispatcher) adjustByRouting(apiID uint64, reqCtx *fasthttp.RequestCtx, dn *dispathNode, requestTag string) {
 	routings := r.routings
 
 	for _, routing := range routings {
-		if routing.isUp() && routing.matches(apiID, req, requestTag) {
+		if routing.isUp() && routing.matches(apiID, &reqCtx.Request, requestTag) {
 			log.Infof("%s: match routing %s, %s traffic to cluster %d",
 				requestTag,
 				routing.meta.Name,
 				routing.meta.Status.String(),
 				routing.meta.ClusterID)
 
-			svr := r.selectServerFromCluster(req, routing.meta.ClusterID)
+			svr := r.selectServerFromCluster(reqCtx, routing.meta.ClusterID)
 
 			switch routing.meta.Strategy {
 			case metapb.Split:
@@ -310,14 +311,14 @@ func (r *dispatcher) adjustByRouting(apiID uint64, req *fasthttp.Request, dn *di
 	}
 }
 
-func (r *dispatcher) selectServerFromCluster(req *fasthttp.Request, id uint64) *serverRuntime {
+func (r *dispatcher) selectServerFromCluster(ctx *fasthttp.RequestCtx, id uint64) *serverRuntime {
 	cluster, ok := r.clusters[id]
 	if !ok {
 		return nil
 	}
 
 	if bindsInfo, ok := r.binds[id]; ok {
-		return r.servers[cluster.selectServer(req, bindsInfo.actives)]
+		return r.servers[cluster.selectServer(ctx, bindsInfo.actives)]
 	}
 
 	return nil
