@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/valyala/fasthttp.svg)](https://travis-ci.org/valyala/fasthttp)
 [![GoDoc](https://godoc.org/github.com/valyala/fasthttp?status.svg)](http://godoc.org/github.com/valyala/fasthttp)
-[![Go Report](http://goreportcard.com/badge/valyala/fasthttp)](http://goreportcard.com/report/valyala/fasthttp)
+[![Go Report](https://goreportcard.com/badge/github.com/valyala/fasthttp)](https://goreportcard.com/report/github.com/valyala/fasthttp)
 
 # fasthttp
 Fast HTTP implementation for Go.
@@ -22,6 +22,8 @@ connections per physical server.
 [Examples from docs](https://godoc.org/github.com/valyala/fasthttp#pkg-examples)
 
 [Code examples](examples)
+
+[Awesome fasthttp tools](https://github.com/fasthttp)
 
 [Switching from net/http to fasthttp](#switching-from-nethttp-to-fasthttp)
 
@@ -168,8 +170,8 @@ go get -u github.com/valyala/fasthttp
 Unfortunately, fasthttp doesn't provide API identical to net/http.
 See the [FAQ](#faq) for details.
 There is [net/http -> fasthttp handler converter](https://godoc.org/github.com/valyala/fasthttp/fasthttpadaptor),
-but it is advisable writing fasthttp request handlers by hands for gaining
-all the fasthttp advantages (especially high performance :) ).
+but it is better to write fasthttp request handlers by hand in order to use 
+all of the fasthttp advantages (especially high performance :) ).
 
 Important points:
 
@@ -239,7 +241,7 @@ from net/http to fasthttp.
   ```
 
 * Fasthttp allows setting response headers and writing response body
-in arbitrary order. There is no 'headers first, then body' restriction
+in an arbitrary order. There is no 'headers first, then body' restriction
 like in net/http. The following code is valid for fasthttp:
 
   ```go
@@ -273,12 +275,12 @@ like in net/http. The following code is valid for fasthttp:
 
 * Fasthttp doesn't provide [ServeMux](https://golang.org/pkg/net/http/#ServeMux),
 but there are more powerful third-party routers and web frameworks
-with fasthttp support exist:
+with fasthttp support:
 
-  * [Iris](https://github.com/kataras/iris)
   * [fasthttp-routing](https://github.com/qiangxue/fasthttp-routing)
   * [fasthttprouter](https://github.com/buaazp/fasthttprouter)
-  * [echo v2](https://github.com/labstack/echo)
+  * [lu](https://github.com/vincentLiuxiang/lu)
+  * [atreugo](https://github.com/savsgio/atreugo)
 
   Net/http code with simple ServeMux is trivially converted to fasthttp code:
 
@@ -308,7 +310,7 @@ with fasthttp support exist:
   	}
   }
 
-  fastttp.ListenAndServe(":80", m)
+  fasthttp.ListenAndServe(":80", m)
   ```
 
 * net/http -> fasthttp conversion table:
@@ -372,7 +374,7 @@ RequestCtx provides the following _band aids_ for this case:
   See [the example](https://godoc.org/github.com/valyala/fasthttp#example-RequestCtx-TimeoutError)
   for more details.
 
-Use brilliant tool - [race detector](http://blog.golang.org/race-detector) -
+Use this brilliant tool - [race detector](http://blog.golang.org/race-detector) -
 for detecting and eliminating data races in your program. If you detected
 data race related to fasthttp in your program, then there is high probability
 you forgot calling [TimeoutError](https://godoc.org/github.com/valyala/fasthttp#RequestCtx.TimeoutError)
@@ -478,18 +480,20 @@ uintBuf := fasthttp.AppendUint(nil, 1234)
 
 # Related projects
 
-  * [fasthttp-contrib](https://github.com/fasthttp-contrib) - various useful
+  * [fasthttp](https://github.com/fasthttp) - various useful
     helpers for projects based on fasthttp.
-  * [iris](https://github.com/kataras/iris) - web application framework built
-    on top of fasthttp. Features speed and functionality.
   * [fasthttp-routing](https://github.com/qiangxue/fasthttp-routing) - fast and
     powerful routing package for fasthttp servers.
   * [fasthttprouter](https://github.com/buaazp/fasthttprouter) - a high
     performance fasthttp request router that scales well.
-  * [echo](https://github.com/labstack/echo) - fast and unfancy HTTP server
-    framework with fasthttp support.
-  * [websocket](https://github.com/leavengood/websocket) - Gorilla-based
+  * [gramework](https://github.com/gramework/gramework) - a web framework made by one of fasthttp maintainers
+  * [lu](https://github.com/vincentLiuxiang/lu) - a high performance
+    go middleware web framework which is based on fasthttp.
+  * [websocket](https://github.com/fasthttp/websocket) - Gorilla-based
     websocket implementation for fasthttp.
+  * [fasthttpsession](https://github.com/phachon/fasthttpsession) - a fast and powerful session package for fasthttp servers.
+  * [atreugo](https://github.com/savsgio/atreugo) - Micro-framework to make simple the use of routing and middlewares.
+  * [kratgo](https://github.com/savsgio/kratgo) - Simple, lightweight and ultra-fast HTTP Cache to speed up your websites.
 
 
 # FAQ
@@ -499,13 +503,13 @@ uintBuf := fasthttp.AppendUint(nil, 1234)
   Because net/http API limits many optimization opportunities.
   For example:
   * net/http Request object lifetime isn't limited by request handler execution
-    time. So the server must create new request object per each request instead
-    of reusing existing objects like fasthttp do.
+    time. So the server must create a new request object per each request instead
+    of reusing existing objects like fasthttp does.
   * net/http headers are stored in a `map[string][]string`. So the server
     must parse all the headers, convert them from `[]byte` to `string` and put
     them into the map before calling user-provided request handler.
     This all requires unnecessary memory allocations avoided by fasthttp.
-  * net/http client API requires creating new response object per each request.
+  * net/http client API requires creating a new response object per each request.
 
 * *Why fasthttp API is incompatible with net/http?*
 
@@ -519,10 +523,9 @@ uintBuf := fasthttp.AppendUint(nil, 1234)
 
 * *Why fasthttp doesn't support HTTP/2.0 and WebSockets?*
 
-  There are [plans](TODO) for adding HTTP/2.0 and WebSockets support
-  in the future.
-  In the mean time, third parties may use [RequestCtx.Hijack](https://godoc.org/github.com/valyala/fasthttp#RequestCtx.Hijack)
-  for implementing these goodies. See [the first third-party websocket implementation on the top of fasthttp](https://github.com/leavengood/websocket).
+  [HTTP/2.0 support](https://github.com/fasthttp/http2) is in progress. [WebSockets](https://github.com/fasthttp/websockets) has been done already. 
+  Third parties also may use [RequestCtx.Hijack](https://godoc.org/github.com/valyala/fasthttp#RequestCtx.Hijack)
+  for implementing these goodies.
 
 * *Are there known net/http advantages comparing to fasthttp?*
 
@@ -545,8 +548,10 @@ uintBuf := fasthttp.AppendUint(nil, 1234)
 
   Go1.5+. Older versions won't be supported, since their standard package
   [miss useful functions](https://github.com/valyala/fasthttp/issues/5).
+  
+  **NOTE**: Go 1.9.7 is the oldest tested version. We recommend you to update as soon as you can. As of 1.11.3 we will drop 1.9.x support.
 
-* *Please provide real benchmark data and sever information*
+* *Please provide real benchmark data and server information*
 
   See [this issue](https://github.com/valyala/fasthttp/issues/4).
 
@@ -555,10 +560,11 @@ uintBuf := fasthttp.AppendUint(nil, 1234)
   There are no plans to add request routing into fasthttp.
   Use third-party routers and web frameworks with fasthttp support:
 
-    * [Iris](https://github.com/kataras/iris)
     * [fasthttp-routing](https://github.com/qiangxue/fasthttp-routing)
     * [fasthttprouter](https://github.com/buaazp/fasthttprouter)
-    * [echo v2](https://github.com/labstack/echo)
+    * [gramework](https://github.com/gramework/gramework)
+    * [lu](https://github.com/vincentLiuxiang/lu)
+    * [atreugo](https://github.com/savsgio/atreugo)
 
   See also [this issue](https://github.com/valyala/fasthttp/issues/9) for more info.
 

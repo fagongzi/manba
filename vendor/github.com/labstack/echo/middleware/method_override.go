@@ -1,29 +1,31 @@
 package middleware
 
-import (
-	"github.com/labstack/echo"
-)
+import "github.com/labstack/echo"
 
 type (
-	// MethodOverrideConfig defines the config for method override middleware.
+	// MethodOverrideConfig defines the config for MethodOverride middleware.
 	MethodOverrideConfig struct {
+		// Skipper defines a function to skip middleware.
+		Skipper Skipper
+
 		// Getter is a function that gets overridden method from the request.
+		// Optional. Default values MethodFromHeader(echo.HeaderXHTTPMethodOverride).
 		Getter MethodOverrideGetter
 	}
 
 	// MethodOverrideGetter is a function that gets overridden method from the request
-	// Optional, with default values as `MethodFromHeader(echo.HeaderXHTTPMethodOverride)`.
 	MethodOverrideGetter func(echo.Context) string
 )
 
 var (
-	// DefaultMethodOverrideConfig is the default method override middleware config.
+	// DefaultMethodOverrideConfig is the default MethodOverride middleware config.
 	DefaultMethodOverrideConfig = MethodOverrideConfig{
-		Getter: MethodFromHeader(echo.HeaderXHTTPMethodOverride),
+		Skipper: DefaultSkipper,
+		Getter:  MethodFromHeader(echo.HeaderXHTTPMethodOverride),
 	}
 )
 
-// MethodOverride returns a method override middleware.
+// MethodOverride returns a MethodOverride middleware.
 // MethodOverride  middleware checks for the overridden method from the request and
 // uses it instead of the original method.
 //
@@ -32,21 +34,28 @@ func MethodOverride() echo.MiddlewareFunc {
 	return MethodOverrideWithConfig(DefaultMethodOverrideConfig)
 }
 
-// MethodOverrideWithConfig returns a method override middleware from config.
-// See `MethodOverride()`.
+// MethodOverrideWithConfig returns a MethodOverride middleware with config.
+// See: `MethodOverride()`.
 func MethodOverrideWithConfig(config MethodOverrideConfig) echo.MiddlewareFunc {
 	// Defaults
+	if config.Skipper == nil {
+		config.Skipper = DefaultMethodOverrideConfig.Skipper
+	}
 	if config.Getter == nil {
 		config.Getter = DefaultMethodOverrideConfig.Getter
 	}
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			if config.Skipper(c) {
+				return next(c)
+			}
+
 			req := c.Request()
-			if req.Method() == echo.POST {
+			if req.Method == echo.POST {
 				m := config.Getter(c)
 				if m != "" {
-					req.SetMethod(m)
+					req.Method = m
 				}
 			}
 			return next(c)
@@ -58,7 +67,7 @@ func MethodOverrideWithConfig(config MethodOverrideConfig) echo.MiddlewareFunc {
 // the request header.
 func MethodFromHeader(header string) MethodOverrideGetter {
 	return func(c echo.Context) string {
-		return c.Request().Header().Get(header)
+		return c.Request().Header.Get(header)
 	}
 }
 

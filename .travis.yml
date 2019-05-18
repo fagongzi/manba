@@ -1,6 +1,14 @@
 language: go
+sudo: true
+dist: xenial
 
 go:
-  - 1.8
+  - 1.11
 
 script: go build  ./...
+
+env:
+  global:
+    core: 
+      longpaths: true
+    core.longpaths: true

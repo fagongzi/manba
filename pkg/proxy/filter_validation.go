@@ -21,15 +21,20 @@ func newValidationFilter() filter.Filter {
 	return &ValidationFilter{}
 }
 
+// Init init filter
+func (f *ValidationFilter) Init(cfg string) error {
+	return nil
+}
+
 // Name return name of this filter
-func (v ValidationFilter) Name() string {
+func (f *ValidationFilter) Name() string {
 	return FilterValidation
 }
 
 // Pre pre filter, before proxy reuqest
-func (v ValidationFilter) Pre(c filter.Context) (statusCode int, err error) {
-	if c.ValidateProxyOuterRequest() {
-		return v.BaseFilter.Pre(c)
+func (f *ValidationFilter) Pre(c filter.Context) (statusCode int, err error) {
+	if c.(*proxyContext).validateRequest() {
+		return f.BaseFilter.Pre(c)
 	}
 
 	return fasthttp.StatusBadRequest, ErrValidationFailure

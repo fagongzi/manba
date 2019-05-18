@@ -1,44 +1,37 @@
 Server
 ------
-In Gateway, server is a real backend server that provide API implemention.
+在Gateway中，一个Server对应一个真实存在的后端Server。
 
-# Server fields
-* Server Addr
-  The backend server's IP and Port. The same IP And Port identified a uniq backend server.
+# Server属性
+## ID
+Server ID，唯一标识。
 
-* Server Check URL
-  The URL for server heath check.
+## Addr
+Server地址，格式为："IP:PORT"。
 
-* Server Check URL Responsed Body
-  The check url expect response value, if not set, proxy only check http status code is 200.
+## Protocol
+Server的接口协议，目前支持HTTP。
 
-* Server Check Timeout
-  Timeout of backend server response.
+## Weight
+Weight 服务器的权重（当该服务器所属的集群负载方式是权重轮询时则需要配置）
 
-* Server Check Duration
-  Duration of heath check.
+## MaxQPS
+Server能够支持的最大QPS，用于流控。Gateway采用令牌桶算法，根据QPS限制流量，保护后端Server被压垮。
 
-* Server Max QPS
-  Used for rate limiting, over this value, proxy will reject request.
+## HeathCheck（可选）
+Server的健康检查机制，目前支持HTTP的协议检查，支持检查返回状态码以及返回内容。如果没有设置，认为这个Server的健康检查交给外部，Gateway永久认为这个Server是健康的。
 
-* Server Half To Open Seconds
-  It's a circuit breaker attrbutes, how many seconds that half-open status convert to open status.
+## CircuitBreaker（可选）
+熔断器，设置后端Server的熔断规则。熔断器分为3个状态：
 
-* Server Half Traffic Rate
-  It's a circuit breaker attrbutes, at half-open status, how many rate of traffic will passed from proxy, other will reject.
+* Open
 
-* Server To Close Count
-  It's a circuit breaker attrbutes, number of continuous occur error. Over this value will convert to closed status, in closed status proxy will reject all request.
+  Open状态，正常状态，Gateway放入全部流量。当Gateway发现失败的请求比例达到了设置的规则，熔断器会把状态切换到Close状态
 
-# CRUD
-# Create
-You can create a server use admin. Once a server created, all proxy will add it to check tasks, after heath, this server will be moved to proxy's available servers list.
+* Half
 
-# Update
-You can update server's infomation at admin system. Once server has been updated, all proxy will update there memory immidately. 
+  Half状态，尝试恢复的状态。在这个状态下，Gateway会尝试放入一定比例的流量，然后观察这些流量的请求的情况，如果达到预期就把状态转换为Open状态，如果没有达到预期，恢复成Close状态
 
-# Delete
-You can delete a server at admin system. Once server has been deleted, all proxy will delete it immidately. 
+* Close
 
-# Bind
-Server will not received traffic until it binded a cluster. So you must bind server with a cluster.
+  Close状态，在这个状态下，Gateway禁止任何流量进入这个后端Server，在达到指定的阈值时间后，Gateway自动尝试切换到Half状态，尝试恢复。

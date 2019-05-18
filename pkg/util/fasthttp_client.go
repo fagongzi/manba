@@ -8,194 +8,89 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/fagongzi/gateway/pkg/conf"
 	"github.com/valyala/fasthttp"
-)
-
-var (
-	requestPool  sync.Pool
-	responsePool sync.Pool
 )
 
 var startTimeUnix = time.Now().Unix()
 var clientConnPool sync.Pool
 
+// HTTPOption http client option
+type HTTPOption struct {
+	// Maximum number of connections which may be established to server
+	MaxConns int
+	// MaxConnDuration Keep-alive connections are closed after this duration.
+	MaxConnDuration time.Duration
+	// MaxIdleConnDuration Idle keep-alive connections are closed after this duration.
+	MaxIdleConnDuration time.Duration
+	// ReadBufferSize Per-connection buffer size for responses' reading.
+	ReadBufferSize int
+	// WriteBufferSize Per-connection buffer size for requests' writing.
+	WriteBufferSize int
+	// ReadTimeout Maximum duration for full response reading (including body).
+	ReadTimeout time.Duration
+	// WriteTimeout Maximum duration for full request writing (including body).
+	WriteTimeout time.Duration
+	// MaxResponseBodySize Maximum response body size.
+	MaxResponseBodySize int
+}
+
+// DefaultHTTPOption returns a HTTP Option
+func DefaultHTTPOption() *HTTPOption {
+	return &HTTPOption{
+		MaxConns:            8,
+		MaxConnDuration:     time.Minute,
+		MaxIdleConnDuration: time.Second * 30,
+		ReadBufferSize:      512,
+		WriteBufferSize:     256,
+		ReadTimeout:         time.Second * 30,
+		WriteTimeout:        time.Second * 30,
+		MaxResponseBodySize: 1024 * 1024 * 10,
+	}
+}
+
 // FastHTTPClient fast http client
 type FastHTTPClient struct {
-	MaxConnDuration     time.Duration
-	MaxIdleConnDuration time.Duration
-	ReadTimeout         time.Duration
-	WriteTimeout        time.Duration
+	sync.RWMutex
 
-	MaxConns            int
-	MaxResponseBodySize int
-
-	WriteBufferSize int
-	ReadBufferSize  int
-
-	clientName  atomic.Value
-	lastUseTime uint32
-
-	connsLock  sync.Mutex
-	connsCount int
-	conns      []*clientConn
-
-	readerPool sync.Pool
-	writerPool sync.Pool
+	defaultOption *HTTPOption
+	hostClients   map[string]*hostClients
+	readerPool    sync.Pool
+	writerPool    sync.Pool
 }
 
 // NewFastHTTPClient create FastHTTPClient instance
-func NewFastHTTPClient(conf *conf.Conf) *FastHTTPClient {
+func NewFastHTTPClient() *FastHTTPClient {
+	return NewFastHTTPClientOption(nil)
+}
+
+// NewFastHTTPClientOption create FastHTTPClient instance with default option
+func NewFastHTTPClientOption(defaultOption *HTTPOption) *FastHTTPClient {
 	return &FastHTTPClient{
-		MaxConnDuration:     time.Duration(conf.MaxConnDuration) * time.Second,
-		MaxIdleConnDuration: time.Duration(conf.MaxIdleConnDuration) * time.Second,
-		ReadTimeout:         time.Duration(conf.ReadTimeout) * time.Second,
-		WriteTimeout:        time.Duration(conf.WriteTimeout) * time.Second,
-
-		MaxResponseBodySize: conf.MaxResponseBodySize,
-		WriteBufferSize:     conf.WriteBufferSize,
-		ReadBufferSize:      conf.ReadBufferSize,
-		MaxConns:            conf.MaxConns,
+		defaultOption: defaultOption,
+		hostClients:   make(map[string]*hostClients),
 	}
 }
 
-type clientConn struct {
-	c net.Conn
+type hostClients struct {
+	sync.Mutex
 
-	createdTime time.Time
-	lastUseTime time.Time
-
-	lastReadDeadlineTime  time.Time
-	lastWriteDeadlineTime time.Time
+	startedCleaner uint64
+	option         *HTTPOption
+	lastUseTime    uint32
+	connsCount     int
+	conns          []*clientConn
 }
 
-// Do do a http request
-func (c *FastHTTPClient) Do(req *fasthttp.Request, addr string) (*fasthttp.Response, error) {
-	resp, retry, err := c.do(req, addr)
-	if err != nil && retry && isIdempotent(req) {
-		resp, _, err = c.do(req, addr)
-	}
-	if err == io.EOF {
-		err = fasthttp.ErrConnectionClosed
-	}
-	return resp, err
-}
-
-func (c *FastHTTPClient) do(req *fasthttp.Request, addr string) (*fasthttp.Response, bool, error) {
-	resp := fasthttp.AcquireResponse()
-
-	ok, err := c.doNonNilReqResp(req, resp, addr)
-
-	return resp, ok, err
-}
-
-func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.Response, addr string) (bool, error) {
-	if req == nil {
-		panic("BUG: req cannot be nil")
-	}
-	if resp == nil {
-		panic("BUG: resp cannot be nil")
-	}
-
-	atomic.StoreUint32(&c.lastUseTime, uint32(time.Now().Unix()-startTimeUnix))
-
-	// Free up resources occupied by response before sending the request,
-	// so the GC may reclaim these resources (e.g. response body).
-	resp.Reset()
-
-	cc, err := c.acquireConn(addr)
-	if err != nil {
-		return false, err
-	}
-	conn := cc.c
-
-	// set write deadline
-	if c.WriteTimeout > 0 {
-		// Optimization: update write deadline only if more than 25%
-		// of the last write deadline exceeded.
-		// See https://github.com/golang/go/issues/15133 for details.
-		currentTime := time.Now()
-		if currentTime.Sub(cc.lastWriteDeadlineTime) > (c.WriteTimeout >> 2) {
-			if err = conn.SetWriteDeadline(currentTime.Add(c.WriteTimeout)); err != nil {
-				c.closeConn(cc)
-				return true, err
-			}
-			cc.lastWriteDeadlineTime = currentTime
-		}
-	}
-
-	resetConnection := false
-	if c.MaxConnDuration > 0 && time.Since(cc.createdTime) > c.MaxConnDuration && !req.ConnectionClose() {
-		req.SetConnectionClose()
-		resetConnection = true
-	}
-
-	bw := c.acquireWriter(conn)
-	err = req.Write(bw)
-
-	if resetConnection {
-		req.Header.ResetConnectionClose()
-	}
-
-	if err == nil {
-		err = bw.Flush()
-	}
-	if err != nil {
-		c.releaseWriter(bw)
-		c.closeConn(cc)
-		return true, err
-	}
-	c.releaseWriter(bw)
-
-	// set read readline
-	if c.ReadTimeout > 0 {
-		// Optimization: update read deadline only if more than 25%
-		// of the last read deadline exceeded.
-		// See https://github.com/golang/go/issues/15133 for details.
-		currentTime := time.Now()
-		if currentTime.Sub(cc.lastReadDeadlineTime) > (c.ReadTimeout >> 2) {
-			if err = conn.SetReadDeadline(currentTime.Add(c.ReadTimeout)); err != nil {
-				c.closeConn(cc)
-				return true, err
-			}
-			cc.lastReadDeadlineTime = currentTime
-		}
-	}
-
-	if !req.Header.IsGet() && req.Header.IsHead() {
-		resp.SkipBody = true
-	}
-
-	br := c.acquireReader(conn)
-	if err = resp.ReadLimitBody(br, c.MaxResponseBodySize); err != nil {
-		c.releaseReader(br)
-		c.closeConn(cc)
-		if err == io.EOF {
-			return true, err
-		}
-		return false, err
-	}
-	c.releaseReader(br)
-
-	if resetConnection || req.ConnectionClose() || resp.ConnectionClose() {
-		c.closeConn(cc)
-	} else {
-		c.releaseConn(cc)
-	}
-
-	return false, err
-}
-
-func (c *FastHTTPClient) acquireConn(addr string) (*clientConn, error) {
+func (c *hostClients) acquireConn(addr string) (*clientConn, error) {
 	var cc *clientConn
 	createConn := false
 	startCleaner := false
 
 	var n int
-	c.connsLock.Lock()
+	c.Lock()
 	n = len(c.conns)
 	if n == 0 {
-		maxConns := c.MaxConns
+		maxConns := c.option.MaxConns
 		if maxConns <= 0 {
 			maxConns = fasthttp.DefaultMaxConnsPerHost
 		}
@@ -211,7 +106,7 @@ func (c *FastHTTPClient) acquireConn(addr string) (*clientConn, error) {
 		cc = c.conns[n]
 		c.conns = c.conns[:n]
 	}
-	c.connsLock.Unlock()
+	c.Unlock()
 
 	if cc != nil {
 		return cc, nil
@@ -228,29 +123,37 @@ func (c *FastHTTPClient) acquireConn(addr string) (*clientConn, error) {
 	cc = acquireClientConn(conn)
 
 	if startCleaner {
-		go c.connsCleaner()
+		if atomic.SwapUint64(&c.startedCleaner, 1) == 0 {
+			go c.connsCleaner()
+		}
 	}
 	return cc, nil
 }
 
-func (c *FastHTTPClient) releaseConn(cc *clientConn) {
-	cc.lastUseTime = time.Now()
-	c.connsLock.Lock()
-	c.conns = append(c.conns, cc)
-	c.connsLock.Unlock()
+func (c *hostClients) decConnsCount() {
+	c.Lock()
+	c.connsCount--
+	c.Unlock()
 }
 
-func (c *FastHTTPClient) connsCleaner() {
+func (c *hostClients) releaseConn(cc *clientConn) {
+	cc.lastUseTime = time.Now()
+	c.Lock()
+	c.conns = append(c.conns, cc)
+	c.Unlock()
+}
+
+func (c *hostClients) connsCleaner() {
 	var (
 		scratch             []*clientConn
 		mustStop            bool
-		maxIdleConnDuration = c.MaxIdleConnDuration
+		maxIdleConnDuration = c.option.MaxIdleConnDuration
 	)
 
 	for {
 		currentTime := time.Now()
 
-		c.connsLock.Lock()
+		c.Lock()
 		conns := c.conns
 		n := len(conns)
 		i := 0
@@ -266,7 +169,7 @@ func (c *FastHTTPClient) connsCleaner() {
 			}
 			c.conns = conns[:m]
 		}
-		c.connsLock.Unlock()
+		c.Unlock()
 
 		for i, cc := range scratch {
 			c.closeConn(cc)
@@ -277,6 +180,143 @@ func (c *FastHTTPClient) connsCleaner() {
 		}
 		time.Sleep(maxIdleConnDuration)
 	}
+
+	atomic.StoreUint64(&c.startedCleaner, 0)
+}
+
+func (c *hostClients) closeConn(cc *clientConn) {
+	c.decConnsCount()
+	cc.c.Close()
+	releaseClientConn(cc)
+}
+
+type clientConn struct {
+	c net.Conn
+
+	createdTime time.Time
+	lastUseTime time.Time
+
+	lastReadDeadlineTime  time.Time
+	lastWriteDeadlineTime time.Time
+}
+
+// Do do a http request
+func (c *FastHTTPClient) Do(req *fasthttp.Request, addr string, option *HTTPOption) (*fasthttp.Response, error) {
+	resp, err := c.do(req, addr, option)
+	return resp, err
+}
+
+func (c *FastHTTPClient) do(req *fasthttp.Request, addr string, option *HTTPOption) (*fasthttp.Response, error) {
+	resp := fasthttp.AcquireResponse()
+	err := c.doNonNilReqResp(req, resp, addr, option)
+	return resp, err
+}
+
+func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.Response, addr string, option *HTTPOption) error {
+	if req == nil {
+		panic("BUG: req cannot be nil")
+	}
+	if resp == nil {
+		panic("BUG: resp cannot be nil")
+	}
+
+	opt := option
+	if opt == nil {
+		opt = c.defaultOption
+	}
+
+	var hc *hostClients
+	var ok bool
+	c.Lock()
+	if hc, ok = c.hostClients[addr]; !ok {
+		hc = &hostClients{option: opt}
+		c.hostClients[addr] = hc
+	}
+	c.Unlock()
+
+	atomic.StoreUint32(&hc.lastUseTime, uint32(time.Now().Unix()-startTimeUnix))
+
+	// Free up resources occupied by response before sending the request,
+	// so the GC may reclaim these resources (e.g. response body).
+	resp.Reset()
+
+	cc, err := hc.acquireConn(addr)
+	if err != nil {
+		return err
+	}
+	conn := cc.c
+
+	// set write deadline
+	if opt.WriteTimeout > 0 {
+		// Optimization: update write deadline only if more than 25%
+		// of the last write deadline exceeded.
+		// See https://github.com/golang/go/issues/15133 for details.
+		currentTime := time.Now()
+		if err = conn.SetWriteDeadline(currentTime.Add(opt.WriteTimeout)); err != nil {
+			hc.closeConn(cc)
+			return err
+		}
+		cc.lastWriteDeadlineTime = currentTime
+	}
+
+	resetConnection := false
+	if opt.MaxConnDuration > 0 && time.Since(cc.createdTime) > opt.MaxConnDuration && !req.ConnectionClose() {
+		req.SetConnectionClose()
+		resetConnection = true
+	}
+
+	bw := c.acquireWriter(conn, opt)
+	err = req.Write(bw)
+
+	if resetConnection {
+		req.Header.ResetConnectionClose()
+	}
+
+	if err == nil {
+		err = bw.Flush()
+	}
+	if err != nil {
+		c.releaseWriter(bw)
+		hc.closeConn(cc)
+		return err
+	}
+	c.releaseWriter(bw)
+
+	// set read readline
+	if opt.ReadTimeout > 0 {
+		// Optimization: update read deadline only if more than 25%
+		// of the last read deadline exceeded.
+		// See https://github.com/golang/go/issues/15133 for details.
+		currentTime := time.Now()
+		if err = conn.SetReadDeadline(currentTime.Add(opt.ReadTimeout)); err != nil {
+			hc.closeConn(cc)
+			return err
+		}
+		cc.lastReadDeadlineTime = currentTime
+	}
+
+	if !req.Header.IsGet() && req.Header.IsHead() {
+		resp.SkipBody = true
+	}
+
+	br := c.acquireReader(conn, opt)
+	if err = resp.ReadLimitBody(br, opt.MaxResponseBodySize); err != nil {
+		c.releaseReader(br)
+		hc.closeConn(cc)
+		if err == io.EOF {
+			return err
+		}
+		return err
+	}
+	c.releaseReader(br)
+
+	if resetConnection || req.ConnectionClose() || resp.ConnectionClose() {
+		hc.closeConn(cc)
+	} else {
+		hc.releaseConn(cc)
+	}
+
+	return err
 }
 
 func dialAddr(addr string) (net.Conn, error) {
@@ -291,16 +331,10 @@ func dialAddr(addr string) (net.Conn, error) {
 	return conn, nil
 }
 
-func (c *FastHTTPClient) closeConn(cc *clientConn) {
-	c.decConnsCount()
-	cc.c.Close()
-	releaseClientConn(cc)
-}
-
-func (c *FastHTTPClient) acquireWriter(conn net.Conn) *bufio.Writer {
+func (c *FastHTTPClient) acquireWriter(conn net.Conn, opt *HTTPOption) *bufio.Writer {
 	v := c.writerPool.Get()
 	if v == nil {
-		return bufio.NewWriterSize(conn, c.WriteBufferSize)
+		return bufio.NewWriterSize(conn, opt.WriteBufferSize)
 	}
 	bw := v.(*bufio.Writer)
 	bw.Reset(conn)
@@ -311,10 +345,10 @@ func (c *FastHTTPClient) releaseWriter(bw *bufio.Writer) {
 	c.writerPool.Put(bw)
 }
 
-func (c *FastHTTPClient) acquireReader(conn net.Conn) *bufio.Reader {
+func (c *FastHTTPClient) acquireReader(conn net.Conn, opt *HTTPOption) *bufio.Reader {
 	v := c.readerPool.Get()
 	if v == nil {
-		return bufio.NewReaderSize(conn, c.ReadBufferSize)
+		return bufio.NewReaderSize(conn, opt.ReadBufferSize)
 	}
 	br := v.(*bufio.Reader)
 	br.Reset(conn)
@@ -323,16 +357,6 @@ func (c *FastHTTPClient) acquireReader(conn net.Conn) *bufio.Reader {
 
 func (c *FastHTTPClient) releaseReader(br *bufio.Reader) {
 	c.readerPool.Put(br)
-}
-
-func (c *FastHTTPClient) decConnsCount() {
-	c.connsLock.Lock()
-	c.connsCount--
-	c.connsLock.Unlock()
-}
-
-func isIdempotent(req *fasthttp.Request) bool {
-	return req.Header.IsGet() || req.Header.IsHead() || req.Header.IsPut()
 }
 
 func acquireClientConn(conn net.Conn) *clientConn {

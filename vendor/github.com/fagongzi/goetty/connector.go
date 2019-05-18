@@ -2,8 +2,11 @@ package goetty
 
 import (
 	"errors"
+	"io"
 	"net"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -16,73 +19,99 @@ var (
 	ErrIllegalState = errors.New("goetty.Connector: Not connected")
 )
 
-// Conf config for connector
-type Conf struct {
-	Addr                   string
-	TimeoutConnectToServer time.Duration
+type connector struct {
+	sync.RWMutex
 
-	TimeWheel      *HashedTimeWheel
-	TimeoutWrite   time.Duration
-	WriteTimeoutFn func(string, *Connector)
+	opts        *clientOptions
+	addr        string
+	conn        net.Conn
+	closed      int32
+	lastTimeout Timeout
+	attrs       map[string]interface{}
+	in          *ByteBuf
+	out         *ByteBuf
 }
 
-// Connector client connector
-type Connector struct {
-	cnf *Conf
+// NewConnector create a new connector with opts
+func NewConnector(svrAddr string, opts ...ClientOption) IOSession {
+	sopts := &clientOptions{}
+	for _, opt := range opts {
+		opt(sopts)
+	}
+	sopts.adjust()
 
-	decoder Decoder
-	encoder Encoder
-
-	conn         net.Conn
-	connected    bool
-	writeBufSize int
-
-	timeoutWriteKey string
-
-	in  *ByteBuf
-	out sync.Pool
-}
-
-// NewConnector create a new connector
-func NewConnector(cnf *Conf, decoder Decoder, encoder Encoder) *Connector {
-	return NewConnectorSize(cnf, decoder, encoder, BufReadSize, BufWriteSize)
-}
-
-// NewConnectorSize create a new connector
-func NewConnectorSize(cnf *Conf, decoder Decoder, encoder Encoder, readBufSize, writeBufSize int) *Connector {
-	return &Connector{
-		cnf:          cnf,
-		in:           NewByteBuf(readBufSize),
-		writeBufSize: writeBufSize,
-		decoder:      decoder,
-		encoder:      encoder,
+	return &connector{
+		addr:  svrAddr,
+		in:    NewByteBuf(sopts.readBufSize),
+		out:   NewByteBuf(sopts.writeBufSize),
+		opts:  sopts,
+		attrs: make(map[string]interface{}),
 	}
 }
 
-// Connect connect server
-func (c *Connector) Connect() (bool, error) {
+// InBuf returns internal bytebuf that used for read from client
+func (c *connector) InBuf() *ByteBuf {
+	return c.in
+}
+
+// OutBuf returns internal bytebuf that used for write to client
+func (c *connector) OutBuf() *ByteBuf {
+	return c.out
+}
+
+// SetAttr add a attr on session
+func (c *connector) SetAttr(key string, value interface{}) {
+	c.Lock()
+	c.attrs[key] = value
+	c.Unlock()
+}
+
+// GetAttr get attr from session
+func (c *connector) GetAttr(key string) interface{} {
+	c.RLock()
+	v := c.attrs[key]
+	c.RUnlock()
+	return v
+}
+
+// ID get id
+func (c *connector) ID() interface{} {
+	return 0
+}
+
+// Hash get hash value use id
+func (c *connector) Hash() int {
+	return 0
+}
+
+func (c *connector) Connect() (bool, error) {
 	e := c.Close() // Close current connection
 
 	if e != nil {
 		return false, e
 	}
 
-	conn, e := net.DialTimeout("tcp", c.cnf.Addr, c.cnf.TimeoutConnectToServer)
+	conn, e := net.DialTimeout("tcp", c.addr, c.opts.connectTimeout)
 
 	if nil != e {
 		return false, e
 	}
 
+	conn.(*net.TCPConn).SetNoDelay(true)
+	conn.(*net.TCPConn).SetLinger(0)
 	c.conn = conn
-	c.connected = true
+	for _, sm := range c.opts.middlewares {
+		sm.Connected(c)
+	}
 
+	atomic.StoreInt32(&c.closed, 0)
 	c.bindWriteTimeout()
 
 	return true, nil
 }
 
 // Close close
-func (c *Connector) Close() error {
+func (c *connector) Close() error {
 	if nil != c.conn {
 		err := c.conn.Close()
 		if err != nil {
@@ -96,111 +125,269 @@ func (c *Connector) Close() error {
 }
 
 // IsConnected is connected
-func (c *Connector) IsConnected() bool {
-	return nil != c.conn && c.connected
+func (c *connector) IsConnected() bool {
+	return nil != c.conn && atomic.LoadInt32(&c.closed) == 0
 }
 
-func (c *Connector) reset() {
-	c.connected = false
+func (c *connector) reset() {
+	atomic.StoreInt32(&c.closed, 1)
 	c.conn = nil
+	c.in.Clear()
+	c.out.Clear()
+
+	for _, sm := range c.opts.middlewares {
+		sm.Closed(c)
+	}
 }
 
 // Read read data from server, block until a msg arrived or  get a error
-func (c *Connector) Read() (interface{}, error) {
+func (c *connector) Read() (interface{}, error) {
 	return c.ReadTimeout(0)
 }
 
 // ReadTimeout read data from server with a timeout duration
-func (c *Connector) ReadTimeout(timeout time.Duration) (interface{}, error) {
-	if !c.IsConnected() {
-		return nil, ErrIllegalState
-	}
-
-	var msg interface{}
-	var err error
-	var complete bool
-
+func (c *connector) ReadTimeout(timeout time.Duration) (interface{}, error) {
 	for {
-		if 0 != timeout {
-			c.conn.SetReadDeadline(time.Now().Add(timeout))
+		if !c.IsConnected() {
+			return nil, ErrIllegalState
 		}
 
-		_, err = c.in.ReadFrom(c.conn)
-
+		doRead, msg, err := c.doPreRead()
 		if err != nil {
 			return nil, err
 		}
 
-		complete, msg, err = c.decoder.Decode(c.in)
+		if !doRead {
+			return msg, nil
+		}
 
-		if nil != err || complete {
-			break
+		var complete bool
+		for {
+			if c.in.Readable() > 0 {
+				complete, msg, err = c.opts.decoder.Decode(c.in)
+
+				if !complete && err == nil {
+					complete, msg, err = c.readFromConn(timeout)
+				}
+			} else {
+				complete, msg, err = c.readFromConn(timeout)
+			}
+
+			if nil != err {
+				c.in.Clear()
+				return nil, err
+			}
+
+			if complete {
+				break
+			}
+		}
+
+		if c.in.Readable() == 0 {
+			c.in.Clear()
+		}
+
+		returnRead, readMsg, err := c.doPostRead(msg)
+		if err != nil {
+			return nil, err
+		}
+
+		if returnRead {
+			return readMsg, err
 		}
 	}
-
-	c.in.Clear()
-	return msg, err
 }
 
 // Write write a msg to server
-func (c *Connector) Write(msg interface{}) error {
-	if c.IsConnected() {
-		buf, ok := c.out.Get().(*ByteBuf)
+func (c *connector) Write(msg interface{}) error {
+	return c.write(msg, false)
+}
 
-		if !ok {
-			buf = NewByteBuf(c.writeBufSize)
+// WriteAndFlush write a msg to server
+func (c *connector) WriteAndFlush(msg interface{}) error {
+	return c.write(msg, true)
+}
+
+// Flush writes bytes that in the internal bytebuf
+func (c *connector) Flush() error {
+	buf := c.out
+
+	written := 0
+	all := buf.Readable()
+	for {
+		if written == all {
+			break
 		}
 
-		err := c.encoder.Encode(msg, buf)
-
+		n, err := c.conn.Write(buf.buf[buf.readerIndex+written : buf.writerIndex])
 		if err != nil {
-			c.writeRelease(buf)
+			for _, sm := range c.opts.middlewares {
+				sm.WriteError(err, c)
+			}
+
+			c.writeRelease()
 			return err
 		}
 
-		_, bytes, _ := buf.ReadAll()
+		written += n
+	}
 
-		n, err := c.conn.Write(bytes)
+	c.writeRelease()
+	return nil
+}
 
+// RemoteAddr get remote address
+func (c *connector) RemoteAddr() string {
+	if nil != c.conn {
+		return c.conn.RemoteAddr().String()
+	}
+
+	return ""
+}
+
+// RemoteIP return remote ip address
+func (c *connector) RemoteIP() string {
+	addr := c.RemoteAddr()
+	if addr == "" {
+		return ""
+	}
+
+	return strings.Split(addr, ":")[0]
+}
+
+func (c *connector) doPreRead() (bool, interface{}, error) {
+	for _, sm := range c.opts.middlewares {
+		doNext, msg, err := sm.PreRead(c)
 		if err != nil {
-			c.writeRelease(buf)
+			return false, false, err
+		}
+
+		if !doNext {
+			return false, msg, nil
+		}
+	}
+
+	return true, nil, nil
+}
+
+func (c *connector) doPostRead(msg interface{}) (bool, interface{}, error) {
+	readedMsg := msg
+
+	doNext := true
+	var err error
+	for _, sm := range c.opts.middlewares {
+		doNext, readedMsg, err = sm.PostRead(readedMsg, c)
+		if err != nil {
+			return false, nil, err
+		}
+
+		if !doNext {
+			return false, readedMsg, nil
+		}
+	}
+
+	return true, readedMsg, nil
+}
+
+func (c *connector) doPreWrite(msg interface{}) (bool, interface{}, error) {
+	var err error
+	var doNext bool
+	writeMsg := msg
+
+	for _, sm := range c.opts.middlewares {
+		doNext, writeMsg, err = sm.PreWrite(writeMsg, c)
+		if err != nil {
+			return false, writeMsg, err
+		}
+
+		if !doNext {
+			return false, writeMsg, nil
+		}
+	}
+
+	return true, writeMsg, nil
+}
+
+func (c *connector) doPostWrite(msg interface{}) error {
+	for _, sm := range c.opts.middlewares {
+		doNext, err := sm.PostWrite(msg, c)
+		if err != nil {
 			return err
 		}
 
-		c.cancelWriteTimeout()
-
-		if n != len(bytes) {
-			c.writeRelease(buf)
-			return ErrWrite
+		if !doNext {
+			return nil
 		}
+	}
 
-		c.writeRelease(buf)
+	return nil
+}
+
+func (c *connector) write(msg interface{}, flush bool) error {
+	doWrite, writeMsg, err := c.doPreWrite(msg)
+	if err != nil {
+		return err
+	}
+
+	if !doWrite {
 		return nil
 	}
 
-	return ErrIllegalState
+	err = c.opts.encoder.Encode(writeMsg, c.out)
+	if err != nil {
+		return err
+	}
+
+	if flush {
+		err = c.Flush()
+		if err != nil {
+			return err
+		}
+	}
+
+	return c.doPostWrite(writeMsg)
 }
 
-func (c *Connector) writeRelease(buf *ByteBuf) {
-	buf.Clear()
-	c.out.Put(buf)
+func (c *connector) readFromConn(timeout time.Duration) (bool, interface{}, error) {
+	if 0 != timeout {
+		c.conn.SetReadDeadline(time.Now().Add(timeout))
+	}
+
+	_, err := io.Copy(c.in, c.conn)
+	if err != nil {
+		for _, sm := range c.opts.middlewares {
+			oerr := sm.ReadError(err, c)
+			if oerr == nil {
+				return false, nil, nil
+			}
+		}
+
+		return false, nil, err
+	}
+
+	return c.opts.decoder.Decode(c.in)
+}
+
+func (c *connector) writeRelease() {
+	c.out.Clear()
 	c.bindWriteTimeout()
 }
 
-func (c *Connector) bindWriteTimeout() {
-	if c.cnf.WriteTimeoutFn != nil {
-		c.timeoutWriteKey = c.cnf.TimeWheel.Add(c.cnf.TimeoutWrite, c.writeTimeout)
+func (c *connector) bindWriteTimeout() {
+	if c.opts.writeTimeoutHandler != nil {
+		c.lastTimeout.Stop()
+		c.lastTimeout, _ = c.opts.timeWheel.Schedule(c.opts.writeTimeout, c.writeTimeout, nil)
 	}
 }
 
-func (c *Connector) cancelWriteTimeout() {
-	if c.cnf.WriteTimeoutFn != nil {
-		c.cnf.TimeWheel.Cancel(c.timeoutWriteKey)
+func (c *connector) cancelWriteTimeout() {
+	if c.opts.writeTimeoutHandler != nil {
+		c.lastTimeout.Stop()
 	}
 }
 
-func (c *Connector) writeTimeout(key string) {
-	if c.timeoutWriteKey == key && c.cnf.WriteTimeoutFn != nil {
-		c.cnf.WriteTimeoutFn(c.cnf.Addr, c)
+func (c *connector) writeTimeout(arg interface{}) {
+	if c.opts.writeTimeoutHandler != nil {
+		c.opts.writeTimeoutHandler(c.addr, c)
 	}
 }

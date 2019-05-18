@@ -1,12 +1,5 @@
 package goetty
 
-const (
-	// BufReadSize read buf size
-	BufReadSize = 1024
-	// BufWriteSize write buf size
-	BufWriteSize = 1024
-)
-
 // Encoder encode interface
 type Encoder interface {
 	Encode(data interface{}, out *ByteBuf) error
@@ -15,6 +8,12 @@ type Encoder interface {
 // Decoder decoder interface
 type Decoder interface {
 	Decode(in *ByteBuf) (complete bool, msg interface{}, err error)
+}
+
+type emptyDecoder struct{}
+
+func (e *emptyDecoder) Decode(in *ByteBuf) (complete bool, msg interface{}, err error) {
+	return true, in, nil
 }
 
 type emptyEncoder struct{}
@@ -26,4 +25,9 @@ func (e *emptyEncoder) Encode(data interface{}, out *ByteBuf) error {
 // NewEmptyEncoder returns a empty encoder
 func NewEmptyEncoder() Encoder {
 	return &emptyEncoder{}
+}
+
+// NewEmptyDecoder returns a empty decoder
+func NewEmptyDecoder() Decoder {
+	return &emptyDecoder{}
 }

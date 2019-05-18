@@ -11,10 +11,9 @@ var hopHeaders = []string{
 	"Keep-Alive",
 	"Proxy-Authenticate",
 	"Proxy-Authorization",
-	"Te", // canonicalized version of "TE"
+	"Te",
 	"Trailers",
 	"Transfer-Encoding",
-	"Upgrade",
 }
 
 // HeadersFilter HeadersFilter
@@ -26,30 +25,36 @@ func newHeadersFilter() filter.Filter {
 	return &HeadersFilter{}
 }
 
+// Init init filter
+func (f *HeadersFilter) Init(cfg string) error {
+	return nil
+}
+
 // Name return name of this filter
-func (f HeadersFilter) Name() string {
+func (f *HeadersFilter) Name() string {
 	return FilterHeader
 }
 
 // Pre execute before proxy
-func (f HeadersFilter) Pre(c filter.Context) (statusCode int, err error) {
+func (f *HeadersFilter) Pre(c filter.Context) (statusCode int, err error) {
 	for _, h := range hopHeaders {
-		c.GetProxyOuterRequest().Header.Del(h)
+		c.ForwardRequest().Header.Del(h)
 	}
 
+	c.ForwardRequest().Header.SetHost(c.Server().Addr)
 	return f.BaseFilter.Pre(c)
 }
 
 // Post execute after proxy
-func (f HeadersFilter) Post(c filter.Context) (statusCode int, err error) {
+func (f *HeadersFilter) Post(c filter.Context) (statusCode int, err error) {
 	for _, h := range hopHeaders {
-		c.GetProxyResponse().Header.Del(h)
+		c.Response().Header.Del(h)
 	}
 
 	// 需要合并处理的，不做header的复制，由proxy做合并
-	if !c.NeedMerge() {
-		c.GetOriginRequestCtx().Response.Header.Reset()
-		c.GetProxyResponse().Header.CopyTo(&c.GetOriginRequestCtx().Response.Header)
+	if len(c.API().Nodes) == 1 {
+		c.OriginRequest().Response.Header.Reset()
+		c.Response().Header.CopyTo(&c.OriginRequest().Response.Header)
 	}
 
 	return f.BaseFilter.Post(c)
