@@ -1,21 +1,27 @@
 package proxy
 
 import (
-	"container/list"
+	"bytes"
+	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
-	"net/rpc"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/fagongzi/gateway/pkg/conf"
-	"github.com/fagongzi/gateway/pkg/model"
+	"github.com/fagongzi/gateway/pkg/expr"
+	"github.com/fagongzi/gateway/pkg/filter"
+	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/plugin"
+	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
+	"github.com/fagongzi/util/hack"
 	"github.com/fagongzi/util/task"
+	"github.com/soheilhy/cmux"
 	"github.com/valyala/fasthttp"
 )
 
@@ -29,24 +35,74 @@ var (
 )
 
 var (
-	// MergeContentType merge operation using content-type
-	MergeContentType = "application/json; charset=utf-8"
-	// MergeRemoveHeaders merge operation need to remove headers
-	MergeRemoveHeaders = []string{
+	// MultiResultsContentType merge operation using content-type
+	MultiResultsContentType = "application/json; charset=utf-8"
+	// MultiResultsRemoveHeaders merge operation need to remove headers
+	MultiResultsRemoveHeaders = []string{
 		"Content-Length",
 		"Content-Type",
 		"Date",
 	}
 )
 
+var (
+	globalHTTPOptions *util.HTTPOption
+)
+
+const (
+	charLeft  = byte('[')
+	charRight = byte(']')
+)
+
+// Proxy Proxy
+type Proxy struct {
+	sync.RWMutex
+
+	dispatchIndex, copyIndex uint64
+	dispatches               []chan *dispathNode
+	copies                   []chan *copyReq
+
+	cfg         *Cfg
+	filtersMap  map[string]filter.Filter
+	filters     []filter.Filter
+	client      *util.FastHTTPClient
+	dispatcher  *dispatcher
+	rpcListener net.Listener
+
+	jsEngine    *plugin.Engine
+	gcJSEngines []*plugin.Engine
+
+	runner   *task.Runner
+	stopped  int32
+	stopC    chan struct{}
+	stopOnce sync.Once
+	stopWG   sync.WaitGroup
+}
+
 // NewProxy create a new proxy
-func NewProxy(cnf *conf.Conf) *Proxy {
+func NewProxy(cfg *Cfg) *Proxy {
+	globalHTTPOptions = &util.HTTPOption{
+		MaxConnDuration:     cfg.Option.LimitDurationConnKeepalive,
+		MaxIdleConnDuration: cfg.Option.LimitDurationConnIdle,
+		ReadTimeout:         cfg.Option.LimitTimeoutRead,
+		WriteTimeout:        cfg.Option.LimitTimeoutWrite,
+		MaxResponseBodySize: cfg.Option.LimitBytesBody,
+		WriteBufferSize:     cfg.Option.LimitBufferWrite,
+		ReadBufferSize:      cfg.Option.LimitBufferRead,
+		MaxConns:            cfg.Option.LimitCountConn,
+	}
+
 	p := &Proxy{
-		fastHTTPClients: make(map[string]*util.FastHTTPClient),
-		cnf:             cnf,
-		filters:         list.New(),
-		stopC:           make(chan struct{}),
-		taskRunner:      task.NewRunner(),
+		client:        util.NewFastHTTPClientOption(globalHTTPOptions),
+		cfg:           cfg,
+		filtersMap:    make(map[string]filter.Filter),
+		stopC:         make(chan struct{}),
+		runner:        task.NewRunner(),
+		copies:        make([]chan *copyReq, cfg.Option.LimitCountCopyWorker, cfg.Option.LimitCountCopyWorker),
+		dispatches:    make([]chan *dispathNode, cfg.Option.LimitCountDispatchWorker, cfg.Option.LimitCountDispatchWorker),
+		dispatchIndex: 0,
+		copyIndex:     0,
+		jsEngine:      plugin.NewEngine(),
 	}
 
 	p.init()
@@ -54,41 +110,63 @@ func NewProxy(cnf *conf.Conf) *Proxy {
 	return p
 }
 
-// Proxy Proxy
-type Proxy struct {
-	sync.RWMutex
-
-	cnf             *conf.Conf
-	filters         *list.List
-	fastHTTPClients map[string]*util.FastHTTPClient
-	routeTable      *model.RouteTable
-
-	rpcListener net.Listener
-
-	taskRunner *task.Runner
-	stopped    int32
-	stopC      chan struct{}
-	stopOnce   sync.Once
-	stopWG     sync.WaitGroup
-}
-
 // Start start proxy
 func (p *Proxy) Start() {
 	go p.listenToStop()
 
-	err := p.startRPC()
-	if nil != err {
-		log.Fatalf("bootstrap: rpc start failed, addr=<%s> errors:\n%+v",
-			p.cnf.MgrAddr,
+	util.StartMetricsPush(p.runner, p.cfg.Metric)
+
+	p.readyToGCJSEngine()
+	p.readyToCopy()
+	p.readyToDispatch()
+
+	log.Infof("gateway proxy started at <%s>", p.cfg.Addr)
+
+	if !p.cfg.Option.EnableWebSocket {
+		err := fasthttp.ListenAndServe(p.cfg.Addr, p.ServeFastHTTP)
+		if err != nil {
+			log.Fatalf("gateway proxy start failed, errors:\n%+v",
+				err)
+		}
+		return
+	}
+
+	l, err := net.Listen("tcp", p.cfg.Addr)
+	if err != nil {
+		log.Fatalf("gateway proxy start failed, errors:\n%+v",
 			err)
 	}
 
-	log.Infof("bootstrap: gateway proxy started at <%s>", p.cnf.Addr)
-	err = fasthttp.ListenAndServe(p.cnf.Addr, p.ReverseProxyHandler)
+	m := cmux.New(l)
+	webSocketL := m.Match(cmux.HTTP1HeaderField("Upgrade", "websocket"))
+	httpL := m.Match(cmux.Any())
+
+	go func() {
+		httpS := fasthttp.Server{
+			Handler: p.ServeFastHTTP,
+		}
+		err = httpS.Serve(httpL)
+		if err != nil {
+			log.Fatalf("gateway proxy start failed, errors:\n%+v",
+				err)
+		}
+	}()
+
+	go func() {
+		webSocketS := &http.Server{
+			Handler: p,
+		}
+		err = webSocketS.Serve(webSocketL)
+		if err != nil {
+			log.Fatalf("gateway proxy start failed, errors:\n%+v",
+				err)
+		}
+	}()
+
+	err = m.Serve()
 	if err != nil {
-		log.Errorf("bootstrap: gateway proxy start failed, errors:\n%+v",
+		log.Fatalf("gateway proxy start failed, errors:\n%+v",
 			err)
-		return
 	}
 }
 
@@ -103,49 +181,6 @@ func (p *Proxy) Stop() {
 	log.Infof("stop: gateway proxy stopped")
 }
 
-func (p *Proxy) startRPC() error {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", p.cnf.MgrAddr)
-
-	if err != nil {
-		return err
-	}
-
-	p.rpcListener, err = net.ListenTCP("tcp", tcpAddr)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("rpc: listen at %s",
-		p.cnf.MgrAddr)
-	server := rpc.NewServer()
-	mgrService := newManager(p)
-	server.Register(mgrService)
-
-	go func() {
-		for {
-			if p.isStopped() {
-				return
-			}
-
-			conn, err := p.rpcListener.Accept()
-			if err != nil {
-				log.Errorf("rpc: accept new conn failed, errors:\n%+v",
-					err)
-				continue
-			}
-
-			if p.isStopped() {
-				conn.Close()
-				return
-			}
-
-			go server.ServeConn(conn)
-		}
-	}()
-
-	return nil
-}
-
 func (p *Proxy) listenToStop() {
 	<-p.stopC
 	p.doStop()
@@ -155,8 +190,7 @@ func (p *Proxy) doStop() {
 	p.stopOnce.Do(func() {
 		defer p.stopWG.Done()
 		p.setStopped()
-		p.stopRPC()
-		p.taskRunner.Stop()
+		p.runner.Stop()
 	})
 }
 
@@ -173,255 +207,494 @@ func (p *Proxy) isStopped() bool {
 }
 
 func (p *Proxy) init() {
-	err := p.initRouteTable()
+	err := p.initDispatcher()
 	if err != nil {
-		log.Fatalf("bootstrap: init route table failed, errors:\n%+v",
+		log.Fatalf("init route table failed, errors:\n%+v",
 			err)
 	}
 
 	p.initFilters()
+
+	err = p.dispatcher.store.RegistryProxy(&metapb.Proxy{
+		Addr:    p.cfg.Addr,
+		AddrRPC: p.cfg.AddrRPC,
+	}, p.cfg.TTLProxy)
+	if err != nil {
+		log.Fatalf("init route table failed, errors:\n%+v",
+			err)
+	}
+
+	p.dispatcher.load()
 }
 
-func (p *Proxy) initRouteTable() error {
-	store, err := model.GetStoreFrom(p.cnf.RegistryAddr, p.cnf.Prefix, p.taskRunner)
+func (p *Proxy) initDispatcher() error {
+	s, err := store.GetStoreFrom(p.cfg.AddrStore, p.cfg.Namespace, p.cfg.AddrStoreUserName, p.cfg.AddrStorePwd)
 
 	if err != nil {
 		return err
 	}
 
-	register, _ := store.(model.Register)
-
-	register.Registry(&model.ProxyInfo{
-		Conf: p.cnf,
-	})
-
-	p.routeTable = model.NewRouteTable(p.cnf, store, p.taskRunner)
-	p.routeTable.Load()
-
+	p.dispatcher = newDispatcher(p.cfg, s, p.runner, p.updateJSEngine)
 	return nil
 }
 
 func (p *Proxy) initFilters() {
-	for _, filter := range p.cnf.Filers {
-		f, err := newFilter(filter)
+	for _, filter := range p.cfg.Filers {
+		f, err := p.newFilter(filter)
 		if nil != err {
-			log.Fatalf("bootstrap: init filter failed, filter=<%+v> errors:\n%+v",
+			log.Fatalf("create filter failed, filter=<%+v> errors:\n%+v",
 				filter,
 				err)
 		}
 
-		log.Infof("bootstrap: filter added, filter=<%+v>", filter)
-		p.filters.PushBack(f)
+		err = f.Init(filter.ExternalCfg)
+		if nil != err {
+			log.Fatalf("init filter failed, filter=<%+v> errors:\n%+v",
+				filter,
+				err)
+		}
+
+		p.filters = append(p.filters, f)
+		p.filtersMap[f.Name()] = f
+		log.Infof("filter added, filter=<%s>", f.Name())
 	}
 }
 
-// ReverseProxyHandler http reverse handler
-func (p *Proxy) ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
+func (p *Proxy) updateJSEngine(jsEngine *plugin.Engine) {
+	var newValues []filter.Filter
+	for _, f := range p.filters {
+		if f.Name() != FilterJSPlugin {
+			newValues = append(newValues, f)
+		} else {
+			p.addGCJSEngine(f.(*plugin.Engine))
+			newValues = append(newValues, jsEngine)
+		}
+	}
+
+	p.filters = newValues
+}
+
+func (p *Proxy) readyToDispatch() {
+	for i := uint64(0); i < p.cfg.Option.LimitCountDispatchWorker; i++ {
+		c := make(chan *dispathNode, 1024)
+		p.dispatches[i] = c
+
+		_, err := p.runner.RunCancelableTask(func(ctx context.Context) {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case dn := <-c:
+					if dn != nil {
+						p.doProxy(dn, nil)
+					}
+				}
+			}
+		})
+		if err != nil {
+			log.Fatalf("init dispatch workers failed, errors:\n%+v", err)
+		}
+	}
+}
+
+func (p *Proxy) readyToCopy() {
+	for i := uint64(0); i < p.cfg.Option.LimitCountCopyWorker; i++ {
+		c := make(chan *copyReq, 1024)
+		p.copies[i] = c
+
+		_, err := p.runner.RunCancelableTask(func(ctx context.Context) {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case req := <-c:
+					if req != nil {
+						p.doCopy(req)
+					}
+				}
+			}
+		})
+		if err != nil {
+			log.Fatalf("init copy workers failed, errors:\n%+v", err)
+		}
+	}
+}
+
+// ServeFastHTTP http reverse handler by fasthttp
+func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
+	var buf bytes.Buffer
+	buf.WriteByte(charLeft)
+	buf.Write(ctx.Method())
+	buf.WriteByte(charRight)
+	buf.Write(ctx.RequestURI())
+	requestTag := hack.SliceToString(buf.Bytes())
+
 	if p.isStopped() {
+		log.Infof("proxy is stopped")
 		ctx.SetStatusCode(fasthttp.StatusServiceUnavailable)
 		return
 	}
 
-	results := p.routeTable.Select(&ctx.Request)
-
-	if nil == results || len(results) == 0 {
+	startAt := time.Now()
+	api, dispatches, exprCtx := p.dispatcher.dispatch(&ctx.Request, requestTag)
+	if len(dispatches) == 0 &&
+		(nil == api || api.meta.DefaultValue == nil) {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
+		releaseExprCtx(exprCtx)
+
+		log.Infof("%s: not match, return with 404",
+			requestTag)
 		return
 	}
 
-	count := len(results)
-	merge := count > 1
+	// make sure fasthttp request header is parsed, avoid concurrent copy header bug
+	ctx.Request.Header.Peek("fuck")
 
-	if merge {
-		wg := &sync.WaitGroup{}
-		wg.Add(count)
+	log.Infof("%s: match api %s, has %d dispatches",
+		requestTag,
+		api.meta.Name,
+		len(dispatches))
 
-		for _, result := range results {
-			result.Merge = merge
 
-			go func(result *model.RouteResult) {
-				p.doProxy(ctx, wg, result)
-			}(result)
-		}
+	rd := acquireRender()
+	rd.init(requestTag, api, dispatches)
 
-		wg.Wait()
-	} else {
-		p.doProxy(ctx, nil, results[0])
+	var multiCtx *multiContext
+	var wg *sync.WaitGroup
+	lastBatch := int32(0)
+	num := len(dispatches)
+
+	if num > 1 {
+		wg = acquireWG()
+		multiCtx = acquireMultiContext()
+		multiCtx.init()
 	}
 
-	for _, result := range results {
-		if result.Err != nil {
-			if result.API.Mock != nil {
-				result.API.RenderMock(ctx)
-				result.Release()
-				return
+	for idx, dn := range dispatches {
+		// wait last batch complete
+		if wg != nil && lastBatch < dn.node.meta.BatchIndex {
+			wg.Wait()
+			wg = nil
+			lastBatch = dn.node.meta.BatchIndex
+			if num-idx > 1 {
+				wg = &sync.WaitGroup{}
 			}
-
-			ctx.SetStatusCode(result.Code)
-			result.Release()
-			return
 		}
 
-		if !merge {
-			p.writeResult(ctx, result.Res)
-			result.Release()
-			return
+		if wg != nil {
+			dn.wg = wg
+			wg.Add(1)
+		}
+
+		if nil != multiCtx {
+			exprCtx.Depend = multiCtx.data
+		}
+		dn.multiCtx = multiCtx
+		dn.requestTag = requestTag
+		dn.rd = rd
+		dn.ctx = ctx
+		if dn.copyTo != nil {
+			log.Infof("%s: dipatch node %d copy to %s",
+				requestTag,
+				idx,
+				dn.copyTo.meta.Addr)
+
+			p.copies[getIndex(&p.copyIndex, p.cfg.Option.LimitCountCopyWorker)] <- &copyReq{
+				origin:     copyRequest(&ctx.Request),
+				to:         dn.copyTo.clone(),
+				api:        dn.api.clone(),
+				node:       dn.node.clone(),
+				idx:        idx,
+				params:     exprCtx.CopyParams(),
+				requestTag: requestTag,
+			}
+		}
+
+		if wg != nil {
+			p.dispatches[getIndex(&p.dispatchIndex, p.cfg.Option.LimitCountDispatchWorker)] <- dn
+		} else {
+			p.doProxy(dn, nil)
 		}
 	}
 
-	for _, result := range results {
-		for _, h := range MergeRemoveHeaders {
-			result.Res.Header.Del(h)
-		}
-		result.Res.Header.CopyTo(&ctx.Response.Header)
+	// wait last batch complete
+	if wg != nil {
+		wg.Wait()
+		releaseWG(wg)
 	}
 
-	ctx.Response.Header.SetContentType(MergeContentType)
-	ctx.SetStatusCode(fasthttp.StatusOK)
+	rd.render(ctx, multiCtx)
+	releaseRender(rd)
+	releaseMultiContext(multiCtx)
 
-	ctx.WriteString("{")
+	incrRequest(api.meta.Name)
+	p.postRequest(api, dispatches, startAt)
+	releaseExprCtx(exprCtx)
 
-	for index, result := range results {
-		ctx.WriteString("\"")
-		ctx.WriteString(result.Node.AttrName)
-		ctx.WriteString("\":")
-		ctx.Write(result.Res.Body())
-		if index < count-1 {
-			ctx.WriteString(",")
-		}
-
-		result.Release()
-	}
-
-	ctx.WriteString("}")
+	log.Debugf("%s: dispatch complete",
+		requestTag)
 }
 
-func (p *Proxy) doProxy(ctx *fasthttp.RequestCtx, wg *sync.WaitGroup, result *model.RouteResult) {
-	if nil != wg {
-		defer wg.Done()
-	}
-
-	svr := result.Svr
+func (p *Proxy) doCopy(req *copyReq) {
+	svr := req.to
 
 	if nil == svr {
-		result.Err = ErrNoServer
-		result.Code = http.StatusServiceUnavailable
 		return
 	}
 
-	outreq := copyRequest(&ctx.Request)
+	req.prepare()
+
+	log.Infof("%s: dipatch node %d copy to %s",
+		req.requestTag,
+		req.idx,
+		req.to.meta.Addr)
+
+	res, err := p.client.Do(req.origin, svr.meta.Addr, nil)
+	if err != nil {
+		log.Errorf("%s: dipatch node %d copy to %s with error %s",
+			req.requestTag,
+			req.idx,
+			req.to.meta.Addr,
+			err)
+		fasthttp.ReleaseRequest(req.origin)
+		return
+	}
+
+	if res != nil {
+		fasthttp.ReleaseResponse(res)
+	}
+
+	fasthttp.ReleaseRequest(req.origin)
+}
+
+func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
+	if dn.node.meta.UseDefault {
+		dn.maybeDone()
+		log.Infof("%s: dipatch node %d force using default",
+			dn.requestTag,
+			dn.idx)
+		return
+	}
+
+	ctx := dn.ctx
+	svr := dn.dest
+	if nil == svr {
+		dn.err = ErrNoServer
+		dn.code = fasthttp.StatusServiceUnavailable
+		dn.maybeDone()
+		log.Infof("%s: dipatch node %d has no server, return with 503",
+			dn.requestTag,
+			dn.idx)
+		return
+	}
+
+	forwardReq := copyRequest(&ctx.Request)
 
 	// change url
-	if result.NeedRewrite() {
+	if dn.needRewrite() {
 		// if not use rewrite, it only change uri path and query string
-		realPath := result.GetRewritePath(&ctx.Request)
-		if "" != realPath {
-			if log.DebugEnabled() {
-				log.Debugf("proxy: rewrite, from=<%s> to=<%s>",
-					string(ctx.URI().FullURI()),
-					realPath)
-			}
+		realPath := expr.Exec(dn.exprCtx, dn.node.parsedExprs...)
+		if len(realPath) != 0 {
+			log.Infof("%s: dipatch node %d rewrite url to %s",
+				dn.requestTag,
+				dn.idx,
+				hack.SliceToString(realPath))
 
-			outreq.SetRequestURI(realPath)
-			outreq.SetHost(svr.Addr)
+			forwardReq.SetRequestURIBytes(realPath)
 		} else {
-			log.Warnf("proxy: rewrite not matches, origin=<%s> pattern=<%s>",
-				string(ctx.URI().FullURI()),
-				result.Node.Rewrite)
+			dn.err = ErrRewriteNotMatch
+			dn.code = fasthttp.StatusBadRequest
+			dn.maybeDone()
 
-			result.Err = ErrRewriteNotMatch
-			result.Code = http.StatusBadRequest
+			log.Warnf("%s: dipatch node %d rewrite not match, return with 400",
+				dn.requestTag,
+				dn.idx)
 			return
 		}
 	}
 
-	c := newContext(p.routeTable, ctx, outreq, result)
+	c := acquireContext()
+	c.init(p.dispatcher, ctx, forwardReq, dn)
+	if adjustH != nil {
+		adjustH(c)
+	}
+
+	filters := p.filters
 
 	// pre filters
-	filterName, code, err := p.doPreFilters(c)
+	filterName, code, err := p.doPreFilters(dn.requestTag, c, filters...)
 	if nil != err {
-		log.Warnf("proxy: call pre filter failed, filter=<%s> errors:\n%+v",
+		dn.err = err
+		dn.code = code
+		dn.maybeDone()
+		releaseContext(c)
+
+		log.Errorf("%s: dipatch node %d call filter %s pre failed with error %s",
+			dn.requestTag,
+			dn.idx,
 			filterName,
 			err)
-
-		result.Err = err
-		result.Code = code
 		return
 	}
 
-	c.SetStartAt(time.Now().UnixNano())
-	res, err := p.getClient(svr.Addr).Do(outreq, svr.Addr)
-	c.SetEndAt(time.Now().UnixNano())
+	// using spec response
+	if value := c.GetAttr(filter.UsingResponse); nil != value {
+		res, ok := value.(*fasthttp.Response)
+		if !ok {
+			dn.err = fmt.Errorf("not support using response attr %T", value)
+			dn.code = fasthttp.StatusInternalServerError
+			dn.maybeDone()
+			releaseContext(c)
 
-	result.Res = res
+			log.Errorf("%s: dipatch node %d using response attr with error %s",
+				dn.requestTag,
+				dn.idx,
+				dn.err)
+			return
+		}
 
-	if err != nil || res.StatusCode() >= fasthttp.StatusInternalServerError {
-		resCode := http.StatusServiceUnavailable
+		dn.res = res
+		dn.maybeDone()
+		releaseContext(c)
+
+		log.Infof("%s: dipatch node %d using response attr",
+			dn.requestTag,
+			dn.idx)
+		return
+	}
+
+	// hit cache
+	if value := c.GetAttr(filter.UsingCachingValue); nil != value {
+		dn.cachedCT, dn.cachedBody = filter.ParseCachedValue(value.([]byte))
+		dn.maybeDone()
+		releaseContext(c)
+
+		log.Infof("%s: dipatch node %d using cache",
+			dn.requestTag,
+			dn.idx)
+		return
+	}
+
+	var res *fasthttp.Response
+	times := int32(0)
+	for {
+		log.Infof("%s: dipatch node %d sent for %d times",
+			dn.requestTag,
+			dn.idx,
+			times)
+
+		if !dn.api.isWebSocket() {
+			dn.setHost(forwardReq)
+			res, err = p.client.Do(forwardReq, svr.meta.Addr, dn.httpOption())
+		} else {
+			res, err = p.onWebsocket(c, svr.meta.Addr)
+		}
+		c.setEndAt(time.Now())
+
+		times++
+
+		// skip succeed
+		if err == nil && res.StatusCode() < fasthttp.StatusBadRequest {
+			break
+		}
+
+		// skip no retry strategy
+		if !dn.hasRetryStrategy() {
+			break
+		}
+
+		// skip not match
+		if !dn.matchAllRetryStrategy() &&
+			!dn.matchRetryStrategy(int32(res.StatusCode())) {
+			break
+		}
+
+		// retry with strategiess
+		retry := dn.retryStrategy()
+		if times >= retry.MaxTimes {
+			log.Infof("%s: dipatch node %d sent times over the max %d",
+				dn.requestTag,
+				dn.idx,
+				retry.MaxTimes)
+			break
+		}
+
+		if retry.Interval > 0 {
+			time.Sleep(time.Millisecond * time.Duration(retry.Interval))
+		}
+
+		fasthttp.ReleaseResponse(res)
+		p.dispatcher.selectServer(&ctx.Request, dn, dn.requestTag)
+		svr = dn.dest
+		if nil == svr {
+			dn.err = ErrNoServer
+			dn.code = fasthttp.StatusServiceUnavailable
+			dn.maybeDone()
+
+			log.Infof("%s: dipatch node %d has no server, return with 503",
+				dn.requestTag,
+				dn.idx)
+			return
+		}
+	}
+
+	dn.res = res
+	if err != nil || res.StatusCode() >= fasthttp.StatusBadRequest {
+		resCode := fasthttp.StatusInternalServerError
 
 		if nil != err {
-			log.Warnf("proxy: failed, target=<%s> errors:\n%+v",
-				svr.Addr,
+			log.Errorf("%s: dipatch node %d failed with error %s",
+				dn.requestTag,
+				dn.idx,
 				err)
 		} else {
 			resCode = res.StatusCode()
-			log.Warnf("proxy: returns error code, target=<%s> code=<%d>",
-				svr.Addr,
-				res.StatusCode())
+			log.Errorf("%s: dipatch node %d failed with error code %d",
+				dn.requestTag,
+				dn.idx,
+				resCode)
 		}
 
-		// 用户取消，不计算为错误
 		if nil == err || !strings.HasPrefix(err.Error(), ErrPrefixRequestCancel) {
-			p.doPostErrFilters(c)
+			p.doPostErrFilters(c, filters...)
 		}
 
-		result.Err = err
-		result.Code = resCode
+		dn.err = err
+		dn.code = resCode
+		dn.maybeDone()
+		releaseContext(c)
 		return
 	}
 
 	if log.DebugEnabled() {
-		log.Debugf("proxy: return, target=<%s> code=<%d> body=<%d>",
-			svr.Addr,
+		log.Debugf("%s: dipatch node %d return by %s with code %d, body <%s>",
+			dn.requestTag,
+			dn.idx,
+			svr.meta.Addr,
 			res.StatusCode(),
-			res.Body())
+			hack.SliceToString(res.Body()))
 	}
 
 	// post filters
-	filterName, code, err = p.doPostFilters(c)
+	filterName, code, err = p.doPostFilters(dn.requestTag, c, filters...)
 	if nil != err {
-		log.Warnf("proxy: call post filter failed, filter=<%s> errors:\n%+v",
+		log.Errorf("%s: dipatch node %d call filter %s post failed with error %s",
+			dn.requestTag,
+			dn.idx,
 			filterName,
 			err)
 
-		result.Err = err
-		result.Code = code
+		dn.err = err
+		dn.code = code
+		dn.maybeDone()
+		releaseContext(c)
 		return
 	}
+
+	dn.maybeDone()
+	releaseContext(c)
 }
 
-func (p *Proxy) writeResult(ctx *fasthttp.RequestCtx, res *fasthttp.Response) {
-	ctx.SetStatusCode(res.StatusCode())
-	ctx.Write(res.Body())
-}
-
-func (p *Proxy) getClient(addr string) *util.FastHTTPClient {
-	p.RLock()
-	c, ok := p.fastHTTPClients[addr]
-	if ok {
-		p.RUnlock()
-		return c
-	}
-	p.RUnlock()
-
-	p.Lock()
-	c, ok = p.fastHTTPClients[addr]
-	if ok {
-		p.Unlock()
-		return c
-	}
-
-	p.fastHTTPClients[addr] = util.NewFastHTTPClient(p.cnf)
-	c = p.fastHTTPClients[addr]
-	p.Unlock()
-	return c
+func getIndex(opt *uint64, size uint64) int {
+	return int(atomic.AddUint64(opt, 1) % size)
 }

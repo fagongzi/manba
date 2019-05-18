@@ -1,35 +1,41 @@
-FROM golang
+FROM alpine:latest
 
-RUN mkdir -p /app/gateway
-RUN mkdir -p /app/gateway/plugins
-RUN mkdir -p /go/src/github.com/fagongzi/gateway 
+ARG APP_ROOT=/app/gateway
+ARG EXEC_NAME=proxy
+ARG UID=2019
+ARG CMD_NAME=demo
+ENV CURRENT_EXEC_PATH=${APP_ROOT}/${EXEC_NAME}
+ENV PATH=${APP_ROOT}:$PATH
 
-COPY ./ /go/src/github.com/fagongzi/gateway
+WORKDIR ${APP_ROOT}
 
-RUN ETCD_VER=v3.0.14 \
-    && DOWNLOAD_URL=https://github.com/coreos/etcd/releases/download \
-    && curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz \
-    && tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /app/gateway --strip-components=1
+ADD dist ${APP_ROOT}
 
-RUN cd /go/src/github.com/fagongzi/gateway/cmd/admin \
-    && go build -ldflags "-w -s" admin.go \
-    && mv ./admin /app/gateway \
-    && mv ./public /app/gateway
+# Alpine Linux doesn't use pam, which means that there is no /etc/nsswitch.conf,
+# but Golang relies on /etc/nsswitch.conf to check the order of DNS resolving
+# (see https://github.com/golang/go/commit/9dee7771f561cf6aee081c0af6658cc81fac3918)
+# To fix this we just create /etc/nsswitch.conf and add the following line:
+# hosts: files mdns4_minimal [NOTFOUND=return] dns mdns4
 
-RUN cd /go/src/github.com/fagongzi/gateway/cmd/proxy \
-    && go build -ldflags "-w -s" proxy.go \
-    && mv ./proxy /app/gateway \
-    && mv ./config_etcd.json  /app/gateway
+RUN MAIN_VERSION=$(cat /etc/alpine-release | cut -d '.' -f 0-2) \
+    && mv /etc/apk/repositories /etc/apk/repositories-bak \
+    && { \
+        echo "https://mirrors.aliyun.com/alpine/v${MAIN_VERSION}/main"; \
+        echo "https://mirrors.aliyun.com/alpine/v${MAIN_VERSION}/community"; \
+    } >> /etc/apk/repositories \
+    && apk add --update --no-cache libcap \
+    && addgroup -g ${UID} -S gateway \
+    && adduser -u ${UID} -S gateway -G gateway \
+    && mkdir -p ${APP_ROOT}/plugins \
+    && chown -R gateway:gateway ./ \
+    && if [ -e ${CURRENT_EXEC_PATH} ]; then \
+         setcap CAP_NET_BIND_SERVICE=+eip ${CURRENT_EXEC_PATH}; \
+       fi \
+    && echo 'hosts: files mdns4_minimal [NOTFOUND=return] dns mdns4' >> /etc/nsswitch.conf \
+    && echo -n ${CMD_NAME} > cmd
 
-COPY ./entrypoint.sh /app/gateway
-RUN chmod +x /app/gateway/entrypoint.sh
+USER gateway
 
-ENV GATEWAY_LOG_LEVEL=info
+EXPOSE 80 2379 9092 9093
 
-EXPOSE 80
-EXPOSE 8080
-EXPOSE 8081
-
-WORKDIR /app/gateway
-
-ENTRYPOINT ./entrypoint.sh
+ENTRYPOINT ["/bin/sh", "./entrypoint.sh"]

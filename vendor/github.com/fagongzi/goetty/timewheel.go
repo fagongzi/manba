@@ -1,211 +1,402 @@
 package goetty
 
 import (
-	"container/list"
-	"hash/fnv"
-	"math"
+	"errors"
+	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
+	"unsafe"
 )
 
-// SimpleTimeWheel Simple time wheel impl
-type SimpleTimeWheel struct {
-	timer *time.Ticker
+// Timeout Hash Wheel / Calendar Queue implementation of a callout wheel for timeouts.
+// Ticking happens from a time.Ticker
 
-	tick        time.Duration
-	pos         int64 // 当前指针
-	periodCount int64 // 每轮多少次
-	period      int64 // 轮数
+const (
+	defaultTickInterval = time.Millisecond
+	defaultNumBuckets   = 2048
 
-	callbacks  map[string]func(key string)
-	timeoutMap map[int64]*list.List
+	cacheline    = 64
+	bitsInUint64 = 64
+)
 
-	cbLock      *sync.RWMutex
-	timeoutLock *sync.RWMutex
+const (
+	// states of the TimeoutWheel
+	stopped = iota
+	stopping
+	running
+)
+
+const (
+	// states of a Timeout
+	timeoutInactive = iota
+	timeoutExpired
+	timeoutActive
+)
+
+var (
+	// ErrSystemStopped is returned when a user tries to schedule a timeout after stopping the
+	// timeout system.
+	ErrSystemStopped = errors.New("Timeout System is stopped")
+
+	// 4*(NumCPU rounded down to the next power of 2.)
+	defaultPoolSize = uint64(1 << uint(findMSB(uint64(runtime.NumCPU()))+2))
+)
+
+// Timeout represents a single timeout function pending expiration.
+type Timeout struct {
+	generation uint64
+	timeout    *timeout
 }
 
-// NewSimpleTimeWheel create a new SimpleTimeWheel instance
-func NewSimpleTimeWheel(tick time.Duration, periodCount int64) *SimpleTimeWheel {
-	timeWheel := &SimpleTimeWheel{
-		timer:       time.NewTicker(tick),
-		tick:        tick,
-		periodCount: periodCount,
-		pos:         0,
-		period:      0,
-
-		callbacks:  make(map[string]func(key string)),
-		timeoutMap: make(map[int64]*list.List),
-
-		cbLock:      &sync.RWMutex{},
-		timeoutLock: &sync.RWMutex{},
+// Stop stops the scheduled timeout so that the callback will not be called. It returns true if it
+// successfully canceled
+func (t *Timeout) Stop() bool {
+	if t.timeout == nil {
+		return false
 	}
 
-	return timeWheel
-}
-
-// AddWithID add a timeout calc with spec id
-func (t *SimpleTimeWheel) AddWithID(timeout time.Duration, key string, callback func(key string)) {
-	index := t.passed() + int64(float64(timeout.Nanoseconds())/float64(t.tick.Nanoseconds())+0.5)
-	t.timeoutLock.Lock()
-	l, ok := t.timeoutMap[index]
-	if !ok {
-		l = list.New()
-		t.timeoutMap[index] = l
+	t.timeout.mtx.Lock()
+	if t.timeout.generation != t.generation || t.timeout.state != timeoutActive {
+		t.timeout.mtx.Unlock()
+		return false
 	}
-	t.timeoutLock.Unlock()
 
-	t.cbLock.Lock()
-	l.PushBack(key)
-	t.callbacks[key] = callback
-	t.cbLock.Unlock()
-
+	t.timeout.removeLocked()
+	t.timeout.wheel.putTimeoutLocked(t.timeout)
+	t.timeout.mtx.Unlock()
+	return true
 }
 
-// Add add a timeout calc
-func (t *SimpleTimeWheel) Add(timeout time.Duration, callback func(key string)) string {
-	key := NewKey()
-	t.AddWithID(timeout, key, callback)
-	return key
+type timeout struct {
+	mtx       *paddedMutex
+	expireCb  func(interface{})
+	expireArg interface{}
+	deadline  uint64
+
+	// list pointers for the freelist/buckets of the queue. The list is implemented as a forward
+	// pointer and a pointer to the address of the previous next field. It is doubly linked in this
+	// manner so that removal does not require traversal. It can only be iterated in the forward.
+	next  *timeout
+	prev  **timeout
+	state int32
+
+	wheel      *TimeoutWheel
+	generation uint64
 }
 
-// Cancel cancel a timeout calc
-func (t *SimpleTimeWheel) Cancel(key string) {
-	t.cbLock.Lock()
-	delete(t.callbacks, key)
-	t.cbLock.Unlock()
+type timeoutList struct {
+	lastTick uint64
+	head     *timeout
 }
 
-// Start start the time wheel
-func (t *SimpleTimeWheel) Start() {
-	go func() {
-		for {
-			<-t.timer.C
-			t.turn()
+func (t *timeout) prependLocked(list *timeoutList) {
+	if list.head != nil {
+		t.prev = list.head.prev
+		list.head.prev = &t.next
+	} else {
+		t.prev = &list.head
+	}
+	t.next = list.head
+	list.head = t
+}
+
+func (t *timeout) removeLocked() {
+	if t.next != nil {
+		t.next.prev = t.prev
+	}
+
+	*t.prev = t.next
+	t.next = nil
+	t.prev = nil
+}
+
+// TimeoutWheel is a bucketed collection of Timeouts that have a deadline in the future.
+// (current tick granularity is 1ms).
+type TimeoutWheel struct {
+	// ticks is an atomic
+	ticks uint64
+
+	// buckets[i] and freelists[i] is locked by mtxPool[i&poolMask]
+	mtxPool      []paddedMutex
+	bucketMask   uint64
+	poolMask     uint64
+	tickInterval time.Duration
+	buckets      []timeoutList
+	freelists    []timeoutList
+
+	state     int
+	calloutCh chan timeoutList
+	done      chan struct{}
+}
+
+// Option is a configuration option to NewTimeoutWheel
+type Option func(*opts)
+
+type opts struct {
+	tickInterval time.Duration
+	size         uint64
+	poolsize     uint64
+}
+
+// sync.Mutex padded to a cache line to keep the locks from false sharing with each other
+type paddedMutex struct {
+	sync.Mutex
+	_ [cacheline - unsafe.Sizeof(sync.Mutex{})]byte
+}
+
+// WithTickInterval sets the frequency of ticks.
+func WithTickInterval(interval time.Duration) Option {
+	return func(opts *opts) { opts.tickInterval = interval }
+}
+
+// WithBucketsExponent sets the number of buckets in the hash table.
+func WithBucketsExponent(bucketExp uint) Option {
+	return func(opts *opts) {
+		opts.size = uint64(1 << bucketExp)
+	}
+}
+
+// WithLocksExponent sets the number locks in the lockpool used to lock the time buckets. If the
+// number is greater than the number of buckets, the number of buckets will be used instead.
+func WithLocksExponent(lockExp uint) Option {
+	return func(opts *opts) {
+		opts.poolsize = uint64(1 << lockExp)
+	}
+}
+
+// NewTimeoutWheel creates and starts a new TimeoutWheel collection.
+func NewTimeoutWheel(options ...Option) *TimeoutWheel {
+	opts := &opts{
+		tickInterval: defaultTickInterval,
+		size:         defaultNumBuckets,
+		poolsize:     defaultPoolSize,
+	}
+
+	for _, option := range options {
+		option(opts)
+	}
+
+	poolsize := opts.poolsize
+	if opts.size < opts.poolsize {
+		poolsize = opts.size
+	}
+
+	t := &TimeoutWheel{
+		mtxPool:      make([]paddedMutex, poolsize),
+		freelists:    make([]timeoutList, poolsize),
+		state:        stopped,
+		poolMask:     poolsize - 1,
+		buckets:      make([]timeoutList, opts.size),
+		tickInterval: opts.tickInterval,
+		bucketMask:   opts.size - 1,
+		ticks:        0,
+	}
+	t.Start()
+	return t
+}
+
+// Start starts a stopped timeout wheel. Subsequent calls to Start panic.
+func (t *TimeoutWheel) Start() {
+	t.lockAllBuckets()
+	defer t.unlockAllBuckets()
+
+	for t.state != stopped {
+		switch t.state {
+		case stopping:
+			t.unlockAllBuckets()
+			<-t.done
+			t.lockAllBuckets()
+		case running:
+			panic("Tried to start a running TimeoutWheel")
 		}
-	}()
-}
-
-// Stop stop the time wheel
-func (t *SimpleTimeWheel) Stop() {
-	if nil != t.timer {
-		t.timer.Stop()
-	}
-}
-
-func (t *SimpleTimeWheel) turn() {
-	t.timeoutLock.Lock()
-	t.timeoutLock.Unlock()
-
-	t.pos++
-
-	if t.pos == t.periodCount {
-		t.pos = 0
-		t.period++
 	}
 
-	t.doTimeout()
+	t.state = running
+	t.done = make(chan struct{})
+	t.calloutCh = make(chan timeoutList)
+
+	go t.doTick()
+	go t.doExpired()
 }
 
-func (t *SimpleTimeWheel) doTimeout() {
-	timeKey := t.passed()
+// Stop stops tick processing, and deletes any remaining timeouts.
+func (t *TimeoutWheel) Stop() {
+	t.lockAllBuckets()
 
-	t.timeoutLock.RLock()
-	keys, ok := t.timeoutMap[timeKey]
-	t.timeoutLock.RUnlock()
+	if t.state == running {
+		t.state = stopping
+		close(t.calloutCh)
+		for i := range t.buckets {
+			t.freeBucketLocked(t.buckets[i])
+		}
+	}
 
-	if ok {
-		for iter := keys.Front(); iter != nil; iter = iter.Next() {
-			key, _ := iter.Value.(string)
-			t.cbLock.RLock()
-			f, _ := t.callbacks[key]
-			t.cbLock.RUnlock()
+	// unlock so the callouts can finish.
+	t.unlockAllBuckets()
+	<-t.done
+}
 
-			if nil != f {
-				t.cbLock.Lock()
-				delete(t.callbacks, key)
-				t.cbLock.Unlock()
+// Schedule adds a new function to be called after some duration of time has
+// elapsed. The returned Timeout can be used to cancel calling the function. If the duration falls
+// between two ticks, the latter tick is used.
+func (t *TimeoutWheel) Schedule(
+	d time.Duration,
+	expireCb func(interface{}),
+	arg interface{},
+) (Timeout, error) {
+	dTicks := (d + t.tickInterval - 1) / t.tickInterval
+	deadline := atomic.LoadUint64(&t.ticks) + uint64(dTicks)
+	timeout := t.getTimeoutLocked(deadline)
 
-				f(key)
+	if t.state != running {
+		t.putTimeoutLocked(timeout)
+		timeout.mtx.Unlock()
+		return Timeout{}, ErrSystemStopped
+	}
+
+	bucket := &t.buckets[deadline&t.bucketMask]
+	timeout.expireCb = expireCb
+	timeout.expireArg = arg
+	timeout.deadline = deadline
+	timeout.state = timeoutActive
+	out := Timeout{timeout: timeout, generation: timeout.generation}
+
+	// execute the callback now, return a Timeout that is already Stopped (generation is bumped)
+	if bucket.lastTick >= deadline {
+		t.putTimeoutLocked(timeout)
+		timeout.mtx.Unlock()
+		expireCb(arg)
+		return out, nil
+	}
+
+	timeout.prependLocked(bucket)
+	timeout.mtx.Unlock()
+	return out, nil
+}
+
+// doTick handles the ticker goroutine of the timer system
+func (t *TimeoutWheel) doTick() {
+	var expiredList timeoutList
+
+	ticker := time.NewTicker(t.tickInterval)
+	for range ticker.C {
+		atomic.AddUint64(&t.ticks, 1)
+
+		mtx := t.lockBucket(t.ticks)
+		if t.state != running {
+			mtx.Unlock()
+			break
+		}
+
+		bucket := &t.buckets[t.ticks&t.bucketMask]
+		timeout := bucket.head
+		bucket.lastTick = t.ticks
+
+		// find all the expired timeouts in the bucket.
+		for timeout != nil {
+			next := timeout.next
+			if timeout.deadline <= t.ticks {
+				timeout.state = timeoutExpired
+				timeout.removeLocked()
+				timeout.prependLocked(&expiredList)
 			}
+			timeout = next
+		}
+
+		mtx.Unlock()
+		if expiredList.head == nil {
+			continue
+		}
+
+		select {
+		case t.calloutCh <- expiredList:
+			expiredList.head = nil
+		default:
 		}
 	}
 
-	t.timeoutLock.Lock()
-	delete(t.timeoutMap, timeKey)
-	t.timeoutLock.Unlock()
+	ticker.Stop()
 }
 
-func (t *SimpleTimeWheel) passed() int64 {
-	return t.periodCount*t.period + t.pos
-}
-
-// HashedTimeWheel hashed SimpleTimeWheel
-type HashedTimeWheel struct {
-	mask        int
-	wheelBucket []*SimpleTimeWheel
-}
-
-// NewHashedTimeWheel create a HashedTimeWheel instance
-func NewHashedTimeWheel(duration time.Duration, periodCount int64, powOf2 int) *HashedTimeWheel {
-	max := int(math.Pow(2.0, float64(powOf2)))
-	h := &HashedTimeWheel{
-		mask:        max - 1,
-		wheelBucket: make([]*SimpleTimeWheel, max),
+func (t *TimeoutWheel) getTimeoutLocked(deadline uint64) *timeout {
+	mtx := &t.mtxPool[deadline&t.poolMask]
+	mtx.Lock()
+	freelist := &t.freelists[deadline&t.poolMask]
+	if freelist.head == nil {
+		timeout := &timeout{mtx: mtx, wheel: t}
+		return timeout
 	}
-
-	h.init(duration, periodCount, max)
-
-	return h
+	timeout := freelist.head
+	timeout.removeLocked()
+	return timeout
 }
 
-// Add add a timeout calc
-func (h *HashedTimeWheel) Add(timeout time.Duration, callback func(key string)) string {
-	key := NewKey()
-	h.AddWithID(timeout, key, callback)
-	return key
+func (t *TimeoutWheel) putTimeoutLocked(timeout *timeout) {
+	freelist := &t.freelists[timeout.deadline&t.poolMask]
+	timeout.state = timeoutInactive
+	timeout.generation++
+	timeout.prependLocked(freelist)
 }
 
-// AddWithID add a timeout calc using spec id
-func (h *HashedTimeWheel) AddWithID(timeout time.Duration, key string, callback func(key string)) string {
-	index := hashCode(key) & h.mask
-	h.wheelBucket[index].AddWithID(timeout, key, callback)
-	return key
+func (t *TimeoutWheel) lockBucket(bucket uint64) *paddedMutex {
+	mtx := &t.mtxPool[bucket&t.poolMask]
+	mtx.Lock()
+	return mtx
 }
 
-// Cancel cancel a timeout calc
-func (h *HashedTimeWheel) Cancel(key string) {
-	index := hashCode(key) & h.mask
-	h.wheelBucket[index].Cancel(key)
-}
-
-func (h *HashedTimeWheel) init(duration time.Duration, periodCount int64, max int) {
-	for i := 0; i < max; i++ {
-		h.wheelBucket[i] = NewSimpleTimeWheel(duration, periodCount)
+func (t *TimeoutWheel) lockAllBuckets() {
+	for i := range t.mtxPool {
+		t.mtxPool[i].Lock()
 	}
 }
 
-// Start start the time wheel
-func (h *HashedTimeWheel) Start() {
-	for i := 0; i < len(h.wheelBucket); i++ {
-		go h.wheelBucket[i].Start()
+func (t *TimeoutWheel) unlockAllBuckets() {
+	for i := len(t.mtxPool) - 1; i >= 0; i-- {
+		t.mtxPool[i].Unlock()
 	}
 }
 
-// Stop stop the time wheel
-func (h *HashedTimeWheel) Stop() {
-	for i := 0; i < len(h.wheelBucket); i++ {
-		go h.wheelBucket[i].Stop()
+func (t *TimeoutWheel) freeBucketLocked(head timeoutList) {
+	timeout := head.head
+	for timeout != nil {
+		next := timeout.next
+		timeout.removeLocked()
+		t.putTimeoutLocked(timeout)
+		timeout = next
 	}
 }
 
-// HashCode return hash code value
-func HashCode(v string) int {
-	return hashCode(v)
+func (t *TimeoutWheel) doExpired() {
+	for list := range t.calloutCh {
+		timeout := list.head
+		for timeout != nil {
+			timeout.mtx.Lock()
+			next := timeout.next
+			expireCb := timeout.expireCb
+			expireArg := timeout.expireArg
+			t.putTimeoutLocked(timeout)
+			timeout.mtx.Unlock()
+
+			if expireCb != nil {
+				expireCb(expireArg)
+			}
+			timeout = next
+		}
+	}
+
+	t.lockAllBuckets()
+	t.state = stopped
+	t.unlockAllBuckets()
+	close(t.done)
 }
 
-func hashCode(v string) int {
-	h := fnv.New32a()
-	h.Write([]byte(v))
-	code := h.Sum32()
-	return int(code)
+// return the bit position of the most significant bit of the number passed in (base zero)
+func findMSB(value uint64) int {
+	for i := bitsInUint64 - 1; i >= 0; i-- {
+		if value&(1<<uint(i)) != 0 {
+			return int(i)
+		}
+	}
+	return -1
 }

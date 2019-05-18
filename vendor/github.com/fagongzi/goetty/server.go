@@ -7,6 +7,22 @@ import (
 	"time"
 )
 
+// Closer is a closer
+type Closer interface {
+	Close() error
+}
+
+// MessageWriter is a message writer
+type MessageWriter interface {
+	Write(msg interface{}) error
+}
+
+// MessageReader is a message reader
+type MessageReader interface {
+	Read() (interface{}, error)
+	ReadTimeout(timeout time.Duration) (interface{}, error)
+}
+
 // IDGenerator ID Generator interface
 type IDGenerator interface {
 	NewID() interface{}
@@ -46,22 +62,13 @@ type sessionMap struct {
 	sessions map[interface{}]IOSession
 }
 
-// DefaultSessionBucketSize default bucket size of session map
-const DefaultSessionBucketSize = 64
-
 // Server tcp server
 type Server struct {
 	addr     string
 	listener *net.TCPListener
 
+	opts        *serverOptions
 	sessionMaps map[int]*sessionMap
-
-	readBufSize, writeBufSize int
-
-	decoder Decoder
-	encoder Encoder
-
-	generator IDGenerator
 
 	startCh  chan struct{}
 	stopOnce *sync.Once
@@ -69,28 +76,23 @@ type Server struct {
 }
 
 // NewServer create server
-func NewServer(addr string, decoder Decoder, encoder Encoder, generator IDGenerator) *Server {
-	return NewServerSize(addr, decoder, encoder, BufReadSize, BufWriteSize, generator)
-}
+func NewServer(addr string, opts ...ServerOption) *Server {
+	sopts := &serverOptions{}
+	for _, opt := range opts {
+		opt(sopts)
+	}
+	sopts.adjust()
 
-// NewServerSize create server
-func NewServerSize(addr string, decoder Decoder, encoder Encoder, readBufSize, writeBufSize int, generator IDGenerator) *Server {
 	s := &Server{
 		addr:        addr,
-		sessionMaps: make(map[int]*sessionMap, DefaultSessionBucketSize),
-
-		decoder:      decoder,
-		encoder:      encoder,
-		readBufSize:  readBufSize,
-		writeBufSize: writeBufSize,
-
-		generator: generator,
+		sessionMaps: make(map[int]*sessionMap, sopts.sessionBucketSize),
+		opts:        sopts,
 
 		stopOnce: &sync.Once{},
 		startCh:  make(chan struct{}, 1),
 	}
 
-	for i := 0; i < DefaultSessionBucketSize; i++ {
+	for i := 0; i < sopts.sessionBucketSize; i++ {
 		s.sessionMaps[i] = &sessionMap{
 			sessions: make(map[interface{}]IOSession),
 		}
@@ -109,13 +111,6 @@ func (s *Server) Stop() {
 	s.stopOnce.Do(func() {
 		s.stopped = true
 		s.listener.Close()
-
-		for _, sessions := range s.sessionMaps {
-			for _, session := range sessions.sessions {
-				session.Close()
-			}
-		}
-
 		close(s.startCh)
 	})
 }
@@ -165,7 +160,7 @@ func (s *Server) Start(loopFn func(IOSession) error) error {
 		}
 		tempDelay = 0
 
-		session := newClientIOSession(s.generator.NewID(), conn, s)
+		session := newClientIOSession(s.opts.generator.NewID(), conn, s)
 		s.addSession(session)
 
 		go func() {
@@ -176,16 +171,15 @@ func (s *Server) Start(loopFn func(IOSession) error) error {
 	}
 }
 
-func (s *Server) closeSession(session IOSession) {
-	s.deleteSession(session)
-	session.Close()
-}
-
 func (s *Server) addSession(session IOSession) {
 	m := s.sessionMaps[session.Hash()%DefaultSessionBucketSize]
 	m.Lock()
 	m.sessions[session.ID()] = session
 	m.Unlock()
+
+	for _, sm := range s.opts.middlewares {
+		sm.Connected(session)
+	}
 }
 
 func (s *Server) deleteSession(session IOSession) {
@@ -193,6 +187,10 @@ func (s *Server) deleteSession(session IOSession) {
 	m.Lock()
 	delete(m.sessions, session.ID())
 	m.Unlock()
+
+	for _, sm := range s.opts.middlewares {
+		sm.Closed(session)
+	}
 }
 
 // GetSession get session by id

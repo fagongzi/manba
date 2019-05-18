@@ -3,7 +3,6 @@ package middleware
 import (
 	"fmt"
 	"io"
-	"net/http"
 	"sync"
 
 	"github.com/labstack/echo"
@@ -11,51 +10,80 @@ import (
 )
 
 type (
-	// BodyLimitConfig defines the config for body limit middleware.
+	// BodyLimitConfig defines the config for BodyLimit middleware.
 	BodyLimitConfig struct {
-		// Limit is the maximum allowed size for a request body, it can be specified
+		// Skipper defines a function to skip middleware.
+		Skipper Skipper
+
+		// Maximum allowed size for a request body, it can be specified
 		// as `4x` or `4xB`, where x is one of the multiple from K, M, G, T or P.
-		Limit string `json:"limit"`
-		limit int
+		Limit string `yaml:"limit"`
+		limit int64
 	}
 
 	limitedReader struct {
 		BodyLimitConfig
-		reader  io.Reader
-		read    int
+		reader  io.ReadCloser
+		read    int64
 		context echo.Context
 	}
 )
 
-// BodyLimit returns a body limit middleware.
+var (
+	// DefaultBodyLimitConfig is the default BodyLimit middleware config.
+	DefaultBodyLimitConfig = BodyLimitConfig{
+		Skipper: DefaultSkipper,
+	}
+)
+
+// BodyLimit returns a BodyLimit middleware.
 //
 // BodyLimit middleware sets the maximum allowed size for a request body, if the
 // size exceeds the configured limit, it sends "413 - Request Entity Too Large"
-// response. The body limit is determined based on the actually read and not `Content-Length`
-// request header, which makes it super secure.
+// response. The BodyLimit is determined based on both `Content-Length` request
+// header and actual content read, which makes it super secure.
 // Limit can be specified as `4x` or `4xB`, where x is one of the multiple from K, M,
 // G, T or P.
 func BodyLimit(limit string) echo.MiddlewareFunc {
-	return BodyLimitWithConfig(BodyLimitConfig{Limit: limit})
+	c := DefaultBodyLimitConfig
+	c.Limit = limit
+	return BodyLimitWithConfig(c)
 }
 
-// BodyLimitWithConfig returns a body limit middleware from config.
-// See `BodyLimit()`.
+// BodyLimitWithConfig returns a BodyLimit middleware with config.
+// See: `BodyLimit()`.
 func BodyLimitWithConfig(config BodyLimitConfig) echo.MiddlewareFunc {
+	// Defaults
+	if config.Skipper == nil {
+		config.Skipper = DefaultBodyLimitConfig.Skipper
+	}
+
 	limit, err := bytes.Parse(config.Limit)
 	if err != nil {
-		panic(fmt.Errorf("invalid body-limit=%s", config.Limit))
+		panic(fmt.Errorf("echo: invalid body-limit=%s", config.Limit))
 	}
 	config.limit = limit
 	pool := limitedReaderPool(config)
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			if config.Skipper(c) {
+				return next(c)
+			}
+
 			req := c.Request()
+
+			// Based on content length
+			if req.ContentLength > config.limit {
+				return echo.ErrStatusRequestEntityTooLarge
+			}
+
+			// Based on content read
 			r := pool.Get().(*limitedReader)
-			r.Reset(req.Body(), c)
+			r.Reset(req.Body, c)
 			defer pool.Put(r)
-			req.SetBody(r)
+			req.Body = r
+
 			return next(c)
 		}
 	}
@@ -63,18 +91,21 @@ func BodyLimitWithConfig(config BodyLimitConfig) echo.MiddlewareFunc {
 
 func (r *limitedReader) Read(b []byte) (n int, err error) {
 	n, err = r.reader.Read(b)
-	r.read += n
+	r.read += int64(n)
 	if r.read > r.limit {
-		s := http.StatusRequestEntityTooLarge
-		r.context.String(s, http.StatusText(s))
 		return n, echo.ErrStatusRequestEntityTooLarge
 	}
 	return
 }
 
-func (r *limitedReader) Reset(reader io.Reader, context echo.Context) {
+func (r *limitedReader) Close() error {
+	return r.reader.Close()
+}
+
+func (r *limitedReader) Reset(reader io.ReadCloser, context echo.Context) {
 	r.reader = reader
 	r.context = context
+	r.read = 0
 }
 
 func limitedReaderPool(c BodyLimitConfig) sync.Pool {

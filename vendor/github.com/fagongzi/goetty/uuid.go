@@ -133,11 +133,6 @@ func Or(u1 UUID, u2 UUID) UUID {
 	return u
 }
 
-// Equal returns true if u1 and u2 equals, otherwise returns false.
-func Equal(u1 UUID, u2 UUID) bool {
-	return bytes.Equal(u1[:], u2[:])
-}
-
 // Version returns algorithm version used to generate UUID.
 func (u UUID) Version() uint {
 	return uint(u[6] >> 4)

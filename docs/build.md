@@ -1,113 +1,189 @@
-Build and run Gateway
+搭建Gateway环境
 ------------------------
-This section help you build gateway environment.
+这个章节帮助你搭建Gateway环境
 
-# prepare
+# 准备
 ## Etcd
-Currently, Gateway use etcd store it's mete data, so you need a [etcd environment](https://github.com/coreos/etcd).
+Gateway目前支持Etcd作为元数据区的存储，所以需要一个Etcd环境，参考：[etcd environment](https://github.com/coreos/etcd)
 
-## Consul
-Currently, Gateway use consul store it's mete data, so you need a [consul environment](https://github.com/hashicorp/consul).
 
 ## Golang
-If you want to build gateway with source, you need a [golang environment](https://github.com/golang/go). 
+如果你希望从源码编译Gateway，你需要一个[golang 环境](https://github.com/golang/go)，必须使用`1.11`及以上的版本。
 
-# Build with source 
-Build gateway use commands as below：
+# 从源码编译
+- 使用Makefile脚本
+
+  以下命令默认在项目根目录（即`$GOPATH/src/github.com/fagongzi/gateway`）目录下执行。
+
+  - 编译适合当前系统的二进制文件
+
+  ```bash
+  make release_version='version string'
+  ```
+
+  - 指定编译的二进制文件类型
+
+  ```bash
+  # Linux
+  make release release_version='version string'
+
+  # Darwin(mac osx)
+  make release_darwin release_version='version string'
+  ```
+
+  - 打包为docker镜像
+
+  ```bash
+  make docker release_version='version string'
+  ```
+
+  - 打包为docker镜像，且定制镜像内容
+
+  ```bash
+  # for demo, including etcd, proxy, apiserver, ui
+  make docker release_version='version string'
+
+  # only proxy
+  make docker release_version='version string' with=proxy
+
+  # only etcd
+  make docker release_version='version string' with=etcd
+
+  # apiserver with ui
+  make docker release_version='version string' with=apiserver
+  ```
+
+  - 更多使用说明
+
+  ```bash
+  make help
+  ```
+
+# Gateway组件
+Gateway运行环境包含2个组件：`ApiServer` 和 `Proxy`
+
+* ApiServer
+  对外提供API管理元数据。
+
+* Proxy
+  Proxy是一个无状态的API代理，提供给终端用户直接访问。
+
+## ApiServer
+ApiServer 对外提供GRPC的服务，用来管理Gateway的元数据
 
 ```bash
-cd $GOPATH/src/github.com/fagongzi/gateway/cmd/proxy
-go build proxy.go
-
-cd $GOPATH/src/github.com/fagongzi/gateway/cmd/admin
-go build admin.go
-```
-
-# Run Gateway
-Gateway runtime has 2 components: admin & proxy. Admin is mete data manager system, proxy is a stateless http proxy.
-
-## Run admin
-Admin is web system, provide JSON restful API, web resource is in `$$GOPATH/src/github.com/fagongzi/gateway/cmd/admin/public` dir. You can get help info use:
-
-```bash
-$ ./admin --help
-Usage of xxx/src/github.com/fagongzi/gateway/cmd/admin/admin:
+$ ./apiserver --help
+Usage of ./apiserver:
   -addr string
-        listen addr.(e.g. ip:port) (default ":8080")
-  -cpus int
-        use cpu nums (default 1)
-  -registry-addr string
-        registry address. (default "[ectd|consul]://127.0.0.1:8500")
-  -prefix string
-        node prefix. (default "/dev")
-  -pwd string
-        admin user pwd (default "admin")
-  -user string
-        admin user name (default "admin")
+    	Addr: client entrypoint (default "127.0.0.1:9091")
+  -addr-store string
+    	Addr: store address (default "etcd://127.0.0.1:2379")
+  -crash string
+    	The crash log file. (default "./crash.log")
+  -discovery
+    	Publish apiserver service via discovery.
+  -log-file string
+    	The external log file. Default log to console.
+  -log-level string
+    	The log level, default is info (default "info")
+  -namespace string
+    	The namespace to isolation the environment. (default "dev")
+  -publish-lease int
+    	Publish service lease seconds (default 10)
+  -publish-timeout int
+    	Publish service timeout seconds (default 30)
+  -service-prefix string
+    	The prefix for service name. (default "/services")
 ```
 
-Than you can run admin use:
+`discovery`参数用来是否使用服务发现的方式发布ApiServer提供的对外接口
+`namespace`参数用来隔离多个环境，这个配置需要和对应的`Proxy`的`namespace`一致
 
-```bash
-./admin --addr=:8080  --etcd-addr=ectd://etcdIP:etcdPort --prefix=dev 
-```
 
-It listen at 8080 port, you can you your web browser access `http://127.0.0.1:8080`, the input the user name and password to access admin system.
-
-## Run proxy
-You can get help info use:
+## proxy
+Proxy是内部所有API的统一对外入口，也就是API统一接入层。
 
 ```bash
 $ ./proxy --help
-Usage of xxx/src/github.com/fagongzi/gateway/cmd/proxy/proxy:
-  -config string
-        config file
-  -cpus int
-        use cpu nums (default 1)
+Usage of ./proxy:
+  -addr string
+    	Addr: http request entrypoint (default "127.0.0.1:80")
+  -addr-pprof string
+    	Addr: pprof addr
+  -addr-rpc string
+    	Addr: manager request entrypoint (default "127.0.0.1:9091")
+  -addr-store string
+    	Addr: store of meta data, support etcd (default "etcd://127.0.0.1:2379")
+  -crash string
+    	The crash log file. (default "./crash.log")
+  -filter value
+    	Plugin(Filter): format is <filter name>[:plugin file path][:plugin config file path]
+  -limit-body int
+    	Limit(MB): MB for body size (default 10)
+  -limit-buf-read int
+    	Limit(bytes): Bytes for read buffer size (default 2048)
+  -limit-buf-write int
+    	Limit(bytes): Bytes for write buffer size (default 1024)
+  -limit-conn int
+    	Limit(count): Count of connection per backend server (default 64)
+  -limit-conn-idle int
+    	Limit(sec): Idle for backend server connections (default 30)
+  -limit-conn-keepalive int
+    	Limit(sec): Keepalive for backend server connections (default 60)
+  -limit-heathcheck int
+    	Limit: Count of heath check worker (default 1)
+  -limit-heathcheck-interval int
+    	Limit(sec): Interval for heath check (default 60)
+  -limit-timeout-read int
+    	Limit(sec): Timeout for read from backend servers (default 30)
+  -limit-timeout-write int
+    	Limit(sec): Timeout for write to backend servers (default 30)
   -log-file string
-        which file to record log, if not set stdout to use.
+    	The external log file. Default log to console.
   -log-level string
-        log level. (default "info")
+    	The log level, default is info (default "info")
+  -namespace string
+    	The namespace to isolation the environment. (default "dev")
+  -ttl-proxy int
+    	TTL(secs): proxy (default 10)
+  -version
+      Show version info
 ```
 
-Proxy use a json config file like this:
+`namespace`参数用来隔离多个环境，这个配置需要和对应的`ApiServer`的`namespace`一致
 
-```json
-{
-    "addr": ":80", 
-    "mgrAddr": ":8081",
-    "registryAddr": [
-        "ectd://127.0.0.1:2379"
-    ],
-    "prefix": "/dev",
-    "filers": [
-        "analysis",
-        "rate-limiting",
-        "circuit-breake",
-        "http-access",
-        "head",
-        "xforward"
-    ],
-    "maxConns": 512,
-    "maxConnDuration": 10,
-    "maxIdleConnDuration": 10,
-    "readBufferSize": 4096,
-    "writeBufferSize": 4096,
-    "readTimeout": 30,
-    "writeTimeout": 30,
-    "maxResponseBodySize": 1048576,
+# 运行环境
+我们以三台etcd、一台ApiServer,三台Proxy的环境为例
 
-    "enablePPROF": false,
-    "pprofAddr": ""
-}
+## 环境信息
+
+|组件|环境|
+| -------------|:-------------:|
+|etcd集群环境|192.168.1.100,192.168.1.101,192.168.1.102|
+|Proxy|192.168.1.200,192.168.1.201,192.168.1.202|
+|ApiServer|192.168.1.203|
+
+## 启动Proxy
+```bash
+./proxy --addr=192.168.1.200:80 --addr-rpc=192.168.1.200:9091 --addr-store=etcd://192.168.1.100:2379,192.168.1.101:2379,192.168.1.102:2379 --namespace=test
 ```
-
-Note: Admin and proxy must use same ectd address and ectd prefix.
-
-Run proxy:
 
 ```bash
-./proxy --cpus=number of you cpu core ---config ./proxy.json --log-file ./proxy.log --log-level=info
+./proxy --addr=192.168.1.201:80 --addr-rpc=192.168.1.201:9091 --addr-store=etcd://192.168.1.100:2379,192.168.1.101:2379,192.168.1.102:2379 --namespace=test
 ```
 
-Than you can see proxy start at 80 port. And load mete data from ectd. At first time, there will be have some warn message, ingore these, because has no mete data in ectd(consul). 
+```bash
+./proxy --addr=192.168.1.202:80 --addr-rpc=192.168.1.202:9091 --addr-store=etcd://192.168.1.100:2379,192.168.1.101:2379,192.168.1.102:2379 --namespace=test
+```
+
+用户的API接入地址可以为：192.168.1.201:80、192.168.1.201:80、192.168.1.202:80其中任意一个
+
+## 启动ApiServer
+```bash
+./apiserver --addr=192.168.1.203:9091 --addr-store=etcd://192.168.1.100:2379,192.168.1.101:2379,192.168.1.102:2379 --discovery --namespace=test
+```
+
+## 调用ApiServer创建元信息
+[Gateway Restful API](./restful.md)
+
+[Gateway grpc客户端例子](../examples)

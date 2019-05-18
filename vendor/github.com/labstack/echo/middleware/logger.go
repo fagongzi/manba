@@ -2,56 +2,77 @@ package middleware
 
 import (
 	"bytes"
-	"fmt"
 	"io"
-	"net"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/gommon/color"
-	isatty "github.com/mattn/go-isatty"
 	"github.com/valyala/fasttemplate"
 )
 
 type (
-	// LoggerConfig defines the config for logger middleware.
+	// LoggerConfig defines the config for Logger middleware.
 	LoggerConfig struct {
-		// Format is the log format which can be constructed using the following tags:
+		// Skipper defines a function to skip middleware.
+		Skipper Skipper
+
+		// Tags to constructed the logger format.
 		//
+		// - time_unix
+		// - time_unix_nano
 		// - time_rfc3339
+		// - time_rfc3339_nano
+		// - time_custom
+		// - id (Request ID)
 		// - remote_ip
 		// - uri
+		// - host
 		// - method
 		// - path
+		// - referer
+		// - user_agent
 		// - status
-		// - response_time
-		// - response_size
+		// - latency (In nanoseconds)
+		// - latency_human (Human readable)
+		// - bytes_in (Bytes received)
+		// - bytes_out (Bytes sent)
+		// - header:<NAME>
+		// - query:<NAME>
+		// - form:<NAME>
 		//
-		// Example "${remote_id} ${status}"
+		// Example "${remote_ip} ${status}"
 		//
-		// Optional, with default value as `DefaultLoggerConfig.Format`.
-		Format string
+		// Optional. Default value DefaultLoggerConfig.Format.
+		Format string `yaml:"format"`
 
-		// Output is the writer where logs are written.
-		// Optional with default value as os.Stdout.
+		// Optional. Default value DefaultLoggerConfig.CustomTimeFormat.
+		CustomTimeFormat string `yaml:"custom_time_format"`
+
+		// Output is a writer where logs in JSON format are written.
+		// Optional. Default value os.Stdout.
 		Output io.Writer
 
-		template   *fasttemplate.Template
-		color      *color.Color
-		bufferPool sync.Pool
+		template *fasttemplate.Template
+		colorer  *color.Color
+		pool     *sync.Pool
 	}
 )
 
 var (
-	// DefaultLoggerConfig is the default logger middleware config.
+	// DefaultLoggerConfig is the default Logger middleware config.
 	DefaultLoggerConfig = LoggerConfig{
-		Format: "time=${time_rfc3339}, remote_ip=${remote_ip}, method=${method}, " +
-			"uri=${uri}, status=${status}, took=${response_time}, sent=${response_size} bytes\n",
-		color:  color.New(),
-		Output: os.Stdout,
+		Skipper: DefaultSkipper,
+		Format: `{"time":"${time_rfc3339_nano}","id":"${id}","remote_ip":"${remote_ip}","host":"${host}",` +
+			`"method":"${method}","uri":"${uri}","status":${status}, "latency":${latency},` +
+			`"latency_human":"${latency_human}","bytes_in":${bytes_in},` +
+			`"bytes_out":${bytes_out}}` + "\n",
+		CustomTimeFormat: "2006-01-02 15:04:05.00000",
+		Output:           os.Stdout,
+		colorer:          color.New(),
 	}
 )
 
@@ -60,10 +81,13 @@ func Logger() echo.MiddlewareFunc {
 	return LoggerWithConfig(DefaultLoggerConfig)
 }
 
-// LoggerWithConfig returns a logger middleware from config.
-// See `Logger()`.
+// LoggerWithConfig returns a Logger middleware with config.
+// See: `Logger()`.
 func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 	// Defaults
+	if config.Skipper == nil {
+		config.Skipper = DefaultLoggerConfig.Skipper
+	}
 	if config.Format == "" {
 		config.Format = DefaultLoggerConfig.Format
 	}
@@ -72,11 +96,9 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 	}
 
 	config.template = fasttemplate.New(config.Format, "${", "}")
-	config.color = color.New()
-	if w, ok := config.Output.(*os.File); !ok || !isatty.IsTerminal(w.Fd()) {
-		config.color.Disable()
-	}
-	config.bufferPool = sync.Pool{
+	config.colorer = color.New()
+	config.colorer.SetOutput(config.Output)
+	config.pool = &sync.Pool{
 		New: func() interface{} {
 			return bytes.NewBuffer(make([]byte, 256))
 		},
@@ -84,6 +106,10 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
+			if config.Skipper(c) {
+				return next(c)
+			}
+
 			req := c.Request()
 			res := c.Response()
 			start := time.Now()
@@ -91,57 +117,92 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 				c.Error(err)
 			}
 			stop := time.Now()
-			buf := config.bufferPool.Get().(*bytes.Buffer)
+			buf := config.pool.Get().(*bytes.Buffer)
 			buf.Reset()
-			defer config.bufferPool.Put(buf)
+			defer config.pool.Put(buf)
 
-			_, err = config.template.ExecuteFunc(buf, func(w io.Writer, tag string) (int, error) {
+			if _, err = config.template.ExecuteFunc(buf, func(w io.Writer, tag string) (int, error) {
 				switch tag {
+				case "time_unix":
+					return buf.WriteString(strconv.FormatInt(time.Now().Unix(), 10))
+				case "time_unix_nano":
+					return buf.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
 				case "time_rfc3339":
-					return w.Write([]byte(time.Now().Format(time.RFC3339)))
-				case "remote_ip":
-					ra := req.RemoteAddress()
-					if ip := req.Header().Get(echo.HeaderXRealIP); ip != "" {
-						ra = ip
-					} else if ip = req.Header().Get(echo.HeaderXForwardedFor); ip != "" {
-						ra = ip
-					} else {
-						ra, _, _ = net.SplitHostPort(ra)
+					return buf.WriteString(time.Now().Format(time.RFC3339))
+				case "time_rfc3339_nano":
+					return buf.WriteString(time.Now().Format(time.RFC3339Nano))
+				case "time_custom":
+					return buf.WriteString(time.Now().Format(config.CustomTimeFormat))
+				case "id":
+					id := req.Header.Get(echo.HeaderXRequestID)
+					if id == "" {
+						id = res.Header().Get(echo.HeaderXRequestID)
 					}
-					return w.Write([]byte(ra))
+					return buf.WriteString(id)
+				case "remote_ip":
+					return buf.WriteString(c.RealIP())
+				case "host":
+					return buf.WriteString(req.Host)
 				case "uri":
-					return w.Write([]byte(req.URI()))
+					return buf.WriteString(req.RequestURI)
 				case "method":
-					return w.Write([]byte(req.Method()))
+					return buf.WriteString(req.Method)
 				case "path":
-					p := req.URL().Path()
+					p := req.URL.Path
 					if p == "" {
 						p = "/"
 					}
-					return w.Write([]byte(p))
+					return buf.WriteString(p)
+				case "referer":
+					return buf.WriteString(req.Referer())
+				case "user_agent":
+					return buf.WriteString(req.UserAgent())
 				case "status":
-					n := res.Status()
-					s := config.color.Green(n)
+					n := res.Status
+					s := config.colorer.Green(n)
 					switch {
 					case n >= 500:
-						s = config.color.Red(n)
+						s = config.colorer.Red(n)
 					case n >= 400:
-						s = config.color.Yellow(n)
+						s = config.colorer.Yellow(n)
 					case n >= 300:
-						s = config.color.Cyan(n)
+						s = config.colorer.Cyan(n)
 					}
-					return w.Write([]byte(s))
-				case "response_time":
-					return w.Write([]byte(stop.Sub(start).String()))
-				case "response_size":
-					return w.Write([]byte(strconv.FormatInt(res.Size(), 10)))
+					return buf.WriteString(s)
+				case "latency":
+					l := stop.Sub(start)
+					return buf.WriteString(strconv.FormatInt(int64(l), 10))
+				case "latency_human":
+					return buf.WriteString(stop.Sub(start).String())
+				case "bytes_in":
+					cl := req.Header.Get(echo.HeaderContentLength)
+					if cl == "" {
+						cl = "0"
+					}
+					return buf.WriteString(cl)
+				case "bytes_out":
+					return buf.WriteString(strconv.FormatInt(res.Size, 10))
 				default:
-					return w.Write([]byte(fmt.Sprintf("[unknown tag %s]", tag)))
+					switch {
+					case strings.HasPrefix(tag, "header:"):
+						return buf.Write([]byte(c.Request().Header.Get(tag[7:])))
+					case strings.HasPrefix(tag, "query:"):
+						return buf.Write([]byte(c.QueryParam(tag[6:])))
+					case strings.HasPrefix(tag, "form:"):
+						return buf.Write([]byte(c.FormValue(tag[5:])))
+					case strings.HasPrefix(tag, "cookie:"):
+						cookie, err := c.Cookie(tag[7:])
+						if err == nil {
+							return buf.Write([]byte(cookie.Value))
+						}
+					}
 				}
-			})
-			if err == nil {
-				config.Output.Write(buf.Bytes())
+				return 0, nil
+			}); err != nil {
+				return
 			}
+
+			_, err = config.Output.Write(buf.Bytes())
 			return
 		}
 	}

@@ -3,7 +3,6 @@ package fasthttp
 import (
 	"net"
 	"runtime"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -17,7 +16,7 @@ import (
 type workerPool struct {
 	// Function for serving server connections.
 	// It must leave c unclosed.
-	WorkerFunc func(c net.Conn) error
+	WorkerFunc ServeHandler
 
 	MaxWorkersCount int
 
@@ -36,6 +35,8 @@ type workerPool struct {
 	stopCh chan struct{}
 
 	workerChanPool sync.Pool
+
+	connState func(net.Conn, ConnState)
 }
 
 type workerChan struct {
@@ -202,19 +203,6 @@ func (wp *workerPool) release(ch *workerChan) bool {
 func (wp *workerPool) workerFunc(ch *workerChan) {
 	var c net.Conn
 
-	defer func() {
-		if r := recover(); r != nil {
-			wp.Logger.Printf("panic: %s\nStack trace:\n%s", r, debug.Stack())
-			if c != nil {
-				c.Close()
-			}
-		}
-
-		wp.lock.Lock()
-		wp.workersCount--
-		wp.lock.Unlock()
-	}()
-
 	var err error
 	for c = range ch.ch {
 		if c == nil {
@@ -225,12 +213,16 @@ func (wp *workerPool) workerFunc(ch *workerChan) {
 			errStr := err.Error()
 			if wp.LogAllErrors || !(strings.Contains(errStr, "broken pipe") ||
 				strings.Contains(errStr, "reset by peer") ||
+				strings.Contains(errStr, "request headers: small read buffer") ||
 				strings.Contains(errStr, "i/o timeout")) {
 				wp.Logger.Printf("error when serving connection %q<->%q: %s", c.LocalAddr(), c.RemoteAddr(), err)
 			}
 		}
-		if err != errHijacked {
+		if err == errHijacked {
+			wp.connState(c, StateHijacked)
+		} else {
 			c.Close()
+			wp.connState(c, StateClosed)
 		}
 		c = nil
 
@@ -238,4 +230,8 @@ func (wp *workerPool) workerFunc(ch *workerChan) {
 			break
 		}
 	}
+
+	wp.lock.Lock()
+	wp.workersCount--
+	wp.lock.Unlock()
 }

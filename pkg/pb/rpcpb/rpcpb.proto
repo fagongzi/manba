@@ -1,0 +1,327 @@
+syntax = "proto2";
+package rpcpb;
+
+import "metapb/metapb.proto";
+import "gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_enum_prefix_all) = false;
+
+// RpcHeader is the header for all rpc request and response
+message RpcHeader {
+    optional string uuid = 1 [(gogoproto.nullable) = false];
+}
+
+// MetaService is a interface for meta manager
+service MetaService {
+    rpc PutCluster        (PutClusterReq)        returns (PutClusterRsp)         {}
+    rpc RemoveCluster     (RemoveClusterReq)     returns (RemoveClusterRsp)      {}
+    rpc GetCluster        (GetClusterReq)        returns (GetClusterRsp)         {}
+    rpc GetClusterList    (GetClusterListReq)    returns (stream metapb.Cluster) {}
+      
+    rpc PutServer         (PutServerReq)         returns (PutServerRsp)          {}
+    rpc RemoveServer      (RemoveServerReq)      returns (RemoveServerRsp)       {}
+    rpc GetServer         (GetServerReq)         returns (GetServerRsp)          {}
+    rpc GetServerList     (GetServerListReq)     returns (stream metapb.Server)  {}
+      
+    rpc PutAPI            (PutAPIReq)            returns (PutAPIRsp)             {}
+    rpc RemoveAPI         (RemoveAPIReq)         returns (RemoveAPIRsp)          {}
+    rpc GetAPI            (GetAPIReq)            returns (GetAPIRsp)             {}
+    rpc GetAPIList        (GetAPIListReq)        returns (stream metapb.API)     {}
+      
+    rpc PutRouting        (PutRoutingReq)        returns (PutRoutingRsp)         {}
+    rpc RemoveRouting     (RemoveRoutingReq)     returns (RemoveRoutingRsp)      {}
+    rpc GetRouting        (GetRoutingReq)        returns (GetRoutingRsp)         {}
+    rpc GetRoutingList    (GetRoutingListReq)    returns (stream metapb.Routing) {}
+      
+    rpc AddBind           (AddBindReq)           returns (AddBindRsp)            {}
+    rpc RemoveBind        (RemoveBindReq)        returns (RemoveBindRsp)         {}
+    rpc RemoveClusterBind (RemoveClusterBindReq) returns (RemoveClusterBindRsp)  {}
+    rpc GetBindServers    (GetBindServersReq)    returns (GetBindServersRsp)     {}
+
+    rpc PutPlugin         (PutPluginReq)         returns (PutPluginRsp)          {}
+    rpc RemovePlugin      (RemovePluginReq)      returns (RemovePluginRsp)       {}
+    rpc GetPlugin         (GetPluginReq)         returns (GetPluginRsp)          {}
+    rpc GetPluginList     (GetPluginListReq)     returns (stream metapb.Plugin)  {}
+    rpc ApplyPlugins      (ApplyPluginsReq)      returns (ApplyPluginsRsp)       {}
+    rpc GetAppliedPlugins (GetAppliedPluginsReq) returns (GetAppliedPluginsRsp)  {}
+
+    rpc Clean             (CleanReq)             returns (CleanRsp)              {}
+    rpc SetID             (SetIDReq)             returns (SetIDRsp)              {}
+    rpc Batch             (BatchReq)             returns (BatchRsp)              {}
+}
+
+message PutClusterReq {
+    optional RpcHeader      header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.Cluster cluster = 2 [(gogoproto.nullable) = false];
+}
+
+message PutClusterRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveClusterReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveClusterRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message GetClusterReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message GetClusterRsp {
+    optional RpcHeader      header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.Cluster cluster = 2 [(gogoproto.nullable) = true];
+}
+
+message GetClusterListReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message PutServerReq {
+    optional RpcHeader      header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.Server  server  = 2 [(gogoproto.nullable) = false];
+}
+
+message PutServerRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveServerReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveServerRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message GetServerReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message GetServerRsp {
+    optional RpcHeader      header = 1 [(gogoproto.nullable) = false];
+    optional metapb.Server  server = 2 [(gogoproto.nullable) = true];
+}
+
+message GetServerListReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message PutAPIReq {
+    optional RpcHeader      header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.API     api     = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "API"];
+}
+
+message PutAPIRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveAPIReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveAPIRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message GetAPIReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message GetAPIRsp {
+    optional RpcHeader      header = 1 [(gogoproto.nullable) = false];
+    optional metapb.API     api    = 2 [(gogoproto.nullable) = true, (gogoproto.customname) = "API"];
+}
+
+message GetAPIListReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message PutRoutingReq {
+    optional RpcHeader      header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.Routing routing = 2 [(gogoproto.nullable) = false];
+}
+
+message PutRoutingRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveRoutingReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemoveRoutingRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message GetRoutingReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message GetRoutingRsp {
+    optional RpcHeader      header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.Routing routing = 2 [(gogoproto.nullable) = true];
+}
+
+message GetRoutingListReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message AddBindReq {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+    optional uint64     cluster = 2 [(gogoproto.nullable) = false];
+    optional uint64     server  = 3 [(gogoproto.nullable) = false];
+}
+
+message AddBindRsp {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+}
+
+message RemoveBindReq {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+    optional uint64     cluster = 2 [(gogoproto.nullable) = false];
+    optional uint64     server  = 3 [(gogoproto.nullable) = false];
+}
+
+message RemoveBindRsp {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+}
+
+message RemoveClusterBindReq {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+    optional uint64     cluster = 2 [(gogoproto.nullable) = false];
+}
+
+message RemoveClusterBindRsp {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+}
+
+message GetBindServersReq {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+    optional uint64     cluster = 2 [(gogoproto.nullable) = false];
+}
+
+message GetBindServersRsp {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+    repeated uint64     servers = 2 [(gogoproto.nullable) = true];
+}
+
+message PutPluginReq {
+    optional RpcHeader      header = 1 [(gogoproto.nullable) = false];
+    optional metapb.Plugin  plugin = 2 [(gogoproto.nullable) = false];
+}
+
+message PutPluginRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemovePluginReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message RemovePluginRsp {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message GetPluginReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message GetPluginRsp {
+    optional RpcHeader      header = 1 [(gogoproto.nullable) = false];
+    optional metapb.Plugin  plugin = 2 [(gogoproto.nullable) = true];
+}
+
+message GetPluginListReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+}
+
+message ApplyPluginsReq {
+    optional RpcHeader             header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.AppliedPlugins applied = 2 [(gogoproto.nullable) = false];
+}
+
+message ApplyPluginsRsp {
+    optional RpcHeader header = 1 [(gogoproto.nullable) = false];
+}
+
+message GetAppliedPluginsReq {
+    optional RpcHeader header = 1 [(gogoproto.nullable) = false];
+}
+
+message GetAppliedPluginsRsp {
+    optional RpcHeader             header  = 1 [(gogoproto.nullable) = false];
+    optional metapb.AppliedPlugins applied = 2;
+}
+
+message CleanReq {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+}
+
+message CleanRsp {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+}
+
+message SetIDReq {
+    optional RpcHeader header  = 1 [(gogoproto.nullable) = false];
+    optional uint64    id      = 2 [(gogoproto.nullable) = false, (gogoproto.customname) = "ID"];
+}
+
+message SetIDRsp {
+    optional RpcHeader  header  = 1 [(gogoproto.nullable) = false];
+}
+
+message BatchReq {
+    optional RpcHeader        header         = 1 [(gogoproto.nullable) = false];
+    repeated PutClusterReq    putClusters    = 2;
+    repeated RemoveClusterReq removeClusters = 3;
+    repeated PutServerReq     putServers     = 4;
+    repeated RemoveServerReq  removeServers  = 5;
+    repeated PutAPIReq        putAPIs        = 6;
+    repeated RemoveAPIReq     removeAPIs     = 7;
+    repeated PutRoutingReq    putRoutings    = 8;
+    repeated RemoveRoutingReq removeRoutings = 9;
+    repeated AddBindReq       addBinds       = 10;
+    repeated RemoveBindReq    removeBinds    = 11;
+    repeated PutPluginReq     putPlugins     = 12;
+    repeated RemovePluginReq  removePlugins  = 13;
+    optional ApplyPluginsReq  applyPlugins   = 14;
+}
+
+message BatchRsp {
+    optional RpcHeader        header         = 1 [(gogoproto.nullable) = false];
+    repeated PutClusterRsp    putClusters    = 2;
+    repeated RemoveClusterRsp removeClusters = 3;
+    repeated PutServerRsp     putServers     = 4;
+    repeated RemoveServerRsp  removeServers  = 5;
+    repeated PutAPIRsp        putAPIs        = 6;
+    repeated RemoveAPIRsp     removeAPIs     = 7;
+    repeated PutRoutingRsp    putRoutings    = 8;
+    repeated RemoveRoutingRsp removeRoutings = 9;
+    repeated AddBindRsp       addBinds       = 10;
+    repeated RemoveBindRsp    removeBinds    = 11;
+    repeated PutPluginRsp     putPlugins     = 12;
+    repeated RemovePluginRsp  removePlugins  = 13;
+    optional ApplyPluginsRsp  applyPlugins   = 14;
+}
