@@ -44,7 +44,7 @@ func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 	ctx.Request.SetRequestURI(req.RequestURI)
 
-	api, dispatches, exprCtx := p.dispatcher.dispatch(&ctx.Request, requestTag)
+	api, dispatches, exprCtx := p.dispatcher.dispatch(ctx, requestTag)
 	if len(dispatches) <= 0 &&
 		(nil == api || api.meta.DefaultValue == nil) {
 		rw.WriteHeader(fasthttp.StatusNotFound)
