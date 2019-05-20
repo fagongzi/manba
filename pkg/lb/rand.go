@@ -17,8 +17,8 @@ func NewRandBalance() LoadBalance {
 	return lb
 }
 
-// Select select a server from servers using rand
-func (this RandBalance) Select(ctx *fasthttp.RequestCtx, servers []metapb.Server) uint64 {
+// Select select a server from servers using fastrand
+func (rb RandBalance) Select(ctx *fasthttp.RequestCtx, servers []metapb.Server) uint64 {
 	l := len(servers)
 	if 0 >= l {
 		return 0

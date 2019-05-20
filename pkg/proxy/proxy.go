@@ -355,7 +355,6 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		api.meta.Name,
 		len(dispatches))
 
-
 	rd := acquireRender()
 	rd.init(requestTag, api, dispatches)
 
