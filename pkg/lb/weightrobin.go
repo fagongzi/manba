@@ -24,9 +24,12 @@ func NewWeightRobin() LoadBalance {
 }
 
 // Select select a server from servers using WeightRobin
-func (w *WeightRobin) Select(req *fasthttp.Request, servers []metapb.Server) (best uint64) {
+func (w *WeightRobin) Select(req *fasthttp.RequestCtx, servers []metapb.Server) (best uint64) {
 	var total int64
 	l := len(servers)
+	if 0 >= l {
+		return 0
+	}
 
 	for i := l - 1; i >= 0; i-- {
 		svr := servers[i]
