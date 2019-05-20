@@ -336,7 +336,7 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	}
 
 	startAt := time.Now()
-	api, dispatches, exprCtx := p.dispatcher.dispatch(&ctx.Request, requestTag)
+	api, dispatches, exprCtx := p.dispatcher.dispatch(ctx, requestTag)
 	if len(dispatches) == 0 &&
 		(nil == api || api.meta.DefaultValue == nil) {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
@@ -354,7 +354,6 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		requestTag,
 		api.meta.Name,
 		len(dispatches))
-
 
 	rd := acquireRender()
 	rd.init(requestTag, api, dispatches)
@@ -624,7 +623,8 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 		}
 
 		fasthttp.ReleaseResponse(res)
-		p.dispatcher.selectServer(&ctx.Request, dn, dn.requestTag)
+		// update selectServer params : change fasthttp.Request to fasthttp.RequestCtx
+		p.dispatcher.selectServer(ctx, dn, dn.requestTag)
 		svr = dn.dest
 		if nil == svr {
 			dn.err = ErrNoServer

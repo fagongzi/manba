@@ -33,7 +33,7 @@ func TestWeightRobin_Select(t *testing.T) {
 		opts map[uint64]*weightRobin
 	}
 	type args struct {
-		req     *fasthttp.Request
+		req     *fasthttp.RequestCtx
 		servers []metapb.Server
 	}
 	tests := []struct {
@@ -46,7 +46,7 @@ func TestWeightRobin_Select(t *testing.T) {
 			name:   "test_case_1",
 			fields: struct{ opts map[uint64]*weightRobin }{opts: make(map[uint64]*weightRobin, 50)},
 			args: struct {
-				req     *fasthttp.Request
+				req     *fasthttp.RequestCtx
 				servers []metapb.Server
 			}{req: nil, servers: values},
 			wantBest: []int{20, 10, 35, 5},

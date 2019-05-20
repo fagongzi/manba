@@ -59,7 +59,7 @@ func (c *clusterRuntime) updateMeta(meta *metapb.Cluster) {
 	c.lb = lb.NewLoadBalance(meta.LoadBalance)
 }
 
-func (c *clusterRuntime) selectServer(req *fasthttp.Request, svrs []metapb.Server) uint64 {
+func (c *clusterRuntime) selectServer(req *fasthttp.RequestCtx, svrs []metapb.Server) uint64 {
 	return c.lb.Select(req, svrs)
 }
 
