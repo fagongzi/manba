@@ -9,23 +9,26 @@ import (
 	"github.com/fagongzi/gateway/pkg/util"
 )
 
+// HashIPBalance is hash IP loadBalance impl
 type HashIPBalance struct {
 }
 
+// NewHashIPBalance create a HashIPBalance
 func NewHashIPBalance() LoadBalance {
 	lb := HashIPBalance{}
 	return lb
 }
 
+// Select select a server from servers using HashIPBalance
 func (haship HashIPBalance) Select(ctx *fasthttp.RequestCtx, servers []metapb.Server) uint64 {
-	size := len(servers)
-	if size < 1 {
+	l := len(servers)
+	if 0 >= l {
 		return 0
 	}
 	hash := fnv.New32a()
-	//key为客户端ip
+	// key is client ip
 	key := util.ClientIP(ctx)
 	hash.Write([]byte(key))
-	serve := servers[hash.Sum32()%uint32(size)]
+	serve := servers[hash.Sum32()%uint32(l)]
 	return serve.ID
 }

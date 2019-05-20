@@ -6,7 +6,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-//获取真实的
+// Get client IP
 func ClientIP(ctx *fasthttp.RequestCtx) string {
 	clientIP := string(ctx.Request.Header.Peek("X-Forwarded-For"))
 	if index := strings.IndexByte(clientIP, ','); index >= 0 {

@@ -624,7 +624,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 		}
 
 		fasthttp.ReleaseResponse(res)
-		// 升级负载均衡模式  --20190518
+		// update selectServer params : change fasthttp.Request to fasthttp.RequestCtx
 		p.dispatcher.selectServer(ctx, dn, dn.requestTag)
 		svr = dn.dest
 		if nil == svr {
