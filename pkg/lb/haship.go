@@ -29,7 +29,3 @@ func (haship HashIPBalance) Select(ctx *fasthttp.RequestCtx, servers []metapb.Se
 	serve := servers[hash.Sum32()%uint32(size)]
 	return serve.ID
 }
-
-func init() {
-	//Register("hash", newHashIPBalancer())
-}
