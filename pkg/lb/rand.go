@@ -23,7 +23,3 @@ func (this RandBalance) Select(ctx *fasthttp.RequestCtx, servers []metapb.Server
 	server := servers[fastrand.Uint32n(uint32(size))]
 	return server.ID
 }
-
-func init() {
-	//Register("hash", newHashIPBalancer())
-}
