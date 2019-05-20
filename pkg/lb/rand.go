@@ -1,23 +1,17 @@
 package lb
 
 import (
-	"math/rand"
-	"time"
-
 	"github.com/valyala/fasthttp"
+	"github.com/valyala/fastrand"
 
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
 )
 
 type RandBalance struct {
-	Random *rand.Rand
 }
 
 func NewRandBalance() LoadBalance {
-	s := rand.NewSource(time.Now().UnixNano())
-	lb := RandBalance{
-		Random: rand.New(s),
-	}
+	lb := RandBalance{}
 	return lb
 }
 
@@ -26,7 +20,7 @@ func (this RandBalance) Select(ctx *fasthttp.RequestCtx, servers []metapb.Server
 	if size < 1 {
 		return 0
 	}
-	server := servers[this.Random.Intn(size)]
+	server := servers[fastrand.Uint32n(uint32(size))]
 	return server.ID
 }
 
