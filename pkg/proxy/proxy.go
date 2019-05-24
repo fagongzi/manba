@@ -143,7 +143,10 @@ func (p *Proxy) Start() {
 
 	go func() {
 		httpS := fasthttp.Server{
-			Handler: p.ServeFastHTTP,
+			Handler:            p.ServeFastHTTP,
+			ReadBufferSize:     p.cfg.Option.LimitBufferRead,
+			WriteBufferSize:    p.cfg.Option.LimitBufferWrite,
+			MaxRequestBodySize: p.cfg.Option.LimitBytesBody,
 		}
 		err = httpS.Serve(httpL)
 		if err != nil {
