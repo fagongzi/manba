@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/fagongzi/gateway/pkg/util"
 	"os"
 	"os/signal"
 	"runtime"
@@ -13,7 +14,6 @@ import (
 	"github.com/fagongzi/gateway/pkg/pb/rpcpb"
 	"github.com/fagongzi/gateway/pkg/service"
 	"github.com/fagongzi/gateway/pkg/store"
-	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/grpcx"
 	"github.com/fagongzi/log"
 	"github.com/labstack/echo"
@@ -39,7 +39,8 @@ var (
 func main() {
 	flag.Parse()
 
-	if *version && util.PrintVersion() {
+	if *version {
+		util.PrintVersion()
 		os.Exit(0)
 	}
 
