@@ -1,8 +1,8 @@
 ApiServer
 --------------
-ApiServer对外提供GRPC接口，用来管理Gateway的元信息（Cluster、Server、Routing以及API）。
+ApiServer provides GRPC APIs to manage metadata of Gateway which is Cluster,Server, Routing, and API info.
 
-# 对外开放的接口：
+# APIs Exposed
 ```
 // MetaService is a interface for meta manager
 service MetaService {
@@ -32,7 +32,7 @@ service MetaService {
     rpc GetBindServers    (GetBindServersReq)    returns (GetBindServersRsp)     {}
 }
 ```
-具体的PB在项目的`pkg/pb/rpcpb`目录下
+The PB is under `pkg/pb/rpcpb`.
 
-# 客户端
-目前Gateway支持GO的客户端，这里以Gateway的GO客户端管理元信息的例子，参见[examples](../examples)
+# Client
+For the moment, Gateway supports Go client. Here are [examples](../examples) of Go clients of Gateway which manage metadata.

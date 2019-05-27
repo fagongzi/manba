@@ -1,10 +1,20 @@
 Filter javascript plugin
 --------------
-Gateway provides the ability to write `Javascript` plugin. It is used to add features dynamically. It even provides `Serverless` scalability.
+Gateway提供以`Javascript`编写插件的能力，用以动态的扩展功能，甚至可以提供`Serverless`的能力扩展功能。
 
+<<<<<<< HEAD:docs/plugin_js-en.md
 ## Definition
 One JavaScript plugin definition:
 ```JavaScript
+||||||| merged common ancestors
+## Definition
+一个js的插件定义如下：
+```javascript
+=======
+## 定义
+一个js的插件定义如下：
+```javascript
+>>>>>>> 098098f026e5c9afbbc07bf47c0ee52a6611b6cc:docs-cn/plugin_js.md
 function NewPlugin(cfg) {
     // import builtin modules
     var JSON = require("json")

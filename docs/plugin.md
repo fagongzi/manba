@@ -1,17 +1,17 @@
 Filter plugin
 --------------
-Gateway中的很多功能都是使用Filter来实现的，用户的大部分功能需求都可以使用Filter来解决。所以Filter被设计成Plugin机制，借助于Go1.8的plugin机制，可以很好的扩展Gateway。
+Most features of Gateway are implemented through Filter. Most of users' functional requirements are implemented through Filter. Filter is thus implemented as a plugin thanks to Go 1.8's plugin mechanism to scale Gateway well.
 
-# Request处理流程
-request -> filter预处理 -> 转发请求 -> filter后置处理 -> 响应客户端
+# Handling Procedures of Request
+request -> filter preprocess -> redirect request -> filter postprocess -> respond client
 
-整个逻辑处理符合以下规则:
+All the logic processing follows the rules below:
 
-* filter预处理返回错误，流程立即终止，并且使用filter返回的状态码响应客户端
-* filter后置处理返回错误，使用filter返回的状态码响应客户端
-* 转发请求，后端返回的状态码`>=500`，调用filter的错误处理接口
+* When filter preprocessing returns error, the procedure aborts immediately and uses the returned status code of filter to respond to client.
+* When filter postprocessing returns error, the returned status code of filter is used to respond to client.
+* When the status code of the response of redirected requests is `>=500`, filter's error handling API is called.
 
-# Filter接口定义
+# Filter API Definition
 ```golang
 // Filter filter interface
 type Filter interface {
@@ -60,9 +60,9 @@ func (f BaseFilter) PostErr(c Context) {
 }
 ```
 
-这些相关的定义都在`github.com/fagongzi/gateway/pkg/filter`包中，每一个Filter都需要导入。其中的`Context`的上下文接口，提供了Filter和Gateway交互的能力;`BaseFilter`定义了默认行为。
+Relevant definitions are in `github.com/fagongzi/gateway/pkg/filter`. Each filter needs to be imported. `Context` API provides the ability of interactions between Filter and Gateway. `BaseFilter` defines the default.
 
-# Gateway加载Filter插件机制
+# The Mechanism of Gateway Loading Filter Plugin
 ```golang
 func newExternalFilter(filterSpec *conf.FilterSpec) (filter.Filter, error) {
 	p, err := plugin.Open(filterSpec.ExternalPluginFile)
@@ -80,17 +80,17 @@ func newExternalFilter(filterSpec *conf.FilterSpec) (filter.Filter, error) {
 }
 ```
 
-每一个外部的Filter插件，对外提供`NewExternalFilter`，返回一个`filter.Filter`实现，或者错误。
+Every external Filter plugin exposes `NewExternalFilter`. It returns a `filter.Filter` or an error.
 
-# Go1.8 Plugin的问题
-当编写的自定义插件的时候，有一个问题涉及到Go1.8的一个[Bug](https://github.com/golang/go/issues/19233)。所以编写的自定义插件必须在`Gateway的Project`下编译的插件才能被正确加载。
+# A Problem of Go1.8 Plugin
+When writing customized plugin, there is a problem concerning a Go 1.8 [bug](https://github.com/golang/go/issues/19233). It can be avoided by compiling the customized plugin under `Gateway/Project` in order to make the plugin load correctly.
 
-# Go1.9.2以上版本
-支持插件项目独立目录，但是不能有自己的vender目录，否则加载的时候一样会出现1.8的问题。
+# For Go 1.9.2 and Above
+Independent directories of plugins are supported. However, it can not have its own vender directory, otherwise, the same problem arises as with Go 1.8
 
-# 自定义插件例子
-可以参考这个例子实现自己的插件
-[参考JWT插件](https://github.com/fagongzi/jwt-plugin)
+# A Customized Plugin Example
+You can refer to this example to make your own plugin
+[JWT Plugin Reference](https://github.com/fagongzi/jwt-plugin)
 
-# 启动自定义插件
-`Proxy`组件有一个`--filter`选项来指定Gateway使用的插件以及顺序。默认情况下Gateway使用一下的内置插件顺序：`--filter WHITELIST --filter WHITELIST --filter ANALYSIS --filter RATE-LIMITING --filter CIRCUIT-BREAKER --filter HTTP-ACCESS --filter HEADER --filter XFORWARD --filter VALIDATION`。例如我们开发好了一个插件JWT，并且编译成为jwt.so文件，可以加上启动参数加载插件：`--filter WHITELIST --filter WHITELIST --filter ANALYSIS --filter RATE-LIMITING --filter CIRCUIT-BREAKER --filter HTTP-ACCESS --filter HEADER --filter XFORWARD --filter VALIDATION --filter JWT:/plugins/jwt.so:/plugins/jwt.json`，自定义插件的格式：`名称:插件文件:插件配置`
+# Start A Customized Plugin Example
+`Proxy` component has a `--filter` option to designate plugins used by Gateway and its order. By default, the order of built-in plugins of Gateway：`--filter WHITELIST --filter WHITELIST --filter ANALYSIS --filter RATE-LIMITING --filter CIRCUIT-BREAKER --filter HTTP-ACCESS --filter HEADER --filter XFORWARD --filter VALIDATION`. For instance, suppose we have a JWT plugin ready and it is compiled as a jwt.so file, options to start can be `--filter WHITELIST --filter WHITELIST --filter ANALYSIS --filter RATE-LIMITING --filter CIRCUIT-BREAKER --filter HTTP-ACCESS --filter HEADER --filter XFORWARD --filter VALIDATION --filter JWT:/plugins/jwt.so:/plugins/jwt.json`. The format of a customized plugin is `Name:Plugin File:Plugin Configuration`
