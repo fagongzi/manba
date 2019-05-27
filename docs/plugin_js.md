@@ -3,8 +3,8 @@ Filter javascript plugin
 Gateway provides the ability to write `Javascript` plugin. It is used to add features dynamically. It even provides `Serverless` scalability.
 
 ## Definition
-一个js的插件定义如下：
-```javascript
+One JavaScript plugin definition:
+```JavaScript
 function NewPlugin(cfg) {
     // import builtin modules
     var JSON = require("json")
@@ -43,30 +43,30 @@ function NewPlugin(cfg) {
 }
 ```
 
-### ctx 插件上下文对象
+### ctx Plugin Context Object
 |method|args|return|remark|
 | - | - | - | - |
-|OriginRequest||HTTPRequest|接收到的原始请求|
-|ForwardRequest||HTTPRequest|转发到后端的请求|
-|Response||HTTPResponse|后端响应|
-|SetAttr|key String, value Any Type||在上下文中存储属性，用来在插件之间传递数据|
-|HasAttr|key String|Boolean|检查一个属性是否在上下文中存在
-|GetAttr|key String|Any Type|获取上下文中的属性|
+|OriginRequest||HTTPRequest|Original Request Received|
+|ForwardRequest||HTTPRequest|Requests Redirected to Backend|
+|Response||HTTPResponse|Backend Response|
+|SetAttr|key String, value Any Type||Used to store attributes and transmitt data between plugins|
+|HasAttr|key String|Boolean|Check whether an attribute exists in context
+|GetAttr|key String|Any Type|Retrieve attibutes in context|
 
-#### HTTPRequest对象
+#### HTTPRequest Object
 |method|args|return|remark|
 | - | - | - | - |
-|Header|name String|String|获取请求header|
-|RemoveHeader|name String||移除请求Header|
-|SetHeader|name String, value String||设置请求Header|
-|Cookie|name String|String|获取请求Cookie|
-|RemoveCookie|name String||移除请求Cookie|
-|SetCookie|name String, value String||设置请求Cookie|
-|Query|name String|String|获取请求URL参数|
-|Body||String|获取请求Body|
-|SetBody|String||设置请求Body|
+|Header|name String|String|Get Request Header|
+|RemoveHeader|name String||Remove Request Header|
+|SetHeader|name String, value String||Set Request Header|
+|Cookie|name String|String|Get Request Cookie|
+|RemoveCookie|name String||Remove Request Cookie|
+|SetCookie|name String, value String||Set Request Cookie|
+|Query|name String|String|Get Request URL Arguments|
+|Body||String|Get Request Body|
+|SetBody|String||Set Request Body|
 
-#### HTTPResponse对象
+#### HTTPResponse Object
 |method|args|return|remark|
 | - | - | - | - |
 |Delegate||Go fasthttp Reponse|一般用在插件的pre方法中使用指定Response的时候|
@@ -193,6 +193,6 @@ gateway会在收到后端server的响应后调用插件的`post`方法，方法�
 在`post`方法中，插件可以从调用上下文中获取`原始请求`，`转发请求`和`响应`来处理。
 
 ### postErr
-gateway会在转发到后端server出错的时候调用插件的`postErr`方法。
+Gateway calls `postErr` when redirecting to backend server fails.
 
-在`postErr`方法中，插件可以从调用上下文中获取`原始请求`，`转发请求`来处理。
+In `postErr`, plugin can retrieve `OriginalRequest`，`RedirectRequest` from context.
