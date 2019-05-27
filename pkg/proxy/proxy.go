@@ -123,7 +123,13 @@ func (p *Proxy) Start() {
 	log.Infof("gateway proxy started at <%s>", p.cfg.Addr)
 
 	if !p.cfg.Option.EnableWebSocket {
-		err := fasthttp.ListenAndServe(p.cfg.Addr, p.ServeFastHTTP)
+		httpServer := fasthttp.Server{
+			Handler:            p.ServeFastHTTP,
+			ReadBufferSize:     p.cfg.Option.LimitBufferRead,
+			WriteBufferSize:    p.cfg.Option.LimitBufferWrite,
+			MaxRequestBodySize: p.cfg.Option.LimitBytesBody,
+		}
+		err := httpServer.ListenAndServe(p.cfg.Addr)
 		if err != nil {
 			log.Fatalf("gateway proxy start failed, errors:\n%+v",
 				err)
@@ -143,7 +149,10 @@ func (p *Proxy) Start() {
 
 	go func() {
 		httpS := fasthttp.Server{
-			Handler: p.ServeFastHTTP,
+			Handler:            p.ServeFastHTTP,
+			ReadBufferSize:     p.cfg.Option.LimitBufferRead,
+			WriteBufferSize:    p.cfg.Option.LimitBufferWrite,
+			MaxRequestBodySize: p.cfg.Option.LimitBytesBody,
 		}
 		err = httpS.Serve(httpL)
 		if err != nil {
