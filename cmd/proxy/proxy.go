@@ -85,7 +85,8 @@ func main() {
 	flag.Var(filters, "filter", "Plugin(Filter): format is <filter name>[:plugin file path][:plugin config file path]")
 	flag.Parse()
 
-	if *version && util.PrintVersion() {
+	if *version {
+		util.PrintVersion()
 		os.Exit(0)
 	}
 

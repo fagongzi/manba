@@ -12,11 +12,10 @@ var (
 	Version   = ""
 )
 
-// PrintVersion 输出版本信息
-func PrintVersion() bool {
+// PrintVersion Print out version information
+func PrintVersion() {
 	fmt.Println("Version  : ", Version)
 	fmt.Println("GitCommit: ", GitCommit)
 	fmt.Println("BuildTime: ", BuildTime)
 	fmt.Println("GoVersion: ", GoVersion)
-	return true
 }
