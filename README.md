@@ -4,6 +4,8 @@
 [![Build Status](https://api.travis-ci.org/fagongzi/gateway.svg)](https://travis-ci.org/fagongzi/gateway)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fagongzi/gateway)](https://goreportcard.com/report/github.com/fagongzi/gateway)
 
+* [English](./README-en.md)
+
 Gateway
 -------
 Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的API接入层。
