@@ -4,115 +4,120 @@
 [![Build Status](https://api.travis-ci.org/fagongzi/gateway.svg)](https://travis-ci.org/fagongzi/gateway)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fagongzi/gateway)](https://goreportcard.com/report/github.com/fagongzi/gateway)
 
-* [English](./README-en.md)
-
-Gateway
+Gateway/[简体中文](README_CN.md)
 -------
-Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的API接入层。
+Gateway is a restful API gateway based on HTTP, which can be used as a unified API access layer.
 
 ## Features
-* 流量控制(Server或API级别)
-* 熔断(Server或API级别)
-* 负载均衡
-* 服务发现
-* 插件机制
-* 路由(分流，复制流量)
-* API 聚合
-* API 参数校验
-* API 访问控制（黑白名单）
-* API 默认返回值
-* API 定制返回值
-* API 结果Cache
+* Traffic Control (on Server or API)
+* Circuit Breaker (on Server or API)
+* Load Balance
+* Service Discovery
+* Plugin
+* Routing (Divert Traffic, Duplicate Traffic)
+* API Aggregation
+* API Argument Check
+* API Access Control (White and Black List)
+* API Default Return Value
+* API Customized Return Value
+* API Result Cache
 * JWT Authorization
-* API Metric导入Prometheus
-* API 失败重试
-* 后端server的健康检查
-* 开放管理API(GRPC、Restful)
-* 支持websocket
-* 支持在线迁移数据
+* API Metric Imports Prometheus
+* API Retry After Failure
+* Backend Server Health Check
+* Open Management of API (GRPC、Restful)
+* Websocket Support
+* Online Data Migration Support
 
 ## Docker
 
-以下内容要求对docker基本操作有一定了解，可以看[这本书][2]，或者直接看[官方文档][1]。
+The following content requires reader some knowledge of Docker. You can refer to [this book][2], or check out [the official documentation][1]。
 
-### 快速开始
-使用 `docker pull fagongzi/gateway` 命令下载Docker镜像, 使用 `docker run -d -p 9093:9093 -p 80:80 -p 9092:9092 fagongzi/gateway` 运行镜像. 镜像启动后export 3个端口:
+### Quick Start
+Use `docker pull fagongzi/gateway` command to download gateway Docker image.
+`docker run -d -p 9093:9093 -p 80:80 -p 9092:9092 fagongzi/gateway` initiates the container. 3 Ports are exposed:
 
 * 80
 
-  Proxy的http端口，这个端口就是直接为终端用户服务的
+  Proxy's HTTP port, this port is for client access.
 
 * 9092
 
-  APIServer的对外GRPC的端口
+  APIServer's external GRPC port
 
 * 9093
 
-  APIServer的对外HTTP Restful的端口，访问 `http://127.0.0.1:9093/ui/index.html`访问WEBUI
+  APIServer's external HTTP Restful port. Visit `http://127.0.0.1:9093/ui/index.html` to access the web UI.
 
-通过设置以下环境变量可以改变运行参数，参数相同时配置参数将会覆盖默认参数
+Running parameters can be set by the following environment varaibles. Configuration overrides default.
 
 - GW_PROXY_OPTS
 
-   支持`proxy --help`中的所有参数；
+   All options in `proxy --help` are supported.
 
 - API_SERVER_OPTS
 
-   支持`apiserver --help`中的所有参数；
+   All options in `apiserver --help` are supported.
 
 - ETCD_OPTS
 
-   支持`etcd --help`中的所有参数；
+   All options in `etcd --help` are supported.
 
-### 可用的docker镜像
+### Available Docker Images
 
 * `fagongzi/gateway`
 
-   镜像是一个quickstart镜像，包含了3个组件：etcd,proxy,apiserver， `仅限于快速体验，不能使用在生产`
+   A quick start image, consisting of three components: etcd, proxy, apiserver, `Only intended for quick start experience. Do not use in production.`
 
 * `fagongzi/proxy`
 
-   proxy组件，`生产可用`
+   proxy component, `production ready`
 
 * `fagongzi/apiserver`
 
-   apiserver组件，`生产可用`
+   apiserver component, `production ready`
 
-## 架构
+## Architecture
 ![](./images/arch.png)
 
-## WebUI
-可用的Gateway的WebUI的项目：
-* [官方](https://github.com/fagongzi/gateway-ui-vue)
+## Web UI
+Available Gateway Web UI Projects：
+* [Official](https://github.com/fagongzi/gateway-ui-vue)
 * [gateway_ui](https://github.com/archfish/gateway_ui)
 * [gateway_admin_ui](https://github.com/wilehos/gateway_admin_ui)
 
-## 组件
-Gateway由`proxy`, `apiserver`组成
+## Components
+Gateway consists of `proxy` and `apiserver`.
 
 ### Proxy
-Proxy是Gateway对终端用户提供服务的组件，Proxy是一个无状态的节点，可以部署多个来支撑更大的流量，[更多](./docs/proxy.md)。
+Proxy is a component which provides service to clients. Proxy is a stateless node. Multiple proxies can be deployed to handle huge traffic.
+[More](./docs/proxy-en.md).
 
 ### ApiServer
-ApiServer对外提供GRPC和Restful来管理元信息，ApiServer同时集成了官方的WebUI，[更多](./docs/apiserver.md)。
+ApiServer provides GRPC and Restful to manage metadata for users. ApiServer integrates  official Web UI. 
+[More](./docs/apiserver-en.md)。
 
-## Gateway中的概念
+## Concepts of Gateway
 ### Server
-Server是一个真实的后端服务，[更多](./docs/server.md)。
+A server is a a real backend service.
+[More](./docs/server-en.md)。
 
 ### Cluster
-Cluster是一个逻辑概念，它由一组提供相同服务的Server组成。会依据负载均衡策略选择一个可用的Server，[更多](./docs/cluster.md)。
+Cluster consists of servers which provide the same service. A server is chosen to handle a specific request based on a load balance strategy.
+[More](./docs/cluster-en.md)。
 
 ### API
-API是Gateway的核心概念，我们可以在Gateway的中维护对外的API，以及API的分发规则，聚合规则以及URL匹配规则，[更多](./docs/api.md)。
+API is a key concept of Gateway. We can manage external APIs in Gateway and their distribution rules, aggregation rules and URL matching rules.
+[More](./docs/api-en.md)。
 
 ### Routing
-Routing是一个路由策略，根据HTTP Request中的Cookie，Querystring、Header、Path中的一些信息把流量分发到或者复制到指定的Cluster，通过这个功能，我们可以实现AB Test和线上引流，[更多](./docs/routing.md)。
+Routing is a route strategy. Cookie, Querystring, Header and Path in HTTP Request dictate traffic distribution and traffic duplication to a specific cluster. Through this feature, AB test and online traffic divertion is achieved.
+[More](./docs/routing-en.md)。
 
-## 参与开发
-[更多](./docs-cn/build.md)
+## Getting Involved
+[More](./docs/build-en.md)
 
-## 交流方式-微信
+## WeChat
 ![](./images/qr.jpg)
 
 [1]: https://docs.docker.com/ "Docker Documentation"
