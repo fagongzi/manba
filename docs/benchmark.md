@@ -1,4 +1,4 @@
-# 非严谨压力测试结果
+# Non-rigorous Stress Testing Results
 
 ## Hardware
 
@@ -59,13 +59,11 @@
 
 ## 备注
 
-- 测试主机划了两颗虚拟CPU和4G内存给一台KVM虚拟机，所以以下数据可能不是该机器的真实水平；
-- 测试结果未经筛选全部贴上来了，具体哪个是有效数据自行判断；
-- 测试间隔比较短不确定每次测试时主机是否处于最佳状态；
-- nmon采集间隔为0.5秒；
-- 网关、wrk与hello world程序分别放在不同机器上，之间以千兆网线经交换机通信，无法确定网络对测试结果造成的影响；
-- 服务器服役时间略长，小脾气无法预测；
-- ε=ε=ε=┏(゜ロ゜;)┛
+- The testing server has two virtual CPUs and 4G dedicated to a KVM instance. So the result is not rigorous
+- All testing result has been posted without filtering.
+- The testing interval is pretty short.
+- nmon testing interval is 0.5.
+- Gateway, wrk and hello world are on different machines. They communicate through a 1000Mb/s router.
 
 ## Benchmark 1
 
