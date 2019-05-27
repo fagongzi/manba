@@ -1,14 +1,14 @@
 Cluster
 -------
-在Gateway中，Cluster是一个逻辑的概念。它是后端真实Server的一个逻辑组，在同一个组内的后端Server提供相同的服务。
+In Gateway, Cluster is a logical concept. It is a logical collection of backend servers which provide the same service.
 
-# Cluster属性
-一个Cluster包含2部分信息:
+# Cluster Attributes
+A Cluster has two fields.
 ## ID
-Cluster ID, 全局唯一。
+Cluster ID, unique identifier
 
 ## Name
-Cluster名称
+Cluster Name
 
 ## LoadBalance
-Cluster采取的负载均衡算法。
+The load balance algorithm used by Cluster

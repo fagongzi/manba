@@ -1,28 +1,28 @@
 Routing
 ------
-在Gateway中，Routing代表一个路由，利用路由我们可以实现我们的AB Test以及线上导流等高级特性。
+A Routing represents a router. Through routing, we can implement AB test, traffic direction and other advanced features.
 
-# Routing属性
+# Routing Attributes
 ## ID
-Routing ID，唯一标识
+Unique Identifier
 
 ## Name
-Routing Name，路由名称
+Routing Name
 
 ## clusterID
-流量路由到哪一个Cluster
+The cluster to which the routing traffic goes.
 
 ## apiID
-针对哪一个API设置路由
+The API for which the routing is
 
-## Condition（可选）
-路由条件，当满足这些条件，则Gateway执行这个路由。路由条件可以设置`cookie`、`querystring`、`header`、`json body`,`path value`中的参数的表达式。不配置，匹配所有流量。
+## Condition (Optional)
+Routing Condition. When the condition is met, Gateway executes this routing strategy. The routing condition can set the arguement expressions of `cookie`、`querystring`、`header`、`json body`,`path value`. If not set, all traffic is matched.
 
 ## RoutingStrategy
-路由策略，目前支持`Split`分发。分发是指：把满足条件的请求按照比例转发到目标Cluster，剩余比例的流量按照正常流程进入API匹配阶段，流向原有的Cluster。
+Currently support `Split`, which refers to redirecting a certain percentage of eligible requests to the target cluster and direct the rest to the API matching phase and then to the original cluster destination.
 
 ## TrafficRate
-路由流量的比例，例如设置为50，那么50%的流量会根据`RoutingStrategy`进行路由。
+If set to 50, 50% of traffic is being routed according to `RoutingStrategy`.
 
 ## Status
-路由的状态，只有`UP`状态才会生效。
+Routing is valid only if status is `UP`.

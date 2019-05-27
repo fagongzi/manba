@@ -1,43 +1,43 @@
 Restful
 --------------
-In addition to GRPC API, API server supports Restful HTTP API. The following is about Restful API.
+API Server除了支持GRPC的接口以外，还支持HTTP的Restful接口，这里给出Restful的接口定义。
 
-Attention:
-- Because the time unit in Go is nanosecond (`time.Duration`), time in APIs needs to be in nanosecond. 1 second equals to 1,000,000,000 nanoseconds.
-- body in defaultValue needs to be in base64, otherwise `base64.CorruptInputError=illegal base64 data` error occurs. This is due to `type HTTPResult struct {Body []byte}`，For detailed information, please visit [[]byte encodes as a base64-encoded ](https://stackoverflow.com/questions/31449610/illegal-base64-data-error-message)。
-- When configuring `renderTemplate`, if `flatAttrs` is true, name can be omitted. If false, name must be configured not to be null. This requires data checking when calling APIs and wrong configuration leads to service unavailability.
-- `defaultValue` in Nodes should match `renderTemplate`'s, otherwise `Key path not found` error occurs.
+注意：
+- 由于在GO中时间以纳秒为单位(`time.Duration`)，所以API需要从秒转为纳秒(1秒 = 1000000000纳秒)。
+- defaultValue中的body需要将需要返回的内容转为BASE64，否则会遇到`base64.CorruptInputError=illegal base64 data`错误，这个是因为`type HTTPResult struct {Body []byte}`，详细解释见[[]byte encodes as a base64-encoded ](https://stackoverflow.com/questions/31449610/illegal-base64-data-error-message)。
+- 在配置API的`renderTemplate`时，`flatAttrs`为true可以省略name，为false时name必须有值，这需要调用API时对数据进行校验，错误的配置会导致程序无法提供服务。
+- Nodes中使用`defaultValue`时，格式应与`renderTemplate`中定义的抽取路径相符，否则会出现`Key path not found`错误。
 
-## ENUM
+## 枚举值
 ### Status
-|Name|Value|Comment|
+|名称|值|备注|
 | -------------|:-------------:| -------------|
 |Down|0||
 |Up|1||
 
 ### CircuitStatus
-|Name|Value|Comment|
+|名称|值|备注|
 | -------------|:-------------:| -------------|
 |Open|0||
 |Half|1||
 |Close|2||
 
 ### LoadBalance
-|Name|Value|Comment|
+|名称|值|备注|
 | -------------|:-------------:| -------------|
 |RoundRobin|0||
-|IPHash|1|Currently Version Not Supported|
+|IPHash|1|目前版本不支持|
 
 ### Protocol
-|Name|Value|Comment|
+|名称|值|备注|
 | -------------|:-------------:| -------------|
 |HTTP|0||
-|Grpc|1|Currently Version Not Supported|
-|Dubbo|1|Currently Version Not Supported|
-|SpringCloud|2|Currently Version Not Supported|
+|Grpc|1|目前版本不支持|
+|Dubbo|1|目前版本不支持|
+|SpringCloud|2|目前版本不支持|
 
 ### Source
-|Name|Value|Comment|
+|名称|值|备注|
 | -------------|:-------------:| -------------|
 |QueryString|0||
 |FormData|1||
@@ -47,12 +47,12 @@ Attention:
 |PathValue|5||
 
 ### RuleType
-|Name|Value|Comment|
+|名称|值|备注|
 | -------------|:-------------:| -------------|
 |RuleRegexp|0||
 
 ### CMP
-|Name|Value|Comment|
+|名称|值|备注|
 | -------------|:-------------:| -------------|
 |CMPEQ|0||
 |CMPLT|1||
@@ -63,13 +63,13 @@ Attention:
 |CMPMatch|6|
 
 ### RoutingStrategy
-|Name|Value|Comment|
+|名称|值|备注|
 | -------------|:-------------:| -------------|
 |Copy|0||
 |Split|1||
 
 ## Cluster
-### New/Update
+### 新增/更新
 |URL|Method|
 | -------------|:-------------:|
 |/v1/clusters|PUT|
@@ -82,7 +82,7 @@ JSON Body
     "loadBalance":0
 }
 ```
-1 in id field means update.
+设置id字段表示更新
 
 Reponse
 ```json
@@ -91,9 +91,9 @@ Reponse
     "data":1
 }
 ```
-data field represents cluster id
+data字段为cluster id
 
-### Delete
+### 删除
 |URL|Method|
 | -------------|:-------------:|
 |/v1/clusters/{id}|DELETE|
@@ -105,7 +105,7 @@ Reponse
     "data":"null"
 }
 ```
-### Query
+### 查询
 |URL|Method|
 | -------------|:-------------:|
 |/v1/clusters/{id}|GET|
@@ -121,15 +121,15 @@ Reponse
     }
 }
 ```
-data field represents cluster id
+data字段为cluster
 
-### List
+### 列表
 |URL|Method|
 | -------------|:-------------:|
 |/v1/clusters?after=xx&limit=xx|GET|
 
-after：the recent created cluster id
-limit：how many id we need
+after：上一次的最后一个cluster id
+limit：获取多少条记录
 
 Reponse
 ```json
@@ -154,10 +154,10 @@ Reponse
     ]
 }
 ```
-data field is a collection of clusters
-Next batch: /v1/clusters?after=3&limit=3
+data字段为cluster集合
+取下一批: /v1/clusters?after=3&limit=3
 
-### Query all the servers binded
+### 查询所有bind的server
 |URL|Method|
 | -------------|:-------------:|
 |/v1/clusters/{id}/binds|GET|
@@ -173,9 +173,9 @@ Reponse
     ]
 }
 ```
-data field represents ids of all servers binded to the cluster.
+data字段为cluster bind的所有server id
 
-### Unbind All Server
+### unbind所有server
 |URL|Method|
 | -------------|:-------------:|
 |/v1/clusters/{id}/binds|DELETE|
@@ -189,7 +189,7 @@ Reponse
 ```
 
 ## Server
-### New/Update
+### 新增/更新
 |URL|Method|
 | -------------|:-------------:|
 |/v1/servers|PUT|
@@ -216,7 +216,7 @@ JSON Body
     }
 }
 ```
-1 in id field means update.
+设置id字段表示更新
 
 Reponse
 ```json
@@ -225,9 +225,9 @@ Reponse
     "data":1
 }
 ```
-data field means server id
+data字段为server id
 
-### Delete
+### 删除
 |URL|Method|
 | -------------|:-------------:|
 |/v1/servers/{id}|DELETE|
@@ -239,7 +239,7 @@ Reponse
     "data":"null"
 }
 ```
-### Query
+### 查询
 |URL|Method|
 | -------------|:-------------:|
 |/v1/servers/{id}|GET|
@@ -269,15 +269,15 @@ Reponse
     }
 }
 ```
-data field reflects server info.
+data字段为server
 
-### List
+### 列表
 |URL|Method|
 | -------------|:-------------:|
 |/v1/servers?after=xx&limit=xx|GET|
 
-after：the recent server id
-limit：how many servers from which we need info
+after：上一次的最后一个server id
+limit：获取多少条记录
 
 Reponse
 ```json
@@ -344,11 +344,11 @@ Reponse
     ]
 }
 ```
-data fields has the collection of servers
-The next batch: /v1/servers?after=3&limit=3
+data字段为server集合
+取下一批: /v1/servers?after=3&limit=3
 
 ## Bind
-### Add
+### 增加
 |URL|Method|
 | -------------|:-------------:|
 |/v1/binds|PUT|
@@ -369,7 +369,7 @@ Reponse
 }
 ```
 
-### Delete
+### 删除
 |URL|Method|
 | -------------|:-------------:|
 |/v1/binds|DELETE|
@@ -391,7 +391,7 @@ Reponse
 ```
 
 ## API
-### New/Update
+### 新增/更新
 |URL|Method|
 | -------------|:-------------:|
 |/v1/apis|PUT|
@@ -540,7 +540,7 @@ JSON Body
     ]
 }
 ```
-1 in id field means update.
+设置id字段表示更新
 
 Reponse
 ```json
@@ -549,9 +549,9 @@ Reponse
     "data":1
 }
 ```
-data field represents API id
+data字段为API id
 
-### Delete
+### 删除
 |URL|Method|
 | -------------|:-------------:|
 |/v1/apis/{id}|DELETE|
@@ -563,7 +563,7 @@ Reponse
     "data":"null"
 }
 ```
-### Query
+### 查询
 |URL|Method|
 | -------------|:-------------:|
 |/v1/apis/{id}|GET|
@@ -705,15 +705,15 @@ Reponse
     }
 }
 ```
-data field represents api id.
+data字段为api
 
-### List
+### 列表
 |URL|Method|
 | -------------|:-------------:|
 |/v1/apis?after=xx&limit=xx|GET|
 
-after：the recent api id
-limit: how many apis from which we need info
+after：上一次的最后一个api id
+limit：获取多少条记录
 
 Reponse
 ```json
@@ -1116,11 +1116,11 @@ Reponse
     ]
 }
 ```
-data field represents a list of apis
-The next batch: /v1/apis?after=3&limit=3
+data字段为apis集合
+取下一批: /v1/apis?after=3&limit=3
 
 ## Routing
-### New/Update
+### 新增/更新
 |URL|Method|
 | -------------|:-------------:|
 |/v1/routings|PUT|
@@ -1148,7 +1148,7 @@ JSON Body
     "name":"test-AB"
 }
 ```
-1 in id field means update.
+设置id字段表示更新
 
 Reponse
 ```json
@@ -1157,9 +1157,9 @@ Reponse
     "data":1
 }
 ```
-data field has routing id.
+data字段为routing id
 
-### Delete
+### 删除
 |URL|Method|
 | -------------|:-------------:|
 |/v1/routings/{id}|DELETE|
@@ -1171,7 +1171,7 @@ Reponse
     "data":"null"
 }
 ```
-### Query
+### 查询
 |URL|Method|
 | -------------|:-------------:|
 |/v1/routings/{id}|GET|
@@ -1202,15 +1202,15 @@ Reponse
     }
 }
 ```
-data field reflect the queried routing.
+data字段为routing
 
-### List
+### 列表
 |URL|Method|
 | -------------|:-------------:|
 |/v1/routings?after=xx&limit=xx|GET|
 
-after：the recent routing id
-limit：how many records
+after：上一次的最后一个routing id
+limit：获取多少条记录
 
 Reponse
 ```json
@@ -1280,5 +1280,5 @@ Reponse
     ]
 }
 ```
-data fields has a collection of server info
-The next batch: /v1/routings?after=3&limit=3
+data字段为server集合
+取下一批: /v1/routings?after=3&limit=3
