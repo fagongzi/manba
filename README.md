@@ -91,23 +91,23 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 Gateway由`proxy`, `apiserver`组成
 
 ### Proxy
-Proxy是Gateway对终端用户提供服务的组件，Proxy是一个无状态的节点，可以部署多个来支撑更大的流量，[更多](./docs/proxy.md)。
+Proxy是Gateway对终端用户提供服务的组件，Proxy是一个无状态的节点，可以部署多个来支撑更大的流量，[更多](./docs-cn/proxy.md)。
 
 ### ApiServer
-ApiServer对外提供GRPC和Restful来管理元信息，ApiServer同时集成了官方的WebUI，[更多](./docs/apiserver.md)。
+ApiServer对外提供GRPC和Restful来管理元信息，ApiServer同时集成了官方的WebUI，[更多](./docs-cn/apiserver.md)。
 
 ## Gateway中的概念
 ### Server
-Server是一个真实的后端服务，[更多](./docs/server.md)。
+Server是一个真实的后端服务，[更多](./docs-cn/server.md)。
 
 ### Cluster
-Cluster是一个逻辑概念，它由一组提供相同服务的Server组成。会依据负载均衡策略选择一个可用的Server，[更多](./docs/cluster.md)。
+Cluster是一个逻辑概念，它由一组提供相同服务的Server组成。会依据负载均衡策略选择一个可用的Server，[更多](./docs-cn/cluster.md)。
 
 ### API
-API是Gateway的核心概念，我们可以在Gateway的中维护对外的API，以及API的分发规则，聚合规则以及URL匹配规则，[更多](./docs/api.md)。
+API是Gateway的核心概念，我们可以在Gateway的中维护对外的API，以及API的分发规则，聚合规则以及URL匹配规则，[更多](./docs-cn/api.md)。
 
 ### Routing
-Routing是一个路由策略，根据HTTP Request中的Cookie，Querystring、Header、Path中的一些信息把流量分发到或者复制到指定的Cluster，通过这个功能，我们可以实现AB Test和线上引流，[更多](./docs/routing.md)。
+Routing是一个路由策略，根据HTTP Request中的Cookie，Querystring、Header、Path中的一些信息把流量分发到或者复制到指定的Cluster，通过这个功能，我们可以实现AB Test和线上引流，[更多](./docs-cn/routing.md)。
 
 ## 参与开发
 [更多](./docs-cn/build.md)
