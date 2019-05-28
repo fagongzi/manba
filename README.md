@@ -121,7 +121,7 @@ Routing is a route strategy. Cookie, Querystring, Header and Path in HTTP Reques
 ![](./images/qr.jpg)
 
 ## Sponsor
-Open source is not easy, if this project is helpful to you, you can ask me for a drink, thank you!
+Open source is not easy. If this project is helpful to you, you can buy me a drink, thank you!
 ### Wechat
 ![](/images/wechat.png)
 
