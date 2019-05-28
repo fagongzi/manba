@@ -113,5 +113,13 @@ Routing是一个路由策略，根据HTTP Request中的Cookie，Querystring、He
 ## 交流方式-微信
 ![](./images/qr.jpg)
 
+## 赞助
+开源不易，如果这个项目对你有帮助，你可以请我喝一杯，谢谢！
+### 微信
+![](/images/wechat.png)
+
+### 支付宝
+![](/images/alipay.jpg)
+
 [1]: https://docs.docker.com/ "Docker Documentation"
 [2]: https://github.com/yeasy/docker_practice "docker_practice"
