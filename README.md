@@ -95,24 +95,24 @@ Proxy is a component which provides service to clients. Proxy is a stateless nod
 
 ### ApiServer
 ApiServer provides GRPC and Restful to manage metadata for users. ApiServer integrates  official Web UI. 
-[More](./docs/apiserver.md)。
+[More](./docs/apiserver.md).
 
 ## Concepts of Gateway
 ### Server
 A server is a a real backend service.
-[More](./docs/server.md)。
+[More](./docs/server.md).
 
 ### Cluster
 Cluster consists of servers which provide the same service. A server is chosen to handle a specific request based on a load balance strategy.
-[More](./docs/cluster.md)。
+[More](./docs/cluster.md).
 
 ### API
 API is a key concept of Gateway. We can manage external APIs in Gateway and their distribution rules, aggregation rules and URL matching rules.
-[More](./docs/api.md)。
+[More](./docs/api.md).
 
 ### Routing
 Routing is a route strategy. Cookie, Querystring, Header and Path in HTTP Request dictate traffic distribution and traffic duplication to a specific cluster. Through this feature, AB test and online traffic divertion is achieved.
-[More](./docs/routing.md)。
+[More](./docs/routing.md).
 
 ## Getting Involved
 [More](./docs/build.md)
