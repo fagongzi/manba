@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/fagongzi/util/format"
@@ -21,6 +22,10 @@ func main() {
 	server := echo.New()
 	server.Use(md.Logger())
 
+	server.GET("/serverinfo", func(c echo.Context) error {
+		hostname, _ := os.Hostname()
+		return c.String(http.StatusOK, hostname + "\n" + *addr)
+	})
 	server.GET("/fail", func(c echo.Context) error {
 		sleep := c.QueryParam("sleep")
 		if sleep != "" {
@@ -35,7 +40,7 @@ func main() {
 		return c.String(http.StatusOK, "OK")
 	})
 
-	server.GET("/check", func(c echo.Context) error {
+		server.GET("/check", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK")
 	})
 
