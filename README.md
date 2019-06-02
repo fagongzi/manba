@@ -8,6 +8,9 @@ Gateway/[简体中文](README_CN.md)
 -------
 Gateway is a restful API gateway based on HTTP, which can be used as a unified API access layer.
 
+## Tutorial
+A very detailed tutorial for beginners. [Link](./docs/tutorial.md)
+
 ## Features
 * Traffic Control (on Server or API)
 * Circuit Breaker (on Server or API)
