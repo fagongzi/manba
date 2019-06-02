@@ -8,6 +8,9 @@ Gateway/[English](./README.md)
 -------
 Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的API接入层。
 
+## 教程
+如果你是一个初学者，那么这个[详细的教程](./docs/tutorial.md)非常适合你。现在只有英文版本。
+
 ## Features
 * 流量控制(Server或API级别)
 * 熔断(Server或API级别)
