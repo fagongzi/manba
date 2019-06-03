@@ -11,6 +11,10 @@ Gateway is a restful API gateway based on HTTP, which can be used as a unified A
 ## Tutorial
 A very detailed tutorial for beginners. [Link](./docs/tutorial.md)
 
+## Attention
+Please make sure your Go version is 1.10 or above. Otherwise, **undefined "math/rand".Shuffle** error will occur when compiling. [StackOverFlow Link](https://stackoverflow.com/questions/52172794/getting-undefined-rand-shuffle-in-golang)
+
+
 ## Features
 * Traffic Control (on Server or API)
 * Circuit Breaker (on Server or API)
