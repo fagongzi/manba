@@ -17,6 +17,7 @@ git clone https://github.com/fagongzi/gateway.git
 ```
 
 ### Compile this project
+Make sure your Go version is **1.10** or above. Otherwise error will occurs.
 In the root directory of this project, there is a **Makefile** which is responsible to generate the executables and the static Web UI. Under the root directory of this project, run  
 ```shell
 make
