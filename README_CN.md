@@ -11,6 +11,9 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 ## 教程
 如果你是一个初学者，那么这个[详细的教程](./docs/tutorial.md)非常适合你。现在只有英文版本。
 
+## 注意
+请确保你的Go版本是在1.10或者之上。用1.10之前版本的Go编译时会出现**undefined "math/rand".Shuffle**错误。[StackOverFlow链接](https://stackoverflow.com/questions/52172794/getting-undefined-rand-shuffle-in-golang)
+
 ## Features
 * 流量控制(Server或API级别)
 * 熔断(Server或API级别)
