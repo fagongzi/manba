@@ -13,6 +13,7 @@ For JWT plugins, you should name your file like **filter_my_plugin.go** under **
 **\*.so** plugin as mentioned in the [docs/plugin.md](plugin.md), which involves **cgo** is really troublesome and thus highly discouraged.  
 After you have finished your plugin file, a plugin json configuration file is needed. For more information, please reference to [this json configuration file example](https://github.com/fagongzi/jwt-plugin).  
 For your JWT plugin to take effect, you need to pass options **--filter JWT** and **--jwt yourJSONConfigurationFilePath**. This is because neither **filter_jwt.go** nor your plugin is in **defaultFilters** in **pkg/proxy/proxy.go**.  
+An example JWT JSON configuration file can be found in **examples/jwt.json**.  
 ![](./images/defaultFilters.png)
 If one of the **defaultFilters** is expected to be used, please specify it by **--filter** like **--filter WHITELIST** when launching **proxy** because if there is **--filter**, **defaultFilters** gets discarded.  
 ![](./images/specs.png)
