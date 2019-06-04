@@ -10,7 +10,7 @@ import (
 
 var (
 	// ErrUnknownFilter unknown filter error
-	ErrUnknownFilter = errors.New("unknow filter")
+	ErrUnknownFilter = errors.New("unknown filter")
 )
 
 const (
