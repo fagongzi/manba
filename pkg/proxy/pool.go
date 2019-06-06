@@ -10,7 +10,7 @@ import (
 var (
 	renderPool       sync.Pool
 	contextPool      sync.Pool
-	dispathNodePool  sync.Pool
+	dispatchNodePool  sync.Pool
 	multiContextPool sync.Pool
 	wgPool           sync.Pool
 	exprCtxPool      sync.Pool
@@ -18,7 +18,7 @@ var (
 
 	emptyRender      = render{}
 	emptyContext     = proxyContext{}
-	emptyDispathNode = dispathNode{}
+	emptyDispathNode = dispatchNode{}
 )
 
 func acquireWG() *sync.WaitGroup {
@@ -52,19 +52,19 @@ func releaseMultiContext(value *multiContext) {
 	}
 }
 
-func acquireDispathNode() *dispathNode {
-	v := dispathNodePool.Get()
+func acquireDispathNode() *dispatchNode {
+	v := dispatchNodePool.Get()
 	if v == nil {
-		return &dispathNode{}
+		return &dispatchNode{}
 	}
 
-	return v.(*dispathNode)
+	return v.(*dispatchNode)
 }
 
-func releaseDispathNode(value *dispathNode) {
+func releaseDispathNode(value *dispatchNode) {
 	if value != nil {
 		value.reset()
-		dispathNodePool.Put(value)
+		dispatchNodePool.Put(value)
 	}
 }
 

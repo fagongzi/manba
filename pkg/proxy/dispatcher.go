@@ -55,7 +55,7 @@ func (req *copyReq) rewiteURL() string {
 	return hack.SliceToString(expr.Exec(ctx, req.node.parsedExprs...))
 }
 
-type dispathNode struct {
+type dispatchNode struct {
 	rd       *render
 	ctx      *fasthttp.RequestCtx
 	multiCtx *multiContext
@@ -74,7 +74,7 @@ type dispathNode struct {
 	code                 int
 }
 
-func (dn *dispathNode) setHost(forwardReq *fasthttp.Request) {
+func (dn *dispatchNode) setHost(forwardReq *fasthttp.Request) {
 	switch dn.node.meta.HostType {
 	case metapb.HostOrigin:
 		forwardReq.SetHostBytes(dn.ctx.Request.Host())
@@ -88,15 +88,15 @@ func (dn *dispathNode) setHost(forwardReq *fasthttp.Request) {
 	}
 }
 
-func (dn *dispathNode) reset() {
+func (dn *dispatchNode) reset() {
 	*dn = emptyDispathNode
 }
 
-func (dn *dispathNode) hasRetryStrategy() bool {
+func (dn *dispatchNode) hasRetryStrategy() bool {
 	return dn.retryStrategy() != nil
 }
 
-func (dn *dispathNode) matchRetryStrategy(target int32) bool {
+func (dn *dispatchNode) matchRetryStrategy(target int32) bool {
 	for _, code := range dn.retryStrategy().Codes {
 		if code == target {
 			return true
@@ -106,38 +106,38 @@ func (dn *dispathNode) matchRetryStrategy(target int32) bool {
 	return false
 }
 
-func (dn *dispathNode) matchAllRetryStrategy() bool {
+func (dn *dispatchNode) matchAllRetryStrategy() bool {
 	return len(dn.retryStrategy().Codes) == 0
 }
 
-func (dn *dispathNode) httpOption() *util.HTTPOption {
+func (dn *dispatchNode) httpOption() *util.HTTPOption {
 	return &dn.node.httpOption
 }
 
-func (dn *dispathNode) retryStrategy() *metapb.RetryStrategy {
+func (dn *dispatchNode) retryStrategy() *metapb.RetryStrategy {
 	return dn.node.meta.RetryStrategy
 }
 
-func (dn *dispathNode) hasError() bool {
+func (dn *dispatchNode) hasError() bool {
 	return dn.err != nil ||
 		dn.code >= fasthttp.StatusBadRequest
 }
 
-func (dn *dispathNode) hasDefaultValue() bool {
+func (dn *dispatchNode) hasDefaultValue() bool {
 	return dn.node.meta.DefaultValue != nil
 }
 
-func (dn *dispathNode) release() {
+func (dn *dispatchNode) release() {
 	if nil != dn.res {
 		fasthttp.ReleaseResponse(dn.res)
 	}
 }
 
-func (dn *dispathNode) needRewrite() bool {
+func (dn *dispatchNode) needRewrite() bool {
 	return dn.node.meta.URLRewrite != ""
 }
 
-func (dn *dispathNode) getResponseContentType() []byte {
+func (dn *dispatchNode) getResponseContentType() []byte {
 	if len(dn.cachedCT) > 0 {
 		return dn.cachedCT
 	}
@@ -149,7 +149,7 @@ func (dn *dispathNode) getResponseContentType() []byte {
 	return nil
 }
 
-func (dn *dispathNode) getResponseBody() []byte {
+func (dn *dispatchNode) getResponseBody() []byte {
 	if len(dn.cachedBody) > 0 {
 		return dn.cachedBody
 	}
@@ -166,7 +166,7 @@ func (dn *dispathNode) getResponseBody() []byte {
 	return nil
 }
 
-func (dn *dispathNode) copyHeaderTo(ctx *fasthttp.RequestCtx) {
+func (dn *dispatchNode) copyHeaderTo(ctx *fasthttp.RequestCtx) {
 	if dn.node.meta.UseDefault ||
 		(dn.hasError() && dn.hasDefaultValue()) {
 		for _, hd := range dn.node.meta.DefaultValue.Headers {
@@ -187,7 +187,7 @@ func (dn *dispathNode) copyHeaderTo(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func (dn *dispathNode) maybeDone() {
+func (dn *dispatchNode) maybeDone() {
 	if nil != dn.wg {
 		dn.multiCtx.completePart(dn.node.meta.AttrName, dn.getResponseBody())
 		dn.wg.Done()
@@ -243,11 +243,11 @@ func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner, jsEngineFunc f
 	return rt
 }
 
-func (r *dispatcher) dispatch(reqCtx *fasthttp.RequestCtx, requestTag string) (*apiRuntime, []*dispathNode, *expr.Ctx) {
+func (r *dispatcher) dispatch(reqCtx *fasthttp.RequestCtx, requestTag string) (*apiRuntime, []*dispatchNode, *expr.Ctx) {
 	req:=&reqCtx.Request
 	route := r.route
 	var targetAPI *apiRuntime
-	var dispathes []*dispathNode
+	var dispatches []*dispatchNode
 
 	exprCtx := acquireExprCtx()
 	exprCtx.Origin = req
@@ -260,7 +260,7 @@ func (r *dispatcher) dispatch(reqCtx *fasthttp.RequestCtx, requestTag string) (*
 	}
 
 	if targetAPI == nil {
-		return targetAPI, dispathes, exprCtx
+		return targetAPI, dispatches, exprCtx
 	}
 
 	if targetAPI.meta.UseDefault {
@@ -275,19 +275,19 @@ func (r *dispatcher) dispatch(reqCtx *fasthttp.RequestCtx, requestTag string) (*
 			dn.node = node
 			dn.exprCtx = exprCtx
 			r.selectServer(reqCtx, dn, requestTag)
-			dispathes = append(dispathes, dn)
+			dispatches = append(dispatches, dn)
 		}
 	}
 
-	return targetAPI, dispathes, exprCtx
+	return targetAPI, dispatches, exprCtx
 }
 
-func (r *dispatcher) selectServer(reqCtx *fasthttp.RequestCtx, dn *dispathNode, requestTag string) {
+func (r *dispatcher) selectServer(reqCtx *fasthttp.RequestCtx, dn *dispatchNode, requestTag string) {
 	dn.dest = r.selectServerFromCluster(reqCtx, dn.node.meta.ClusterID)
 	r.adjustByRouting(dn.api.meta.ID, reqCtx, dn, requestTag)
 }
 
-func (r *dispatcher) adjustByRouting(apiID uint64, reqCtx *fasthttp.RequestCtx, dn *dispathNode, requestTag string) {
+func (r *dispatcher) adjustByRouting(apiID uint64, reqCtx *fasthttp.RequestCtx, dn *dispatchNode, requestTag string) {
 	routings := r.routings
 
 	for _, routing := range routings {

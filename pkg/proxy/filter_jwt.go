@@ -184,7 +184,7 @@ func (f *JWTFilter) initSigningMethod() error {
 	} else if f.cfg.Method == "HS512" {
 		f.signing = jwt.SigningMethodHS512
 	} else {
-		return fmt.Errorf("unsupport method: %s", f.cfg.Method)
+		return fmt.Errorf("unsupported method: %s", f.cfg.Method)
 	}
 
 	return nil
