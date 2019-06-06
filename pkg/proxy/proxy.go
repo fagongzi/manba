@@ -59,7 +59,7 @@ type Proxy struct {
 	sync.RWMutex
 
 	dispatchIndex, copyIndex uint64
-	dispatches               []chan *dispathNode
+	dispatches               []chan *dispatchNode
 	copies                   []chan *copyReq
 
 	cfg         *Cfg
@@ -99,7 +99,7 @@ func NewProxy(cfg *Cfg) *Proxy {
 		stopC:         make(chan struct{}),
 		runner:        task.NewRunner(),
 		copies:        make([]chan *copyReq, cfg.Option.LimitCountCopyWorker, cfg.Option.LimitCountCopyWorker),
-		dispatches:    make([]chan *dispathNode, cfg.Option.LimitCountDispatchWorker, cfg.Option.LimitCountDispatchWorker),
+		dispatches:    make([]chan *dispatchNode, cfg.Option.LimitCountDispatchWorker, cfg.Option.LimitCountDispatchWorker),
 		dispatchIndex: 0,
 		copyIndex:     0,
 		jsEngine:      plugin.NewEngine(),
@@ -285,7 +285,7 @@ func (p *Proxy) updateJSEngine(jsEngine *plugin.Engine) {
 
 func (p *Proxy) readyToDispatch() {
 	for i := uint64(0); i < p.cfg.Option.LimitCountDispatchWorker; i++ {
-		c := make(chan *dispathNode, 1024)
+		c := make(chan *dispatchNode, 1024)
 		p.dispatches[i] = c
 
 		_, err := p.runner.RunCancelableTask(func(ctx context.Context) {
@@ -475,7 +475,7 @@ func (p *Proxy) doCopy(req *copyReq) {
 	fasthttp.ReleaseRequest(req.origin)
 }
 
-func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
+func (p *Proxy) doProxy(dn *dispatchNode, adjustH func(*proxyContext)) {
 	if dn.node.meta.UseDefault {
 		dn.maybeDone()
 		log.Infof("%s: dipatch node %d force using default",
@@ -586,7 +586,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 	var res *fasthttp.Response
 	times := int32(0)
 	for {
-		log.Infof("%s: dipatch node %d sent for %d times",
+		log.Infof("%s: dispatch node %d sent for %d times",
 			dn.requestTag,
 			dn.idx,
 			times)

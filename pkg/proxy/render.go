@@ -16,13 +16,13 @@ type render struct {
 	multi        bool
 	multiContext []byte
 	api          *apiRuntime
-	nodes        []*dispathNode
+	nodes        []*dispatchNode
 	doRender     func(*fasthttp.RequestCtx)
 	allocBytes   [][]byte
 	requestTag   string
 }
 
-func (rd *render) init(requestTag string, api *apiRuntime, nodes []*dispathNode) {
+func (rd *render) init(requestTag string, api *apiRuntime, nodes []*dispatchNode) {
 	rd.requestTag = requestTag
 	rd.nodes = nodes
 	rd.api = api
@@ -130,7 +130,7 @@ func (rd *render) renderMulti(ctx *fasthttp.RequestCtx) {
 	rd.renderTemplate(ctx, rd.multiContext)
 }
 
-func (rd *render) renderRaw(ctx *fasthttp.RequestCtx, dn *dispathNode) {
+func (rd *render) renderRaw(ctx *fasthttp.RequestCtx, dn *dispatchNode) {
 	ctx.Response.Header.SetContentTypeBytes(dn.getResponseContentType())
 	ctx.Write(dn.getResponseBody())
 	dn.release()
