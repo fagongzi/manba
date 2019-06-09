@@ -10,11 +10,12 @@ Gateway is a restful API gateway based on HTTP, which can be used as a unified A
 
 ## Tutorial
 A very detailed tutorial for beginners. [Link](./docs/tutorial.md)  
-Here is the corresponding video tutorial.  
+Below are video tutorials.  
+Basics:  
 [![](https://img.youtube.com/vi/2qMWmdcw7o4/0.jpg)](https://www.youtube.com/watch?v=2qMWmdcw7o4)  
 Routing Configuration Tutorial:  
 [![](https://img.youtube.com/vi/D1pI6opB_ks/0.jpg)](https://www.youtube.com/watch?v=D1pI6opB_ks)  
-JWT Plugin Configuration Tutorial:
+JWT Plugin Configuration Tutorial:  
 [![](https://img.youtube.com/vi/sLb16YDSlBs/0.jpg)](https://www.youtube.com/watch?v=sLb16YDSlBs)  
 
 ## Attention
