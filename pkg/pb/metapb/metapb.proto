@@ -86,7 +86,7 @@ enum RateLimitOption {
 // Proxy is a meta data of the gateway proxy
 message Proxy {
     optional string addr     = 1 [(gogoproto.nullable) = false];
-	optional string addrRPC  = 2 [(gogoproto.nullable) = false];
+    optional string addrRPC  = 2 [(gogoproto.nullable) = false];
 }
 
 // Cluster is a set of server has same interface
@@ -242,6 +242,14 @@ message API {
     optional int64            maxQPS           = 18 [(gogoproto.nullable) = false];
     optional CircuitBreaker   circuitBreaker   = 19;
     optional RateLimitOption  rateLimitOption  = 20 [(gogoproto.nullable) = false];
+    optional bool             useTLS           = 21 [(gogoproto.nullable) = false];
+    optional TLSEmbedCert     tlsEmbedCert     = 22;
+}
+
+// TLSEmbedCert tlsEmbedCert options
+message TLSEmbedCert {
+    optional bytes certData = 1 [(gogoproto.nullable) = true];
+    optional bytes keyData  = 2 [(gogoproto.nullable) = true];
 }
 
 // Condition is a condition for routing
