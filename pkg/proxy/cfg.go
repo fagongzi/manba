@@ -33,6 +33,9 @@ type Option struct {
 // Cfg proxy config
 type Cfg struct {
 	Addr              string
+	AddrHTTPS         string
+	DefaultTLSCert    string
+	DefaultTLSKey     string
 	AddrRPC           string
 	AddrStore         string
 	AddrStoreUserName string

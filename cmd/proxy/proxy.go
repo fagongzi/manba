@@ -32,6 +32,9 @@ var (
 	filters        = &filterFlag{}
 
 	addr                          = flag.String("addr", "127.0.0.1:80", "Addr: http request entrypoint")
+	addrHTTPS                     = flag.String("addr-https", "127.0.0.1:443", "Addr: https request entrypoint")
+	defaultTLSCert                = flag.String("default-tls-cert", "", "Default TLS cert file path")
+	defaultTLSKey                 = flag.String("default-tls-key", "", "Default TLS key file path")
 	addrRPC                       = flag.String("addr-rpc", "127.0.0.1:9091", "Addr: manager request entrypoint")
 	addrStore                     = flag.String("addr-store", "etcd://127.0.0.1:2379", "Addr: store of meta data, support etcd")
 	addrStoreUser                 = flag.String("addr-store-user", "", "addr Store UserName")
@@ -141,6 +144,9 @@ func getCfg() *proxy.Cfg {
 	}
 
 	cfg.Addr = *addr
+	cfg.AddrHTTPS = *addrHTTPS
+	cfg.DefaultTLSCert = *defaultTLSCert
+	cfg.DefaultTLSKey = *defaultTLSKey
 	cfg.AddrRPC = *addrRPC
 	cfg.AddrPPROF = *addrPPROF
 	cfg.AddrStore = *addrStore
