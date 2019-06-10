@@ -17,9 +17,13 @@ import (
 )
 
 const (
+	// besides checking token is legitimate or not, it checks whether token exists in redis
 	actionTokenInRedis  string = "token_in_redis"
+	// update token's TTL
 	actionRenewByRaw    string = "renew_by_raw"
+	// update token's TTL and in the same time put new token in redis, previous token invalid
 	actionRenewByRedis  string = "renew_by_redis"
+	// fetch fields from token and put them in header which is redirected to a backend server who is unbeknownst to JWT
 	actionFetchToHeader string = "fetch_to_header"
 	actionFetchToCookie string = "fetch_to_cookie"
 	ctxRenewTokenAttr   string = "__jwt_renew_token__"
@@ -180,7 +184,7 @@ func (f *JWTFilter) initSigningMethod() error {
 	} else if f.cfg.Method == "HS512" {
 		f.signing = jwt.SigningMethodHS512
 	} else {
-		return fmt.Errorf("unsupport method: %s", f.cfg.Method)
+		return fmt.Errorf("unsupported method: %s", f.cfg.Method)
 	}
 
 	return nil

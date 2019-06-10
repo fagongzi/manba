@@ -62,7 +62,7 @@ func (f *Proxy) doPostErrFilters(c filter.Context, code int, err error, filters 
 type proxyContext struct {
 	startAt    time.Time
 	endAt      time.Time
-	result     *dispathNode
+	result     *dispatchNode
 	forwardReq *fasthttp.Request
 	originCtx  *fasthttp.RequestCtx
 	rt         *dispatcher
@@ -70,7 +70,7 @@ type proxyContext struct {
 	attrs map[string]interface{}
 }
 
-func (c *proxyContext) init(rt *dispatcher, originCtx *fasthttp.RequestCtx, forwardReq *fasthttp.Request, result *dispathNode) {
+func (c *proxyContext) init(rt *dispatcher, originCtx *fasthttp.RequestCtx, forwardReq *fasthttp.Request, result *dispatchNode) {
 	c.result = result
 	c.originCtx = originCtx
 	c.forwardReq = forwardReq

@@ -8,6 +8,20 @@ Gateway/[简体中文](README_CN.md)
 -------
 Gateway is a restful API gateway based on HTTP, which can be used as a unified API access layer.
 
+## Tutorial
+A very detailed tutorial for beginners. [Link](./docs/tutorial.md)  
+Below are video tutorials.  
+Basics:  
+[![](https://img.youtube.com/vi/2qMWmdcw7o4/0.jpg)](https://www.youtube.com/watch?v=2qMWmdcw7o4)  
+Routing Configuration Tutorial:  
+[![](https://img.youtube.com/vi/D1pI6opB_ks/0.jpg)](https://www.youtube.com/watch?v=D1pI6opB_ks)  
+JWT Plugin Configuration Tutorial:  
+[![](https://img.youtube.com/vi/sLb16YDSlBs/0.jpg)](https://www.youtube.com/watch?v=sLb16YDSlBs)  
+
+## Attention
+Please make sure your Go version is 1.10 or above. Otherwise, **undefined "math/rand".Shuffle** error will occur when compiling. [StackOverFlow Link](https://stackoverflow.com/questions/52172794/getting-undefined-rand-shuffle-in-golang)
+
+
 ## Features
 * Traffic Control (on Server or API)
 * Circuit Breaker (on Server or API)
@@ -95,24 +109,24 @@ Proxy is a component which provides service to clients. Proxy is a stateless nod
 
 ### ApiServer
 ApiServer provides GRPC and Restful to manage metadata for users. ApiServer integrates  official Web UI. 
-[More](./docs/apiserver.md)。
+[More](./docs/apiserver.md).
 
 ## Concepts of Gateway
 ### Server
 A server is a a real backend service.
-[More](./docs/server.md)。
+[More](./docs/server.md).
 
 ### Cluster
 Cluster consists of servers which provide the same service. A server is chosen to handle a specific request based on a load balance strategy.
-[More](./docs/cluster.md)。
+[More](./docs/cluster.md).
 
 ### API
 API is a key concept of Gateway. We can manage external APIs in Gateway and their distribution rules, aggregation rules and URL matching rules.
-[More](./docs/api.md)。
+[More](./docs/api.md).
 
 ### Routing
 Routing is a route strategy. Cookie, Querystring, Header and Path in HTTP Request dictate traffic distribution and traffic duplication to a specific cluster. Through this feature, AB test and online traffic divertion is achieved.
-[More](./docs/routing.md)。
+[More](./docs/routing.md).
 
 ## Getting Involved
 [More](./docs/build.md)

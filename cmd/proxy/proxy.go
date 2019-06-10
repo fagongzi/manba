@@ -56,7 +56,7 @@ var (
 	version                       = flag.Bool("version", false, "Show version info")
 
 	// internal plugin configuration file
-	jwtCfg = flag.String("jwt", "", "PLugin(JWT): jwt plugin configuration file, json format")
+	jwtCfg = flag.String("jwt", "", "Plugin(JWT): jwt plugin configuration file, json format")
 
 	// metric
 	metricJob          = flag.String("metric-job", "", "prometheus job name")

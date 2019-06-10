@@ -39,7 +39,7 @@ func init() {
 	prometheus.Register(apiResponseHistogramVec)
 }
 
-func (p *Proxy) postRequest(api *apiRuntime, dispatches []*dispathNode, startAt time.Time) {
+func (p *Proxy) postRequest(api *apiRuntime, dispatches []*dispatchNode, startAt time.Time) {
 	doMetrics := true
 	for _, dn := range dispatches {
 		if doMetrics &&
