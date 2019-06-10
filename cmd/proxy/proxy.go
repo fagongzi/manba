@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"syscall"
 	"time"
+
 	"github.com/fagongzi/gateway/pkg/proxy"
 	"github.com/fagongzi/gateway/pkg/util"
 	"github.com/fagongzi/log"
@@ -68,6 +69,7 @@ var (
 )
 
 func init() {
+	defaultFilters.Set(proxy.FilterPrepare)
 	defaultFilters.Set(proxy.FilterWhiteList)
 	defaultFilters.Set(proxy.FilterBlackList)
 	defaultFilters.Set(proxy.FilterCaching)

@@ -49,7 +49,7 @@ func (f *CachingFilter) Pre(c filter.Context) (statusCode int, err error) {
 	}
 
 	if value, ok := f.cache.Get(id); ok {
-		c.SetAttr(filter.UsingCachingValue, value)
+		c.SetAttr(filter.AttrUsingCachingValue, value)
 	}
 
 	return f.BaseFilter.Post(c)

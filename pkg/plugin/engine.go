@@ -148,11 +148,11 @@ func (eng *Engine) Post(c filter.Context) (int, error) {
 }
 
 // PostErr filter post error method
-func (eng *Engine) PostErr(c filter.Context) {
+func (eng *Engine) PostErr(c filter.Context, code int, err error) {
 	eng.lastActive = time.Now()
 
 	if len(eng.applied) == 0 {
-		eng.BaseFilter.PostErr(c)
+		eng.BaseFilter.PostErr(c, code, err)
 		return
 	}
 
@@ -161,7 +161,7 @@ func (eng *Engine) PostErr(c filter.Context) {
 
 	l := len(eng.applied)
 	for i := l - 1; i >= 0; i-- {
-		eng.applied[i].PostErr(rc)
+		eng.applied[i].PostErr(rc, code, err)
 	}
 
 	releaseContext(rc)

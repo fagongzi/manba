@@ -50,7 +50,7 @@ func NewRuntime(meta *metapb.Plugin) (*Runtime, error) {
 	// add require for using go module
 	vm.Set("require", rt.Require)
 	vm.Set("BreakFilterChainCode", filter.BreakFilterChainCode)
-	vm.Set("UsingResponse", filter.UsingResponse)
+	vm.Set("UsingResponse", filter.AttrUsingResponse)
 
 	_, err := vm.Run(string(meta.Content))
 	if err != nil {
@@ -187,19 +187,19 @@ func (rt *Runtime) Post(c *Ctx) (int, error) {
 }
 
 // PostErr filter post error method
-func (rt *Runtime) PostErr(c *Ctx) {
+func (rt *Runtime) PostErr(c *Ctx, code int, err error) {
 	if rt.postErrFunc.IsUndefined() {
-		rt.BaseFilter.PostErr(c.delegate)
+		rt.BaseFilter.PostErr(c.delegate, code, err)
 		return
 	}
 
-	_, err := rt.postErrFunc.Call(rt.this, c)
-	if err != nil {
+	_, jerr := rt.postErrFunc.Call(rt.this, c, err.Error())
+	if jerr != nil {
 		log.Errorf("plugin %d/%s:%d plugin post error func failed with %+v",
 			rt.meta.ID,
 			rt.meta.Name,
 			rt.meta.Version,
-			err)
+			jerr)
 	}
 }
 
