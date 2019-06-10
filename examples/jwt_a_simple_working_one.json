@@ -1,0 +1,21 @@
+{
+    "secret": "this_is_jwt_secret",
+    "method": "HS256",
+    "tokenLookup": "header:Authorization",
+    "authSchema": "Bearer",
+    "renewTokenHeaderName": "",
+    "redis": {
+        "addr": "127.0.0.1:6379",
+        "maxActive": 1000,
+        "maxIdle": 1000,
+        "idleTimeout": 100
+    },
+    "actions": [
+        {
+            "method": "token_in_redis",
+            "params": {
+                "prefix": "prefix_"
+            }
+        }
+    ]
+}

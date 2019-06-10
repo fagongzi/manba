@@ -4,7 +4,7 @@
     "tokenLookup": "token lookup, [header|query|cookie:Authorization]",
     "authSchema": "jwt schema, [Bearer]",
     "renewTokenHeaderName": "the header name for new token in the response header",
-    "reids": {
+    "redis": {
         "addr": "127.0.0.1:6379",
         "maxActive": "max connections, int",
         "maxIdle": "max idle connections, int",
