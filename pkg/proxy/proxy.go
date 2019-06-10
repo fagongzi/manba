@@ -3,11 +3,9 @@ package proxy
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -23,15 +21,6 @@ import (
 	"github.com/fagongzi/util/task"
 	"github.com/soheilhy/cmux"
 	"github.com/valyala/fasthttp"
-)
-
-var (
-	// ErrPrefixRequestCancel user cancel request error
-	ErrPrefixRequestCancel = "request canceled"
-	// ErrNoServer no server
-	ErrNoServer = errors.New("has no server")
-	// ErrRewriteNotMatch rewrite not match request url
-	ErrRewriteNotMatch = errors.New("rewrite not match request url")
 )
 
 var (
@@ -356,7 +345,8 @@ func (p *Proxy) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	// make sure fasthttp request header is parsed, avoid concurrent copy header bug
+	// make sure the fasthttp request header has been parsed,
+	// avoid concurrent copy header bug
 	ctx.Request.Header.Peek("fuck")
 
 	log.Infof("%s: match api %s, has %d dispatches",
@@ -546,7 +536,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 	}
 
 	// using spec response
-	if value := c.GetAttr(filter.UsingResponse); nil != value {
+	if value := c.GetAttr(filter.AttrUsingResponse); nil != value {
 		res, ok := value.(*fasthttp.Response)
 		if !ok {
 			dn.err = fmt.Errorf("not support using response attr %T", value)
@@ -572,7 +562,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 	}
 
 	// hit cache
-	if value := c.GetAttr(filter.UsingCachingValue); nil != value {
+	if value := c.GetAttr(filter.AttrUsingCachingValue); nil != value {
 		dn.cachedCT, dn.cachedBody = filter.ParseCachedValue(value.([]byte))
 		dn.maybeDone()
 		releaseContext(c)
@@ -664,9 +654,7 @@ func (p *Proxy) doProxy(dn *dispathNode, adjustH func(*proxyContext)) {
 				resCode)
 		}
 
-		if nil == err || !strings.HasPrefix(err.Error(), ErrPrefixRequestCancel) {
-			p.doPostErrFilters(c, filters...)
-		}
+		p.doPostErrFilters(c, resCode, err, filters...)
 
 		dn.err = err
 		dn.code = resCode

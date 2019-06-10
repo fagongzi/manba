@@ -3,6 +3,7 @@ package proxy
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/fagongzi/gateway/pkg/filter"
@@ -88,11 +89,17 @@ func (f *CircuitBreakeFilter) Post(c filter.Context) (statusCode int, err error)
 }
 
 // PostErr execute proxy has errors
-func (f *CircuitBreakeFilter) PostErr(c filter.Context) {
+func (f *CircuitBreakeFilter) PostErr(c filter.Context, code int, err error) {
+	// ignore user cancel
+	if nil != err && strings.HasPrefix(err.Error(), ErrPrefixRequestCancel) {
+		f.BaseFilter.PostErr(c, code, err)
+		return
+	}
+
 	pc := c.(*proxyContext)
 	cb, _ := pc.circuitBreaker()
 	if cb == nil {
-		f.BaseFilter.PostErr(c)
+		f.BaseFilter.PostErr(c, code, err)
 		return
 	}
 

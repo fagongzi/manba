@@ -31,7 +31,7 @@ func (f *AccessFilter) Post(c filter.Context) (statusCode int, err error) {
 
 	if log.InfoEnabled() {
 		log.Infof("filter: %s %s \"%s\" %d \"%s\" %s %s",
-			GetRealClientIP(c.OriginRequest()),
+			filter.StringValue(filter.AttrClientRealIP, c),
 			c.OriginRequest().Method(),
 			c.ForwardRequest().RequestURI(),
 			c.Response().StatusCode(),

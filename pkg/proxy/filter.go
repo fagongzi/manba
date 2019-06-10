@@ -51,11 +51,11 @@ func (f *Proxy) doPostFilters(requestTag string, c filter.Context, filters ...fi
 	return "", http.StatusOK, nil
 }
 
-func (f *Proxy) doPostErrFilters(c filter.Context, filters ...filter.Filter) {
+func (f *Proxy) doPostErrFilters(c filter.Context, code int, err error, filters ...filter.Filter) {
 	l := len(filters)
 	for i := l - 1; i >= 0; i-- {
 		f := filters[i]
-		f.PostErr(c)
+		f.PostErr(c, code, err)
 	}
 }
 

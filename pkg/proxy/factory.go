@@ -14,6 +14,8 @@ var (
 )
 
 const (
+	// FilterPrepare prepare filter
+	FilterPrepare = "PREPARE"
 	// FilterHTTPAccess access log filter
 	FilterHTTPAccess = "HTTP-ACCESS"
 	// FilterHeader header filter

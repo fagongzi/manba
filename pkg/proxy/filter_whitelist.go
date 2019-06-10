@@ -33,7 +33,7 @@ func (f *WhiteListFilter) Name() string {
 
 // Pre execute before proxy
 func (f *WhiteListFilter) Pre(c filter.Context) (statusCode int, err error) {
-	if !c.(*proxyContext).allowWithWhitelist(GetRealClientIP(c.OriginRequest())) {
+	if !c.(*proxyContext).allowWithWhitelist(filter.StringValue(filter.AttrClientRealIP, c)) {
 		return fasthttp.StatusForbidden, ErrWhitelist
 	}
 

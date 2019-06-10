@@ -37,6 +37,6 @@ func (f *AnalysisFilter) Post(c filter.Context) (statusCode int, err error) {
 }
 
 // PostErr execute proxy has errors
-func (f *AnalysisFilter) PostErr(c filter.Context) {
+func (f *AnalysisFilter) PostErr(c filter.Context, code int, err error) {
 	c.Analysis().Failure(c.(*proxyContext).circuitResourceID())
 }
