@@ -50,6 +50,8 @@ func (p *Proxy) newFilter(filterSpec *FilterSpec) (filter.Filter, error) {
 	input := strings.ToUpper(filterSpec.Name)
 
 	switch input {
+	case FilterPrepare:
+		return newPrepareFilter(), nil
 	case FilterHTTPAccess:
 		return newAccessFilter(), nil
 	case FilterHeader:
