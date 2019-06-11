@@ -6,8 +6,10 @@ start_etcd() {
     etcd $ETCD_OPTS &
 }
 
+DEFAULT_IP="0.0.0.0"
+
 start_apiserver() {
-    apiserver --addr=:9092 --addr-http=:9093 --discovery $API_SERVER_OPTS &
+    apiserver --addr=${DEFAULT_IP}:9092 --addr-http=${DEFAULT_IP}:9093 --discovery $API_SERVER_OPTS &
 }
 
 INPUT_CMD=$@
@@ -17,7 +19,7 @@ then
     INPUT_CMD=${CMD}
 fi
 
-DEFAULT_EXEC="proxy --addr=:80 --log-level=$GATEWAY_LOG_LEVEL $GW_PROXY_OPTS"
+DEFAULT_EXEC="proxy --addr=${DEFAULT_IP}:80 --log-level=$GATEWAY_LOG_LEVEL $GW_PROXY_OPTS"
 if [ "${INPUT_CMD}" = 'demo' ]
 then
     start_etcd
@@ -34,7 +36,7 @@ fi
 
 if [ "${INPUT_CMD}" = 'apiserver' ]
 then
-    EXEC="apiserver --addr=:9092 --addr-http=:9093 --discovery $API_SERVER_OPTS"
+    EXEC="apiserver --addr=${DEFAULT_IP}:9092 --addr-http=${DEFAULT_IP}:9093 --discovery $API_SERVER_OPTS"
 fi
 
 if [ "${INPUT_CMD}" = 'etcd' ]
