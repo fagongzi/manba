@@ -52,27 +52,32 @@ func (r *dispatcher) copyAPIs(exclude uint64, excludeToRoute uint64) (*route.Rou
 }
 
 func (r *dispatcher) copyBinds(exclude metapb.Bind) map[uint64]*binds {
+	// remove server from all cluster
+	removedServer := exclude.ClusterID == 0
+
 	values := make(map[uint64]*binds)
 	for key, bindsInfo := range r.binds {
-		if exclude.ClusterID != key {
-			newBindsInfo := &binds{}
-			for _, info := range bindsInfo.servers {
-				if info.svrID != exclude.ServerID {
-					newBindsInfo.servers = append(newBindsInfo.servers, &bindInfo{
-						svrID:  info.svrID,
-						status: info.status,
-					})
-				}
-			}
-
-			for _, info := range bindsInfo.actives {
-				if info.ID != exclude.ServerID {
-					newBindsInfo.actives = append(newBindsInfo.actives, info)
-				}
-			}
-
-			values[key] = newBindsInfo
+		if removedServer {
+			exclude.ClusterID = key
 		}
+
+		newBindsInfo := &binds{}
+		for _, info := range bindsInfo.servers {
+			if info.svrID != exclude.ServerID || exclude.ClusterID != key {
+				newBindsInfo.servers = append(newBindsInfo.servers, &bindInfo{
+					svrID:  info.svrID,
+					status: info.status,
+				})
+			}
+		}
+
+		for _, info := range bindsInfo.actives {
+			if info.ID != exclude.ServerID || exclude.ClusterID != key {
+				newBindsInfo.actives = append(newBindsInfo.actives, info)
+			}
+		}
+
+		values[key] = newBindsInfo
 	}
 
 	return values
