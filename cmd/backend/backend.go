@@ -24,7 +24,7 @@ func main() {
 
 	server.GET("/serverinfo", func(c echo.Context) error {
 		hostname, _ := os.Hostname()
-		return c.String(http.StatusOK, hostname + "\n" + *addr)
+		return c.String(http.StatusOK, hostname+"\n"+*addr)
 	})
 	server.GET("/fail", func(c echo.Context) error {
 		sleep := c.QueryParam("sleep")
@@ -40,7 +40,7 @@ func main() {
 		return c.String(http.StatusOK, "OK")
 	})
 
-		server.GET("/check", func(c echo.Context) error {
+	server.GET("/check", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK")
 	})
 
@@ -50,7 +50,7 @@ func main() {
 	})
 
 	server.GET("/host", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Host in HTTP request header: " + c.Request().Host + "\nserver:" + *addr)
+		return c.String(http.StatusOK, "Host in HTTP request header: "+c.Request().Host+"\nserver:"+*addr)
 	})
 
 	server.GET("/error", func(c echo.Context) error {

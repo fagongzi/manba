@@ -486,6 +486,11 @@ func (p *Proxy) doProxy(dn *dispatchNode, adjustH func(*proxyContext)) {
 		return
 	}
 
+	log.Debugf("%s: dipatch node %d to server %d",
+		dn.requestTag,
+		dn.idx,
+		svr.id)
+
 	forwardReq := copyRequest(&ctx.Request)
 
 	// change url
