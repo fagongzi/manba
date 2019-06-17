@@ -1,7 +1,7 @@
 # Tutorial
 If you have not dealt much with HTTP gateway before and want to deploy one in your company or just play with one, then congradulations, you have come to the right place!  
 This tutorial is very user-friendly. It aims to assist first-timers to have a hands-on experience without going through the pain of searching, asking and wondering.  
-This was tested on a **MacOS** environment.  
+This was tested on a **MacOS** environment. **Windows** is currently not supported. For those new to programming, a **Linux virtual machine** or a **virtual private server** with Linux should suffice. Happy Programming!  
 If you encounter any problem going through the tutorial, feel free to create an issue or send me an email to this address **brucewangno1@qq.com** with the subject "Issues with Gateway Tutorial."
 
 ## ETCD Setup
