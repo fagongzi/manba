@@ -19,8 +19,8 @@ func (p *Proxy) Start() {
 	p.startReadyTasks()
 
 	if !p.cfg.Option.EnableWebSocket {
+		go p.startHTTPS()
 		p.startHTTP()
-		p.startHTTPS()
 
 		return
 	}
