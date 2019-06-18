@@ -3,10 +3,8 @@ package proxy
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net"
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -20,10 +18,7 @@ import (
 	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/hack"
 	"github.com/fagongzi/util/task"
-	"github.com/soheilhy/cmux"
 	"github.com/valyala/fasthttp"
-	"crypto/tls"
-	"io/ioutil"
 )
 
 var (
@@ -100,206 +95,6 @@ func NewProxy(cfg *Cfg) *Proxy {
 	p.init()
 
 	return p
-}
-
-// Start start proxy
-func (p *Proxy) Start() {
-	go p.listenToStop()
-
-	util.StartMetricsPush(p.runner, p.cfg.Metric)
-
-	p.readyToGCJSEngine()
-	p.readyToCopy()
-	p.readyToDispatch()
-
-	enableHTTPSListener := true
-	defaultTLSCertErr, defaultCertData, defaultKeyData := p.getDefaultTLSCert()
-	if defaultTLSCertErr != nil {
-		enableHTTPSListener = false
-		log.Infof("%s, do not serve on https", defaultTLSCertErr.Error())
-	}
-
-	log.Infof("gateway proxy started at <%s>(HTTP)", p.cfg.Addr)
-	if enableHTTPSListener {
-		log.Infof("gateway proxy started at <%s>(HTTPS)", p.cfg.AddrHTTPS)
-	}
-
-	if !p.cfg.Option.EnableWebSocket {
-
-		errs1 := make(chan error)
-
-		go func() {
-			httpServer := fasthttp.Server{
-				Handler:            p.ServeFastHTTP,
-				ReadBufferSize:     p.cfg.Option.LimitBufferRead,
-				WriteBufferSize:    p.cfg.Option.LimitBufferWrite,
-				MaxRequestBodySize: p.cfg.Option.LimitBytesBody,
-			}
-			errs1 <- httpServer.ListenAndServe(p.cfg.Addr)
-		}()
-
-		if enableHTTPSListener {
-			go func() {
-				httpServer := fasthttp.Server{
-					Handler:            p.ServeFastHTTP,
-					ReadBufferSize:     p.cfg.Option.LimitBufferRead,
-					WriteBufferSize:    p.cfg.Option.LimitBufferWrite,
-					MaxRequestBodySize: p.cfg.Option.LimitBytesBody,
-				}
-				p.appendCertsEmbed(&httpServer, defaultCertData, defaultKeyData)
-				errs1 <- httpServer.ListenAndServeTLS(p.cfg.AddrHTTPS, "", "")
-			}()
-		}
-
-		err := <- errs1
-
-		if err != nil {
-			log.Fatalf("gateway proxy start failed, errors:\n%+v",
-				err)
-		}
-		return
-	}
-
-	l, err := net.Listen("tcp", p.cfg.Addr)
-	if err != nil {
-		log.Fatalf("gateway proxy start failed, errors:\n%+v",
-			err)
-	}
-
-
-	m := cmux.New(l)
-
-	webSocketL := m.Match(cmux.HTTP1HeaderField("Upgrade", "websocket"))
-	httpL := m.Match(cmux.Any())
-
-	go func() {
-		httpS := fasthttp.Server{
-			Handler:            p.ServeFastHTTP,
-			ReadBufferSize:     p.cfg.Option.LimitBufferRead,
-			WriteBufferSize:    p.cfg.Option.LimitBufferWrite,
-			MaxRequestBodySize: p.cfg.Option.LimitBytesBody,
-		}
-		err = httpS.Serve(httpL)
-		if err != nil {
-			log.Fatalf("gateway proxy start failed, errors:\n%+v",
-				err)
-		}
-	}()
-
-	go func() {
-		webSocketS := &http.Server{
-			Handler: p,
-		}
-		err = webSocketS.Serve(webSocketL)
-		if err != nil {
-			log.Fatalf("gateway proxy start failed, errors:\n%+v",
-				err)
-		}
-	}()
-
-	errs2 := make(chan error)
-
-	go func() {
-		errs2 <- m.Serve()
-	}()
-
-	if enableHTTPSListener {
-		lHTTPS, err := net.Listen("tcp", p.cfg.AddrHTTPS)
-		if err != nil {
-			log.Fatalf("gateway proxy start failed, errors:\n%+v",
-				err)
-		}
-
-		mHTTPS := cmux.New(lHTTPS)
-		webSocketLHTTPS := mHTTPS.Match(cmux.HTTP1HeaderField("Upgrade", "websocket"))
-		httpLHTTPS := mHTTPS.Match(cmux.Any())
-
-		go func() {
-			httpS := fasthttp.Server{
-				Handler:            p.ServeFastHTTP,
-				ReadBufferSize:     p.cfg.Option.LimitBufferRead,
-				WriteBufferSize:    p.cfg.Option.LimitBufferWrite,
-				MaxRequestBodySize: p.cfg.Option.LimitBytesBody,
-			}
-			err, defaultCertData, defaultKeyData := p.getDefaultTLSCert()
-			if err != nil {
-				log.Fatalf("gateway proxy start failed, errors:\n%+v",
-					err)
-				return
-			}
-			p.appendCertsEmbed(&httpS, defaultCertData, defaultKeyData)
-			err = httpS.ServeTLS(httpLHTTPS, "", "")
-			if err != nil {
-				log.Fatalf("gateway proxy start failed, errors:\n%+v",
-					err)
-			}
-		}()
-
-		go func() {
-			webSocketS := &http.Server{
-				Handler: p,
-			}
-			err, defaultCertData, defaultKeyData := p.getDefaultTLSCert()
-			if err != nil {
-				log.Fatalf("gateway proxy start failed, errors:\n%+v",
-					err)
-				return
-			}
-			p.configTLSConfig(webSocketS, defaultCertData, defaultKeyData)
-			err = webSocketS.ServeTLS(webSocketLHTTPS, "", "")
-			if err != nil {
-				log.Fatalf("gateway proxy start failed, errors:\n%+v",
-					err)
-			}
-		}()
-
-		go func() {
-			errs2 <- mHTTPS.Serve()
-		}()
-	}
-
-	err = <- errs2
-
-	if err != nil {
-		log.Fatalf("gateway proxy start failed, errors:\n%+v",
-			err)
-	}
-}
-
-// Stop stop the proxy
-func (p *Proxy) Stop() {
-	log.Infof("stop: start to stop gateway proxy")
-
-	p.stopWG.Add(1)
-	p.stopC <- struct{}{}
-	p.stopWG.Wait()
-
-	log.Infof("stop: gateway proxy stopped")
-}
-
-func (p *Proxy) listenToStop() {
-	<-p.stopC
-	p.doStop()
-}
-
-func (p *Proxy) doStop() {
-	p.stopOnce.Do(func() {
-		defer p.stopWG.Done()
-		p.setStopped()
-		p.runner.Stop()
-	})
-}
-
-func (p *Proxy) stopRPC() error {
-	return p.rpcListener.Close()
-}
-
-func (p *Proxy) setStopped() {
-	atomic.StoreInt32(&p.stopped, 1)
-}
-
-func (p *Proxy) isStopped() bool {
-	return atomic.LoadInt32(&p.stopped) == 1
 }
 
 func (p *Proxy) init() {
@@ -793,53 +588,6 @@ func (p *Proxy) doProxy(dn *dispatchNode, adjustH func(*proxyContext)) {
 
 	dn.maybeDone()
 	releaseContext(c)
-}
-
-func (p *Proxy) appendCertsEmbed(server *fasthttp.Server, certData []byte, keyData []byte) {
-	for _, api := range p.dispatcher.apis {
-		if metapb.Up == api.meta.GetStatus() && api.meta.GetUseTLS() {
-			server.AppendCertEmbed(api.meta.TlsEmbedCert.CertData, api.meta.TlsEmbedCert.KeyData)
-		}
-	}
-	server.AppendCertEmbed(certData, keyData)
-}
-
-func (p *Proxy) configTLSConfig(server *http.Server, certData []byte, keyData []byte) {
-	certs := make([]tls.Certificate, 0)
-	for _, api := range p.dispatcher.apis {
-		if metapb.Up == api.meta.GetStatus() && api.meta.GetUseTLS() {
-			cert, err := tls.X509KeyPair(api.meta.TlsEmbedCert.CertData, api.meta.TlsEmbedCert.KeyData)
-			if err != nil {
-				log.Errorf("api %s has invalid TLS certs", api.meta.Name)
-				continue
-			}
-			certs = append(certs, cert)
-		}
-	}
-	cert, _ := tls.X509KeyPair(certData, keyData)
-	certs = append(certs, cert)
-	server.TLSConfig.Certificates = certs
-}
-
-func (p *Proxy) getDefaultTLSCert()(error, []byte, []byte) {
-	certFile := p.cfg.DefaultTLSCert
-	keyFile := p.cfg.DefaultTLSKey
-	if len(certFile) == 0 || len(keyFile) == 0 {
-		return errors.New("no default tls certificate"), nil, nil
-	}
-	certPEMBlock, err := ioutil.ReadFile(certFile)
-	if err != nil {
-		return err, nil, nil
-	}
-	keyPEMBlock, err := ioutil.ReadFile(keyFile)
-	if err != nil {
-		return err, nil, nil
-	}
-	_, err = tls.X509KeyPair(certPEMBlock, keyPEMBlock)
-	if err != nil {
-		return err, nil, nil
-	}
-	return nil, certPEMBlock, keyPEMBlock
 }
 
 func getIndex(opt *uint64, size uint64) int {
