@@ -89,7 +89,7 @@ func NewProxy(cfg *Cfg) *Proxy {
 		dispatches:    make([]chan *dispatchNode, cfg.Option.LimitCountDispatchWorker, cfg.Option.LimitCountDispatchWorker),
 		dispatchIndex: 0,
 		copyIndex:     0,
-		jsEngine:      plugin.NewEngine(),
+		jsEngine:      plugin.NewEngine(cfg.Option.EnableJSPlugin),
 	}
 
 	p.init()

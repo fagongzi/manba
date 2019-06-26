@@ -14,13 +14,16 @@ import (
 type Engine struct {
 	filter.BaseFilter
 
+	enable     bool
 	applied    []*Runtime
 	lastActive time.Time
 }
 
 // NewEngine returns a plugin engine
-func NewEngine() *Engine {
-	return &Engine{}
+func NewEngine(enable bool) *Engine {
+	return &Engine{
+		enable: enable,
+	}
 }
 
 // LastActive returns the time that last used
@@ -91,6 +94,10 @@ func (eng *Engine) Init(cfg string) error {
 
 // Pre filter pre method
 func (eng *Engine) Pre(c filter.Context) (int, error) {
+	if !eng.enable {
+		return eng.BaseFilter.Pre(c)
+	}
+
 	eng.lastActive = time.Now()
 
 	if len(eng.applied) == 0 {
@@ -118,6 +125,10 @@ func (eng *Engine) Pre(c filter.Context) (int, error) {
 
 // Post filter post method
 func (eng *Engine) Post(c filter.Context) (int, error) {
+	if !eng.enable {
+		return eng.BaseFilter.Post(c)
+	}
+
 	eng.lastActive = time.Now()
 
 	if len(eng.applied) == 0 {
@@ -149,6 +160,11 @@ func (eng *Engine) Post(c filter.Context) (int, error) {
 
 // PostErr filter post error method
 func (eng *Engine) PostErr(c filter.Context, code int, err error) {
+	if !eng.enable {
+		eng.BaseFilter.PostErr(c, code, err)
+		return
+	}
+
 	eng.lastActive = time.Now()
 
 	if len(eng.applied) == 0 {
