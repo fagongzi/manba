@@ -69,6 +69,7 @@ var (
 
 	// enable features
 	enableWebSocket = flag.Bool("websocket", false, "enable websocket")
+	enableJSPlugin  = flag.Bool("js", false, "enable js plugin")
 )
 
 func init() {
@@ -169,6 +170,7 @@ func getCfg() *proxy.Cfg {
 	cfg.Option.LimitIntervalHeathCheck = time.Second * time.Duration(*limitIntervalHeathCheckSec)
 	cfg.Option.JWTCfgFile = *jwtCfg
 	cfg.Option.EnableWebSocket = *enableWebSocket
+	cfg.Option.EnableJSPlugin = *enableJSPlugin
 
 	specs := defaultFilters
 	if len(*filters) > 0 {
