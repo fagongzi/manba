@@ -1,0 +1,77 @@
+version: '2.1'
+services:
+  pushgateway:
+    image: prom/pushgateway:v0.9.1
+    expose:
+      - 9091
+    ports:
+      - "9091:9091"
+  
+  prometheus:
+    image: prom/prometheus:v2.9.2
+    depends_on: 
+      - pushgateway
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    expose:
+      - 9090
+    ports:
+      - "9090:9090"
+  
+  grafana:
+    image: grafana/grafana:4.6.3
+    depends_on: 
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    expose:
+      - 3000
+    ports:
+      - "3000:3000"
+
+  etcd:
+    image: gcr.io/etcd-development/etcd
+    depends_on: 
+      - prometheus
+    expose:
+      - 2379
+    ports:
+      - "2379:2379"
+    command:
+      - etcd
+      - --listen-client-urls=http://0.0.0.0:2379 
+      - --advertise-client-urls=http://0.0.0.0:2379
+
+  apiserver:
+    image: fagongzi/apiserver
+    depends_on: 
+      - etcd
+    expose:
+      - 9093
+    ports:
+      - "9093:9093"
+    command:
+      - apiserver
+      - --addr-http=:9093
+      - --addr-store=etcd://etcd:2379
+
+  proxy:
+    image: fagongzi/proxy
+    depends_on: 
+      - etcd
+      - apiserver
+    expose:
+      - 80
+    ports:
+      - "80:80"
+    command:
+      - proxy
+      - --addr=:80
+      - --addr-store=etcd://etcd:2379
+      - --metric-job=proxy
+      - --metric-address=pushgateway:9091
+      - --interval-metric-sync=5
