@@ -32,19 +32,22 @@ type HTTPOption struct {
 	WriteTimeout time.Duration
 	// MaxResponseBodySize Maximum response body size.
 	MaxResponseBodySize int
+	// DisableHeaderNamesNormalizing disable normalizing the header name
+	DisableHeaderNamesNormalizing bool
 }
 
 // DefaultHTTPOption returns a HTTP Option
 func DefaultHTTPOption() *HTTPOption {
 	return &HTTPOption{
-		MaxConns:            8,
-		MaxConnDuration:     time.Minute,
-		MaxIdleConnDuration: time.Second * 30,
-		ReadBufferSize:      512,
-		WriteBufferSize:     256,
-		ReadTimeout:         time.Second * 30,
-		WriteTimeout:        time.Second * 30,
-		MaxResponseBodySize: 1024 * 1024 * 10,
+		MaxConns:                      8,
+		MaxConnDuration:               time.Minute,
+		MaxIdleConnDuration:           time.Second * 30,
+		ReadBufferSize:                512,
+		WriteBufferSize:               256,
+		ReadTimeout:                   time.Second * 30,
+		WriteTimeout:                  time.Second * 30,
+		MaxResponseBodySize:           1024 * 1024 * 10,
+		DisableHeaderNamesNormalizing: true,
 	}
 }
 
@@ -297,6 +300,10 @@ func (c *FastHTTPClient) doNonNilReqResp(req *fasthttp.Request, resp *fasthttp.R
 
 	if !req.Header.IsGet() && req.Header.IsHead() {
 		resp.SkipBody = true
+	}
+
+	if opt.DisableHeaderNamesNormalizing {
+		resp.Header.DisableNormalizing()
 	}
 
 	br := c.acquireReader(conn, opt)

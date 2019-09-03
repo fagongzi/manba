@@ -69,14 +69,15 @@ type Proxy struct {
 // NewProxy create a new proxy
 func NewProxy(cfg *Cfg) *Proxy {
 	globalHTTPOptions = &util.HTTPOption{
-		MaxConnDuration:     cfg.Option.LimitDurationConnKeepalive,
-		MaxIdleConnDuration: cfg.Option.LimitDurationConnIdle,
-		ReadTimeout:         cfg.Option.LimitTimeoutRead,
-		WriteTimeout:        cfg.Option.LimitTimeoutWrite,
-		MaxResponseBodySize: cfg.Option.LimitBytesBody,
-		WriteBufferSize:     cfg.Option.LimitBufferWrite,
-		ReadBufferSize:      cfg.Option.LimitBufferRead,
-		MaxConns:            cfg.Option.LimitCountConn,
+		MaxConnDuration:               cfg.Option.LimitDurationConnKeepalive,
+		MaxIdleConnDuration:           cfg.Option.LimitDurationConnIdle,
+		ReadTimeout:                   cfg.Option.LimitTimeoutRead,
+		WriteTimeout:                  cfg.Option.LimitTimeoutWrite,
+		MaxResponseBodySize:           cfg.Option.LimitBytesBody,
+		WriteBufferSize:               cfg.Option.LimitBufferWrite,
+		ReadBufferSize:                cfg.Option.LimitBufferRead,
+		MaxConns:                      cfg.Option.LimitCountConn,
+		DisableHeaderNamesNormalizing: cfg.Option.DisableHeaderNameNormalizing,
 	}
 
 	p := &Proxy{
