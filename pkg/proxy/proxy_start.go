@@ -77,10 +77,11 @@ func (p *Proxy) startReadyTasks() {
 
 func (p *Proxy) newHTTPServer() *fasthttp.Server {
 	return &fasthttp.Server{
-		Handler:            p.ServeFastHTTP,
-		ReadBufferSize:     p.cfg.Option.LimitBufferRead,
-		WriteBufferSize:    p.cfg.Option.LimitBufferWrite,
-		MaxRequestBodySize: p.cfg.Option.LimitBytesBody,
+		Handler:                       p.ServeFastHTTP,
+		ReadBufferSize:                p.cfg.Option.LimitBufferRead,
+		WriteBufferSize:               p.cfg.Option.LimitBufferWrite,
+		MaxRequestBodySize:            p.cfg.Option.LimitBytesBody,
+		DisableHeaderNamesNormalizing: p.cfg.Option.DisableHeaderNameNormalizing,
 	}
 }
 

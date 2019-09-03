@@ -68,8 +68,9 @@ var (
 	metricIntervalSync = flag.Uint64("interval-metric-sync", 0, "Interval(sec): metric sync")
 
 	// enable features
-	enableWebSocket = flag.Bool("websocket", false, "enable websocket")
-	enableJSPlugin  = flag.Bool("js", false, "enable js plugin")
+	enableWebSocket              = flag.Bool("websocket", false, "enable websocket")
+	enableJSPlugin               = flag.Bool("js", false, "enable js plugin")
+	disableHeaderNameNormalizing = flag.Bool("disable-header-normalizing", false, "disable normalizing header name")
 )
 
 func init() {
@@ -171,6 +172,7 @@ func getCfg() *proxy.Cfg {
 	cfg.Option.JWTCfgFile = *jwtCfg
 	cfg.Option.EnableWebSocket = *enableWebSocket
 	cfg.Option.EnableJSPlugin = *enableJSPlugin
+	cfg.Option.DisableHeaderNameNormalizing = *disableHeaderNameNormalizing
 
 	specs := defaultFilters
 	if len(*filters) > 0 {
