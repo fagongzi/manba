@@ -34,9 +34,7 @@ services:
       - "3000:3000"
 
   etcd:
-    image: gcr.io/etcd-development/etcd
-    depends_on: 
-      - prometheus
+    image: bitnami/etcd
     expose:
       - 2379
     ports:
