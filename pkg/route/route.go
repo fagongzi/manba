@@ -172,52 +172,40 @@ func (r *Route) Find(url []byte, method string, paramsFunc func(name, value []by
 
 	var matchAllParams bytes.Buffer
 	nodes = removeSlash(nodes...)
-	target := r.root
+	target := []*routeItem{r.root}
+	var matchesItem *routeItem
 	matchedIdx := 0
+
+OUTER:
 	for idx, node := range nodes {
-		if target.urlMatches(node, &matchAllParams) {
-			matchedIdx = idx
-			if target.node.hasArg {
-				if paramsFunc != nil {
-					paramsFunc(target.node.argName, node.value)
-				}
-			}
-
-			continue
-		}
-
-		matched := false
-		for _, item := range target.children {
+		for _, item := range target {
 			if item.urlMatches(node, &matchAllParams) {
-				target = item
-				matched = true
 				matchedIdx = idx
-
-				if item.node.hasArg {
-					if paramsFunc != nil {
-						paramsFunc(item.node.argName, node.value)
-					}
+				matchesItem = item
+				if item.node.hasArg && paramsFunc != nil {
+					paramsFunc(item.node.argName, node.value)
 				}
-				break
-			}
-		}
 
-		if !matched {
-			break
+				if !item.node.isMatchAllConstString() {
+					target = item.children // find in children
+				}
+
+				continue OUTER
+			}
 		}
 	}
 
 	if matchedIdx == len(nodes)-1 {
-		if target.apis == nil {
+		if matchesItem.apis == nil {
 			return 0, false
 		}
 
 		if paramsFunc != nil && len(matchAllParams.Bytes()) > 0 {
 			paramsFunc(matchAll, matchAllParams.Bytes()[1:])
 		}
-		if id, ok := target.apis[method]; ok {
+		if id, ok := matchesItem.apis[method]; ok {
 			return id, true
-		} else if id, ok := target.apis["*"]; ok {
+		} else if id, ok := matchesItem.apis["*"]; ok {
 			return id, true
 		}
 
