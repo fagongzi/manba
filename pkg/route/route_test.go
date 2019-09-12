@@ -85,6 +85,36 @@ func TestAddWithMethod(t *testing.T) {
 	}
 }
 
+func TestMatchesSame(t *testing.T) {
+	r := NewRoute()
+	err := r.Add(&metapb.API{
+		ID:         1,
+		URLPattern: "/(string):a/(string):b/(string):c",
+		Method:     "*",
+	})
+	if err != nil {
+		t.Errorf("add error")
+	}
+
+	params := make(map[string]string)
+	id, _ := r.Find([]byte("/a/b/c"), "GET", func(name, value []byte) {
+		params[string(name)] = string(value)
+	})
+	if id != 1 {
+		t.Errorf("expect matched 1, but %d", id)
+	}
+
+	if params["a"] != "a" {
+		t.Errorf("expect param value a, but %s", params["a"])
+	}
+	if params["b"] != "b" {
+		t.Errorf("expect param value b, but %s", params["b"])
+	}
+	if params["c"] != "c" {
+		t.Errorf("expect param value c, but %s", params["c"])
+	}
+}
+
 func TestAdd(t *testing.T) {
 	r := NewRoute()
 	err := r.Add(&metapb.API{
@@ -162,9 +192,17 @@ func TestFindWithStar(t *testing.T) {
 		Method:     "*",
 	})
 
-	id, _ := r.Find([]byte("/users/1"), "GET", nil)
+	params := make(map[string]string)
+	id, _ := r.Find([]byte("/users/1"), "GET", func(name, value []byte) {
+		params[string(name)] = string(value)
+	})
+
 	if id != 1 {
 		t.Errorf("expect matched 1, but %d", id)
+	}
+
+	if params["*"] != "users/1" {
+		t.Errorf("expect param value users/1, but %s", params["*"])
 	}
 }
 
