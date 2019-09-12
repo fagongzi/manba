@@ -78,11 +78,6 @@ Running parameters can be set by the following environment varaibles. Configurat
    All options in `etcd --help` are supported.
 
 ### Available Docker Images
-
-* `fagongzi/gateway`
-
-   A quick start image, consisting of three components: etcd, proxy, apiserver, `Only intended for quick start experience. Do not use in production.`
-
 * `fagongzi/proxy`
 
    proxy component, `production ready`
@@ -90,6 +85,15 @@ Running parameters can be set by the following environment varaibles. Configurat
 * `fagongzi/apiserver`
 
    apiserver component, `production ready`
+
+### Quick start with docker-compose
+```bash
+docker-compose up -d
+```
+
+Use `http://127.0.0.1:9093/ui/index.html` to access `apiserver`
+
+Use `http://127.0.0.1` to access to your API
 
 ## Architecture
 ![](./images/arch.png)
@@ -133,14 +137,6 @@ Routing is a route strategy. Cookie, Querystring, Header and Path in HTTP Reques
 
 ## WeChat
 ![](./images/qr.jpg)
-
-## Sponsor
-Open source is not easy. If this project is helpful to you, you can buy me a drink, thank you!
-### Wechat
-![](/images/wechat.png)
-
-### Alipay
-![](/images/alipay.jpg)
 
 [1]: https://docs.docker.com/ "Docker Documentation"
 [2]: https://github.com/yeasy/docker_practice "docker_practice"

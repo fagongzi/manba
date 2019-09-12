@@ -70,10 +70,6 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 
 ### 可用的docker镜像
 
-* `fagongzi/gateway`
-
-   镜像是一个quickstart镜像，包含了3个组件：etcd,proxy,apiserver， `仅限于快速体验，不能使用在生产`
-
 * `fagongzi/proxy`
 
    proxy组件，`生产可用`
@@ -81,6 +77,15 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 * `fagongzi/apiserver`
 
    apiserver组件，`生产可用`
+
+### Quick start with docker-compose
+```bash
+docker-compose up -d
+```
+
+使用 `http://127.0.0.1:9093/ui/index.html` 访问 `apiserver`
+
+使用 `http://127.0.0.1` 访问你的API
 
 ## 架构
 ![](./images/arch.png)
@@ -118,14 +123,6 @@ Routing是一个路由策略，根据HTTP Request中的Cookie，Querystring、He
 
 ## 交流方式-微信
 ![](./images/qr.jpg)
-
-## 赞助
-开源不易，如果这个项目对你有帮助，你可以请我喝一杯，谢谢！
-### 微信
-![](/images/wechat.png)
-
-### 支付宝
-![](/images/alipay.jpg)
 
 [1]: https://docs.docker.com/ "Docker Documentation"
 [2]: https://github.com/yeasy/docker_practice "docker_practice"
