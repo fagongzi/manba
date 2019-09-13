@@ -1,0 +1,4 @@
+[submodule "vendor"]
+	path = vendor
+	url = https://github.com/fagongzi/gateway-vendor.git
+	branch = master
