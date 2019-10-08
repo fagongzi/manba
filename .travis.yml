@@ -4,6 +4,8 @@ dist: xenial
 
 go:
   - 1.11
+  - 1.12
+  - 1.13
 
 script: go build  ./...
 
