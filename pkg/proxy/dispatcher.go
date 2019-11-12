@@ -31,12 +31,12 @@ type copyReq struct {
 func (req *copyReq) prepare() {
 	if req.needRewrite() {
 		// if not use rewrite, it only change uri path and query string
-		realPath := req.rewiteURL()
+		realPath := req.rewriteURL()
 		if "" != realPath {
 			req.origin.SetRequestURI(realPath)
 			req.origin.SetHost(req.to.meta.Addr)
 
-			log.Infof("%s: dipatch node %d rewrite url to %s for copy",
+			log.Infof("%s: dispatch node %d rewrite url to %s for copy",
 				req.requestTag,
 				req.idx,
 				realPath)
@@ -48,7 +48,7 @@ func (req *copyReq) needRewrite() bool {
 	return req.node.meta.URLRewrite != ""
 }
 
-func (req *copyReq) rewiteURL() string {
+func (req *copyReq) rewriteURL() string {
 	ctx := &expr.Ctx{}
 	ctx.Origin = req.origin
 	ctx.Params = req.params
