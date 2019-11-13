@@ -31,12 +31,12 @@ type copyReq struct {
 func (req *copyReq) prepare() {
 	if req.needRewrite() {
 		// if not use rewrite, it only change uri path and query string
-		realPath := req.rewiteURL()
+		realPath := req.rewriteURL()
 		if "" != realPath {
 			req.origin.SetRequestURI(realPath)
 			req.origin.SetHost(req.to.meta.Addr)
 
-			log.Infof("%s: dipatch node %d rewrite url to %s for copy",
+			log.Infof("%s: dispatch node %d rewrite url to %s for copy",
 				req.requestTag,
 				req.idx,
 				realPath)
@@ -48,7 +48,7 @@ func (req *copyReq) needRewrite() bool {
 	return req.node.meta.URLRewrite != ""
 }
 
-func (req *copyReq) rewiteURL() string {
+func (req *copyReq) rewriteURL() string {
 	ctx := &expr.Ctx{}
 	ctx.Origin = req.origin
 	ctx.Params = req.params
@@ -78,13 +78,10 @@ func (dn *dispatchNode) setHost(forwardReq *fasthttp.Request) {
 	switch dn.node.meta.HostType {
 	case metapb.HostOrigin:
 		forwardReq.SetHostBytes(dn.ctx.Request.Host())
-		break
 	case metapb.HostServerAddress:
 		forwardReq.SetHost(dn.dest.meta.Addr)
-		break
 	case metapb.HostCustom:
 		forwardReq.SetHost(dn.node.meta.CustemHost)
-		break
 	}
 }
 
@@ -244,15 +241,15 @@ func newDispatcher(cnf *Cfg, db store.Store, runner *task.Runner, jsEngineFunc f
 }
 
 func (r *dispatcher) dispatch(reqCtx *fasthttp.RequestCtx, requestTag string) (*apiRuntime, []*dispatchNode, *expr.Ctx) {
-	req:=&reqCtx.Request
-	route := r.route
+	req := &reqCtx.Request
+	dispatcherRoute := r.route
 	var targetAPI *apiRuntime
 	var dispatches []*dispatchNode
 
 	exprCtx := acquireExprCtx()
 	exprCtx.Origin = req
 
-	id, ok := route.Find(req.URI().Path(), hack.SliceToString(req.Header.Method()), exprCtx.AddParam)
+	id, ok := dispatcherRoute.Find(req.URI().Path(), hack.SliceToString(req.Header.Method()), exprCtx.AddParam)
 	if ok {
 		if api, ok := r.apis[id]; ok && api.matches(req) {
 			targetAPI = api
