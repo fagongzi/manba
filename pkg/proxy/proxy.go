@@ -506,7 +506,7 @@ func (p *Proxy) doProxy(dn *dispatchNode, adjustH func(*proxyContext)) {
 			break
 		}
 
-		// retry with strategiess
+		// retry with strategies
 		retry := dn.retryStrategy()
 		if times >= retry.MaxTimes {
 			log.Infof("%s: dispatch node %d sent times over the max %d",

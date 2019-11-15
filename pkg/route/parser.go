@@ -113,14 +113,12 @@ func (p *parser) parse() ([]node, error) {
 				nt:    slashType,
 				value: slashValue,
 			})
-			break
 		case tokenLParen:
 			if prev != tokenSlash {
 				return nil, fmt.Errorf("syntax error: ( must after /")
 			}
 
 			p.lexer.ScanString()
-			break
 		case tokenColon:
 			if prev == tokenLParen {
 				value := p.lexer.ScanString()
@@ -137,7 +135,6 @@ func (p *parser) parse() ([]node, error) {
 				p.lexer.ScanString()
 			}
 
-			break
 		case tokenVertical:
 			prevNode := p.prevNode()
 
@@ -149,7 +146,6 @@ func (p *parser) parse() ([]node, error) {
 				return nil, fmt.Errorf("syntax error: missing : with enum type")
 			}
 
-			break
 		case tokenRParen:
 			if prev == tokenLParen {
 				var nt nodeType
@@ -177,7 +173,6 @@ func (p *parser) parse() ([]node, error) {
 				return nil, fmt.Errorf("syntax error: missing (")
 			}
 
-			break
 		case tokenEOF:
 			if prev == tokenSlash {
 				p.nodes = append(p.nodes, node{
