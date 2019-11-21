@@ -140,7 +140,7 @@ func TestExec(t *testing.T) {
 		Origin: req,
 	}, exprs...)
 
-	if string(value) != "" {
+	if string(value) != "abc" {
 		t.Errorf("expect but %s", value)
 	}
 }
