@@ -20,10 +20,13 @@ func newRateLimiter(max int64, option metapb.RateLimitOption) *rateLimiter {
 }
 
 func (l *rateLimiter) do(count int64) bool {
+	if l.limiter.TakeAvailable(count) > 0 {
+		return true
+	}
+
 	if l.option == metapb.Wait {
 		l.limiter.Wait(count)
 		return true
 	}
-
-	return l.limiter.TakeAvailable(count) > 0
+	return false
 }

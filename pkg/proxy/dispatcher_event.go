@@ -24,33 +24,32 @@ func (r *dispatcher) watch() {
 
 	go r.readyToReceiveWatchEvent()
 	err := r.store.Watch(r.watchEventC, r.watchStopC)
-	log.Errorf("router watch failed, errors:\n%+v",
-		err)
+	log.Errorf("router watch failed, errors:\n%+v", err)
 }
 
 func (r *dispatcher) readyToReceiveWatchEvent() {
 	for {
 		evt := <-r.watchEventC
-
-		if evt.Src == store.EventSrcCluster {
+		switch evt.Src {
+		case store.EventSrcCluster:
 			r.doClusterEvent(evt)
-		} else if evt.Src == store.EventSrcServer {
+		case store.EventSrcServer:
 			r.doServerEvent(evt)
-		} else if evt.Src == store.EventSrcBind {
+		case store.EventSrcBind:
 			r.doBindEvent(evt)
-		} else if evt.Src == store.EventSrcAPI {
+		case store.EventSrcAPI:
 			r.doAPIEvent(evt)
-		} else if evt.Src == store.EventSrcRouting {
+		case store.EventSrcRouting:
 			r.doRoutingEvent(evt)
-		} else if evt.Src == store.EventSrcProxy {
+		case store.EventSrcProxy:
 			r.doProxyEvent(evt)
-		} else if evt.Src == store.EventSrcPlugin {
+		case store.EventSrcPlugin:
 			r.doPluginEvent(evt)
-		} else if evt.Src == store.EventSrcApplyPlugin {
+		case store.EventSrcApplyPlugin:
 			r.doApplyPluginEvent(evt)
-		} else if evt.Src == eventSrcStatusChanged {
+		case eventSrcStatusChanged:
 			r.doStatusChangedEvent(evt)
-		} else {
+		default:
 			log.Warnf("unknown event <%+v>", evt)
 		}
 	}
