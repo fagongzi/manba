@@ -14,15 +14,17 @@ import (
 type Engine struct {
 	filter.BaseFilter
 
+	name       string
 	enable     bool
 	applied    []*Runtime
 	lastActive time.Time
 }
 
 // NewEngine returns a plugin engine
-func NewEngine(enable bool) *Engine {
+func NewEngine(enable bool, name string) *Engine {
 	return &Engine{
 		enable: enable,
+		name:   name,
 	}
 }
 
@@ -84,7 +86,7 @@ func (eng *Engine) ApplyPlugins(plugins ...*metapb.Plugin) error {
 
 // Name returns filter name
 func (eng *Engine) Name() string {
-	return "JS-Plugin-Engine"
+	return eng.name
 }
 
 // Init returns error if init failed

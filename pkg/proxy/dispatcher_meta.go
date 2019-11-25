@@ -625,7 +625,7 @@ func (r *dispatcher) maybeUpdateJSEngine(id uint64) error {
 
 func (r *dispatcher) updateJSEngine() error {
 	var plugins []*metapb.Plugin
-	newEngine := plugin.NewEngine(r.cnf.Option.EnableJSPlugin)
+	newEngine := plugin.NewEngine(r.cnf.Option.EnableJSPlugin, FilterJSPlugin)
 	for _, id := range r.appliedPlugins.AppliedIDs {
 		p := r.plugins[id]
 		plugins = append(plugins, p)
