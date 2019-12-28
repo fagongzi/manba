@@ -16,7 +16,7 @@
 
 ## Code
 
-- gateway -version
+- manba-proxy -version
 
   ```log
   GitCommit:  f4e8226

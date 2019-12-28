@@ -48,7 +48,7 @@
 ```
 
 ## 整合业务系统到网关
-网关搭建参见[搭建Gateway环境](./build.md)
+网关搭建参见[搭建Manba环境](./build.md)
 
 ### 网关环境信息
 |组件|地址|开放端口|
@@ -100,17 +100,17 @@ curl -X PUT -H "Content-Type: application/json" -d '{"clusterID":业务B对应�
 curl -X PUT -H "Content-Type: application/json" -d '{"clusterID":业务B对应的ID,"serverID":192.168.0.104对应的ID}' http://192.168.0.11:9093/v1/binds
 ```
 
-### 创建业务A的查询用户信息接口到Gateway
+### 创建业务A的查询用户信息接口到Manba
 ```bash
 curl -X PUT -H "Content-Type: application/json" -d '{"name":"查询用户信息接口","urlPattern":"^/users/.*$","method":"GET","status":1,"nodes":[{"clusterID":业务A对应的ID}]}' http://192.168.0.11:9093/v1/apis
 ```
 
-### 创建业务B的查询账户信息接口到Gateway
+### 创建业务B的查询账户信息接口到Manba
 ```bash
 curl -X PUT -H "Content-Type: application/json" -d '{"name":"查询账户信息接口","urlPattern":"^/accounts/.*$","method":"GET","status":1,"nodes":[{"clusterID":业务B对应的ID}]}' http://192.168.0.11:9093/v1/apis
 ```
 
-### 通过访问Gateway访问后端的接口
+### 通过访问Manba访问后端的接口
 ```bash
 curl http://192.168.0.12/users/100
 
@@ -130,7 +130,7 @@ curl http://192.168.0.12/v1/users/100
 ```
 
 ### API聚合
-如果一个业务场景同时需要A和B业务的返回数据，并且形成一个新的接口同时返回这些数据，利用Gateway的聚合功能实现：
+如果一个业务场景同时需要A和B业务的返回数据，并且形成一个新的接口同时返回这些数据，利用Manba的聚合功能实现：
 ```bash
 curl -X PUT -H "Content-Type: application/json" -d '{"name":"聚合查询接口","urlPattern":"^/aggregation/(.*)$","method":"GET","status":1,"nodes":[{"clusterID":业务A对应的ID,"urlRewrite":"/users/$1","attrName":"user"}, {"clusterID":业务B对应的ID,"urlRewrite":"/accounts/$1","attrName":"account"}]}' http://192.168.0.11:9093/v1/apis
 ```
@@ -211,7 +211,7 @@ curl -X PUT -H "Content-Type: application/json" -d '{"id":创建返回的ID,"nam
 ```
 
 ### Mock
-利用Gateway创建一个Mock接口。
+利用Manba创建一个Mock接口。
 ```bash
 curl -X PUT -H "Content-Type: application/json" -d '{"name":"Mock接口","urlPattern":"^/api/mock$","method":"GET","status":1,"defaultValue":{"code":200, "body":"aGVsbG8gd29ybGQ=","headers":["name":"x-mock-header","mock-header-value"],"cookies":["name":"x-mock-cookie","mock-cookie-value"]}}' http://192.168.0.11:9093/v1/apis
 ```

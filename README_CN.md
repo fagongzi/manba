@@ -4,9 +4,9 @@
 [![Build Status](https://api.travis-ci.org/fagongzi/gateway.svg)](https://travis-ci.org/fagongzi/gateway)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fagongzi/gateway)](https://goreportcard.com/report/github.com/fagongzi/gateway)
 
-Gateway/[English](./README.md)
+Manba/[English](./README.md)
 -------
-Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的API接入层。
+Manba是一个基于HTTP协议的restful的API网关。可以作为统一的API接入层。
 
 ## 教程
 如果你是一个初学者，那么这个[详细的教程](./docs/tutorial.md)非常适合你。现在只有英文版本。
@@ -40,7 +40,7 @@ Gateway 是一个基于HTTP协议的restful的API网关。可以作为统一的A
 以下内容要求对docker基本操作有一定了解，可以看[这本书][2]，或者直接看[官方文档][1]。
 
 ### 快速开始
-使用 `docker pull fagongzi/gateway` 命令下载Docker镜像, 使用 `docker run -d -p 9093:9093 -p 80:80 -p 9092:9092 fagongzi/gateway` 运行镜像. 镜像启动后export 3个端口:
+使用 `docker pull fagongzi/manba` 命令下载Docker镜像, 使用 `docker run -d -p 9093:9093 -p 80:80 -p 9092:9092 fagongzi/manba` 运行镜像. 镜像启动后export 3个端口:
 
 * 80
 
@@ -91,9 +91,9 @@ docker-compose up -d
 ![](./images/arch.png)
 
 ## WebUI
-可用的Gateway的WebUI的项目：
+可用的Manba的WebUI的项目：
 * [官方](https://github.com/fagongzi/gateway-ui-vue)
-* [gateway_ui](https://github.com/archfish/gateway_ui)
+* [gateway_ui（仅适配2.x）](https://github.com/archfish/gateway_ui)
 * [gateway_admin_ui](https://github.com/wilehos/gateway_admin_ui)
 
 ## 组件
@@ -105,7 +105,7 @@ Proxy是Gateway对终端用户提供服务的组件，Proxy是一个无状态的
 ### ApiServer
 ApiServer对外提供GRPC和Restful来管理元信息，ApiServer同时集成了官方的WebUI，[更多](./docs-cn/apiserver.md)。
 
-## Gateway中的概念
+## Manba中的概念
 ### Server
 Server是一个真实的后端服务，[更多](./docs-cn/server.md)。
 
@@ -113,7 +113,7 @@ Server是一个真实的后端服务，[更多](./docs-cn/server.md)。
 Cluster是一个逻辑概念，它由一组提供相同服务的Server组成。会依据负载均衡策略选择一个可用的Server，[更多](./docs-cn/cluster.md)。
 
 ### API
-API是Gateway的核心概念，我们可以在Gateway的中维护对外的API，以及API的分发规则，聚合规则以及URL匹配规则，[更多](./docs-cn/api.md)。
+API是Manba的核心概念，我们可以在Manba的中维护对外的API，以及API的分发规则，聚合规则以及URL匹配规则，[更多](./docs-cn/api.md)。
 
 ### Routing
 Routing是一个路由策略，根据HTTP Request中的Cookie，Querystring、Header、Path中的一些信息把流量分发到或者复制到指定的Cluster，通过这个功能，我们可以实现AB Test和线上引流，[更多](./docs-cn/routing.md)。
