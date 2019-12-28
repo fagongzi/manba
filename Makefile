@@ -9,8 +9,8 @@ VERSION_PATH	   = $(shell echo $(ROOT_DIR) | sed -e "s;${GOPATH}/src/;;g")pkg/ut
 LD_GIT_COMMIT      = -X '$(VERSION_PATH).GitCommit=`git rev-parse --short HEAD`'
 LD_BUILD_TIME      = -X '$(VERSION_PATH).BuildTime=`date +%FT%T%z`'
 LD_GO_VERSION      = -X '$(VERSION_PATH).GoVersion=`go version`'
-LD_GATEWAY_VERSION = -X '$(VERSION_PATH).Version=$(RELEASE_VERSION)'
-LD_FLAGS           = -ldflags "$(LD_GIT_COMMIT) $(LD_BUILD_TIME) $(LD_GO_VERSION) $(LD_GATEWAY_VERSION) -w -s"
+LD_MANBA_VERSION = -X '$(VERSION_PATH).Version=$(RELEASE_VERSION)'
+LD_FLAGS           = -ldflags "$(LD_GIT_COMMIT) $(LD_BUILD_TIME) $(LD_GO_VERSION) $(LD_MANBA_VERSION) -w -s"
 
 GOOS 		= linux
 CGO_ENABLED = 0
@@ -20,8 +20,8 @@ ETCD_VER			= v3.3.12
 ETCD_DOWNLOAD_URL	= https://github.com/coreos/etcd/releases/download
 
 MY_TARGET := dist_dir
-EXEC_NAME := proxy
-IMAGE_NAME := gateway
+EXEC_NAME := manba-proxy
+IMAGE_NAME := manba
 CMD_NAME := demo
 ifeq ("$(MAKECMDGOALS)","docker")
 	ifeq ("$(with)","")
@@ -41,9 +41,9 @@ ifeq ("$(MAKECMDGOALS)","docker")
 	endif
 	ifeq ($(findstring proxy,$(with)),proxy)
 		MY_TARGET := $(MY_TARGET) proxy
-		EXEC_NAME := proxy
+		EXEC_NAME := manba-proxy
 		IMAGE_NAME = proxy
-		CMD_NAME   = proxy
+		CMD_NAME   = manba-proxy
 	endif
 endif
 
@@ -74,11 +74,11 @@ darwin:
 
 .PHONY: apiserver
 apiserver: ; $(info ======== compiled apiserver:)
-	env CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) go build -mod vendor -a -installsuffix cgo -o $(DIST_DIR)apiserver $(LD_FLAGS) $(ROOT_DIR)cmd/api/*.go
+	env CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) go build -mod vendor -a -installsuffix cgo -o $(DIST_DIR)manba-apiserver $(LD_FLAGS) $(ROOT_DIR)cmd/api/*.go
 
 .PHONY: proxy
 proxy: ; $(info ======== compiled proxy:)
-	env CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) go build -mod vendor -a -installsuffix cgo -o $(DIST_DIR)proxy $(LD_FLAGS) $(ROOT_DIR)cmd/proxy/*.go
+	env CGO_ENABLED=$(CGO_ENABLED) GOOS=$(GOOS) go build -mod vendor -a -installsuffix cgo -o $(DIST_DIR)manba-proxy $(LD_FLAGS) $(ROOT_DIR)cmd/proxy/*.go
 
 .PHONY: download_etcd
 download_etcd:

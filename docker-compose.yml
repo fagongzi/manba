@@ -6,10 +6,10 @@ services:
       - 9091
     ports:
       - "9091:9091"
-  
+
   prometheus:
     image: prom/prometheus:v2.9.2
-    depends_on: 
+    depends_on:
       - pushgateway
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
@@ -19,10 +19,10 @@ services:
       - 9090
     ports:
       - "9090:9090"
-  
+
   grafana:
     image: grafana/grafana:4.6.3
-    depends_on: 
+    depends_on:
       - prometheus
     environment:
       - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
@@ -35,7 +35,7 @@ services:
 
   etcd:
     image: gcr.io/etcd-development/etcd
-    depends_on: 
+    depends_on:
       - prometheus
     expose:
       - 2379
@@ -43,25 +43,25 @@ services:
       - "2379:2379"
     command:
       - etcd
-      - --listen-client-urls=http://0.0.0.0:2379 
+      - --listen-client-urls=http://0.0.0.0:2379
       - --advertise-client-urls=http://0.0.0.0:2379
 
   apiserver:
     image: fagongzi/apiserver
-    depends_on: 
+    depends_on:
       - etcd
     expose:
       - 9093
     ports:
       - "9093:9093"
     command:
-      - apiserver
+      - manba-apiserver
       - --addr-http=:9093
       - --addr-store=etcd://etcd:2379
 
   proxy:
     image: fagongzi/proxy
-    depends_on: 
+    depends_on:
       - etcd
       - apiserver
     expose:
@@ -69,7 +69,7 @@ services:
     ports:
       - "80:80"
     command:
-      - proxy
+      - manba-proxy
       - --addr=:80
       - --addr-store=etcd://etcd:2379
       - --metric-job=proxy
