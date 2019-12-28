@@ -1,6 +1,6 @@
 API
 -----------
-API是Gateway的核心概念。可以通过Gateway的API-Server管理API。
+API是Manba的核心概念。可以通过Manba的API-Server管理API。
 
 # API属性
 ## ID
@@ -10,7 +10,7 @@ API的ID，唯一标识一个API。
 API的名称。
 
 ## URLPattern
-URL匹配表达式，Gateway使用该字段来匹配原始请求的URL。该字段必须和`Method`配合使用，同时满足才算这个请求匹配了这个API。
+URL匹配表达式，Manba使用该字段来匹配原始请求的URL。该字段必须和`Method`配合使用，同时满足才算这个请求匹配了这个API。
 
 ### URLPattern表达式
 定义API的`URL`，使用`/`来分割URL Path的每个部分，每个部分可以这些类型：
@@ -22,7 +22,7 @@ URL匹配表达式，Gateway使用该字段来匹配原始请求的URL。该字�
 * 如果需要使用这些变量（例如在URL Rewrite的时候）可以使用:
     * (number):id    变量名称为id
     * (string):name  变量名称为name
-    * (enum:on|off):action  变量名称为action 
+    * (enum:on|off):action  变量名称为action
 
 一些例子：
 * `/api/v1/product/(number):id`
@@ -48,7 +48,7 @@ API 状态枚举, 有2个值组成： `UP` 和 `Down`。只有`UP`状态才能�
 IP的访问控制，有黑白名单2个部门组成。
 
 ## DefaultValue（可选）
-API的默认返回值，当后端Cluster无可用Server的时候，Gateway将返回这个默认值，默认值由Code、HTTP Body、Header、Cookie组成。可以用来做Mock或者后端服务故障时候的默认返回。
+API的默认返回值，当后端Cluster无可用Server的时候，Manba将返回这个默认值，默认值由Code、HTTP Body、Header、Cookie组成。可以用来做Mock或者后端服务故障时候的默认返回。
 
 ## 聚合请求
 聚合请求是原始请求转发到多个后端Server，并且把多个返回结果合并成一个JSON返回，并且可以指定每个转发请求的结果在最终JSON对象中的属性名称。多个转发请求可以同时发送，也可以按批次发送(后面请求参数依赖前面请求的返回值)。使用`BatchIndex`来设置每个转发请求的顺序。
@@ -154,19 +154,19 @@ API匹配时按该值的升序匹配，即值越小优先级越高。默认值�
 websocket选项，设置该API为`websocket`，注意：`websocket特性还处于试验阶段，默认关闭，可以使用--websocket启用特性`。网关转发websocket的时候，`Origin`默认使用后端Server的地址，如果需要设置特殊值，可以指定`Origin`参数。
 
 ## MaxQPS（可选）
-API能够支持的最大QPS，用于流控。Gateway采用令牌桶算法，根据QPS限制流量，保护后端API被压垮。API的优先级高于`Server`的配置
+API能够支持的最大QPS，用于流控。Manba采用令牌桶算法，根据QPS限制流量，保护后端API被压垮。API的优先级高于`Server`的配置
 
 ## CircuitBreaker（可选）
 熔断器，设置后端API的熔断规则，API的优先级高于`Server`的配置。熔断器分为3个状态：
 
 * Open
 
-  Open状态，正常状态，Gateway放入全部流量。当Gateway发现失败的请求比例达到了设置的规则，熔断器会把状态切换到Close状态
+  Open状态，正常状态，Manba放入全部流量。当Manba发现失败的请求比例达到了设置的规则，熔断器会把状态切换到Close状态
 
 * Half
 
-  Half状态，尝试恢复的状态。在这个状态下，Gateway会尝试放入一定比例的流量，然后观察这些流量的请求的情况，如果达到预期就把状态转换为Open状态，如果没有达到预期，恢复成Close状态
+  Half状态，尝试恢复的状态。在这个状态下，Manba会尝试放入一定比例的流量，然后观察这些流量的请求的情况，如果达到预期就把状态转换为Open状态，如果没有达到预期，恢复成Close状态
 
 * Close
 
-  Close状态，在这个状态下，Gateway禁止任何流量进入这个后端Server，在达到指定的阈值时间后，Gateway自动尝试切换到Half状态，尝试恢复。
+  Close状态，在这个状态下，Manba禁止任何流量进入这个后端Server，在达到指定的阈值时间后，Manba自动尝试切换到Half状态，尝试恢复。

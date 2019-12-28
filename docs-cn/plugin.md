@@ -1,6 +1,6 @@
 Filter plugin
 --------------
-Gateway中的很多功能都是使用Filter来实现的，用户的大部分功能需求都可以使用Filter来解决。所以Filter被设计成Plugin机制，借助于Go1.8的plugin机制，可以很好的扩展Gateway。
+Manba中的很多功能都是使用Filter来实现的，用户的大部分功能需求都可以使用Filter来解决。所以Filter被设计成Plugin机制，借助于Go1.8的plugin机制，可以很好的扩展Manba。
 
 # Request处理流程
 request -> filter预处理 -> 转发请求 -> filter后置处理 -> 响应客户端
@@ -60,9 +60,9 @@ func (f BaseFilter) PostErr(c Context) {
 }
 ```
 
-这些相关的定义都在`github.com/fagongzi/gateway/pkg/filter`包中，每一个Filter都需要导入。其中的`Context`的上下文接口，提供了Filter和Gateway交互的能力;`BaseFilter`定义了默认行为。
+这些相关的定义都在`github.com/fagongzi/manba/pkg/filter`包中，每一个Filter都需要导入。其中的`Context`的上下文接口，提供了Filter和Manba交互的能力;`BaseFilter`定义了默认行为。
 
-# Gateway加载Filter插件机制
+# Manba加载Filter插件机制
 ```golang
 func newExternalFilter(filterSpec *conf.FilterSpec) (filter.Filter, error) {
 	p, err := plugin.Open(filterSpec.ExternalPluginFile)
@@ -83,7 +83,7 @@ func newExternalFilter(filterSpec *conf.FilterSpec) (filter.Filter, error) {
 每一个外部的Filter插件，对外提供`NewExternalFilter`，返回一个`filter.Filter`实现，或者错误。
 
 # Go1.8 Plugin的问题
-当编写的自定义插件的时候，有一个问题涉及到Go1.8的一个[Bug](https://github.com/golang/go/issues/19233)。所以编写的自定义插件必须在`Gateway的Project`下编译的插件才能被正确加载。
+当编写的自定义插件的时候，有一个问题涉及到Go1.8的一个[Bug](https://github.com/golang/go/issues/19233)。所以编写的自定义插件必须在`Manba的Project`下编译的插件才能被正确加载。
 
 # Go1.9.2以上版本
 支持插件项目独立目录，但是不能有自己的vender目录，否则加载的时候一样会出现1.8的问题。
@@ -93,4 +93,4 @@ func newExternalFilter(filterSpec *conf.FilterSpec) (filter.Filter, error) {
 [参考JWT插件](https://github.com/fagongzi/jwt-plugin)
 
 # 启动自定义插件
-`Proxy`组件有一个`--filter`选项来指定Gateway使用的插件以及顺序。默认情况下Gateway使用一下的内置插件顺序：`--filter WHITELIST --filter WHITELIST --filter ANALYSIS --filter RATE-LIMITING --filter CIRCUIT-BREAKER --filter HTTP-ACCESS --filter HEADER --filter XFORWARD --filter VALIDATION`。例如我们开发好了一个插件JWT，并且编译成为jwt.so文件，可以加上启动参数加载插件：`--filter WHITELIST --filter WHITELIST --filter ANALYSIS --filter RATE-LIMITING --filter CIRCUIT-BREAKER --filter HTTP-ACCESS --filter HEADER --filter XFORWARD --filter VALIDATION --filter JWT:/plugins/jwt.so:/plugins/jwt.json`，自定义插件的格式：`名称:插件文件:插件配置`
+`Proxy`组件有一个`--filter`选项来指定Manba使用的插件以及顺序。默认情况下Manba使用一下的内置插件顺序：`--filter WHITELIST --filter WHITELIST --filter ANALYSIS --filter RATE-LIMITING --filter CIRCUIT-BREAKER --filter HTTP-ACCESS --filter HEADER --filter XFORWARD --filter VALIDATION`。例如我们开发好了一个插件JWT，并且编译成为jwt.so文件，可以加上启动参数加载插件：`--filter WHITELIST --filter WHITELIST --filter ANALYSIS --filter RATE-LIMITING --filter CIRCUIT-BREAKER --filter HTTP-ACCESS --filter HEADER --filter XFORWARD --filter VALIDATION --filter JWT:/plugins/jwt.so:/plugins/jwt.json`，自定义插件的格式：`名称:插件文件:插件配置`

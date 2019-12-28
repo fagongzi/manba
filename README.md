@@ -4,25 +4,25 @@
 [![Build Status](https://api.travis-ci.org/fagongzi/gateway.svg)](https://travis-ci.org/fagongzi/gateway)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fagongzi/gateway)](https://goreportcard.com/report/github.com/fagongzi/gateway)
 
-Gateway/[简体中文](README_CN.md)
+Manba/[简体中文](README_CN.md)
 -------
-Gateway is a restful API gateway based on HTTP, which can be used as a unified API access layer.
+Manba is a restful API gateway based on HTTP, which can be used as a unified API access layer.
 
 ## Tutorial
-A very detailed tutorial for beginners. [Link](./docs/tutorial.md)  
-Below are video tutorials.  
-Basics:  
-[![](https://img.youtube.com/vi/2qMWmdcw7o4/0.jpg)](https://www.youtube.com/watch?v=2qMWmdcw7o4)  
+A very detailed tutorial for beginners. [Link](./docs/tutorial.md)
+Below are video tutorials.
+Basics:
+[![](https://img.youtube.com/vi/2qMWmdcw7o4/0.jpg)](https://www.youtube.com/watch?v=2qMWmdcw7o4)
 
 Alternative bilibili.com video link: https://www.bilibili.com/video/av73432556/
 
-Routing Configuration Tutorial:  
-[![](https://img.youtube.com/vi/D1pI6opB_ks/0.jpg)](https://www.youtube.com/watch?v=D1pI6opB_ks)  
+Routing Configuration Tutorial:
+[![](https://img.youtube.com/vi/D1pI6opB_ks/0.jpg)](https://www.youtube.com/watch?v=D1pI6opB_ks)
 
 Alternative bilibili.com video link: https://www.bilibili.com/video/av73432836/
 
-JWT Plugin Configuration Tutorial:  
-[![](https://img.youtube.com/vi/sLb16YDSlBs/0.jpg)](https://www.youtube.com/watch?v=sLb16YDSlBs)  
+JWT Plugin Configuration Tutorial:
+[![](https://img.youtube.com/vi/sLb16YDSlBs/0.jpg)](https://www.youtube.com/watch?v=sLb16YDSlBs)
 
 Alternative bilibili.com video link: https://www.bilibili.com/video/av73433002/
 
@@ -56,8 +56,8 @@ Please make sure your Go version is 1.10 or above. Otherwise, **undefined "math/
 The following content requires reader some knowledge of Docker. You can refer to [this book][2], or check out [the official documentation][1]。
 
 ### Quick Start
-Use `docker pull fagongzi/gateway` command to download gateway Docker image.
-`docker run -d -p 9093:9093 -p 80:80 -p 9092:9092 fagongzi/gateway` initiates the container. 3 Ports are exposed:
+Use `docker pull fagongzi/manba` command to download Manba Docker image.
+`docker run -d -p 9093:9093 -p 80:80 -p 9092:9092 fagongzi/manba` initiates the container. 3 Ports are exposed:
 
 * 80
 
@@ -107,23 +107,23 @@ Use `http://127.0.0.1` to access to your API
 ![](./images/arch.png)
 
 ## Web UI
-Available Gateway Web UI Projects：
+Available Manba Web UI Projects：
 * [Official](https://github.com/fagongzi/gateway-ui-vue)
-* [gateway_ui](https://github.com/archfish/gateway_ui)
+* [gateway_ui (v2.x ONLY)](https://github.com/archfish/gateway_ui)
 * [gateway_admin_ui](https://github.com/wilehos/gateway_admin_ui)
 
 ## Components
-Gateway consists of `proxy` and `apiserver`.
+Manba consists of `proxy` and `apiserver`.
 
 ### Proxy
 Proxy is a component which provides service to clients. Proxy is a stateless node. Multiple proxies can be deployed to handle huge traffic.
 [More](./docs/proxy.md).
 
 ### ApiServer
-ApiServer provides GRPC and Restful to manage metadata for users. ApiServer integrates  official Web UI. 
+ApiServer provides GRPC and Restful to manage metadata for users. ApiServer integrates  official Web UI.
 [More](./docs/apiserver.md).
 
-## Concepts of Gateway
+## Concepts of Manba
 ### Server
 A server is a a real backend service.
 [More](./docs/server.md).
@@ -133,7 +133,7 @@ Cluster consists of servers which provide the same service. A server is chosen t
 [More](./docs/cluster.md).
 
 ### API
-API is a key concept of Gateway. We can manage external APIs in Gateway and their distribution rules, aggregation rules and URL matching rules.
+API is a key concept of Manba. We can manage external APIs in Manba and their distribution rules, aggregation rules and URL matching rules.
 [More](./docs/api.md).
 
 ### Routing

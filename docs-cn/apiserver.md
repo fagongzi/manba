@@ -1,6 +1,6 @@
 ApiServer
 --------------
-ApiServer对外提供GRPC接口，用来管理Gateway的元信息（Cluster、Server、Routing以及API）。
+ApiServer对外提供GRPC接口，用来管理Manba的元信息（Cluster、Server、Routing以及API）。
 
 # 对外开放的接口：
 ```
@@ -10,22 +10,22 @@ service MetaService {
     rpc RemoveCluster     (RemoveClusterReq)     returns (RemoveClusterRsp)      {}
     rpc GetCluster        (GetClusterReq)        returns (GetClusterRsp)         {}
     rpc GetClusterList    (GetClusterListReq)    returns (stream metapb.Cluster) {}
-      
+
     rpc PutServer         (PutServerReq)         returns (PutServerRsp)          {}
     rpc RemoveServer      (RemoveServerReq)      returns (RemoveServerRsp)       {}
     rpc GetServer         (GetServerReq)         returns (GetServerRsp)          {}
     rpc GetServerList     (GetServerListReq)     returns (stream metapb.Server)  {}
-      
+
     rpc PutAPI            (PutAPIReq)            returns (PutAPIRsp)             {}
     rpc RemoveAPI         (RemoveAPIReq)         returns (RemoveAPIRsp)          {}
     rpc GetAPI            (GetAPIReq)            returns (GetAPIRsp)             {}
     rpc GetAPIList        (GetAPIListReq)        returns (stream metapb.API)     {}
-      
+
     rpc PutRouting        (PutRoutingReq)        returns (PutRoutingRsp)         {}
     rpc RemoveRouting     (RemoveRoutingReq)     returns (RemoveRoutingRsp)      {}
     rpc GetRouting        (GetRoutingReq)        returns (GetRoutingRsp)         {}
     rpc GetRoutingList    (GetRoutingListReq)    returns (stream metapb.Routing) {}
-      
+
     rpc AddBind           (AddBindReq)           returns (AddBindRsp)            {}
     rpc RemoveBind        (RemoveBindReq)        returns (RemoveBindRsp)         {}
     rpc RemoveClusterBind (RemoveClusterBindReq) returns (RemoveClusterBindRsp)  {}

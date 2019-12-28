@@ -1,7 +1,7 @@
 FROM alpine:latest
 
-ARG APP_ROOT=/app/gateway
-ARG EXEC_NAME=proxy
+ARG APP_ROOT=/app/manba
+ARG EXEC_NAME=manba-proxy
 ARG UID=2019
 ARG CMD_NAME=demo
 ENV CURRENT_EXEC_PATH=${APP_ROOT}/${EXEC_NAME}
@@ -24,17 +24,17 @@ RUN MAIN_VERSION=$(cat /etc/alpine-release | cut -d '.' -f 0-2) \
         echo "https://mirrors.aliyun.com/alpine/v${MAIN_VERSION}/community"; \
     } >> /etc/apk/repositories \
     && apk add --update --no-cache libcap \
-    && addgroup -g ${UID} -S gateway \
-    && adduser -u ${UID} -S gateway -G gateway \
+    && addgroup -g ${UID} -S manba \
+    && adduser -u ${UID} -S manba -G manba \
     && mkdir -p ${APP_ROOT}/plugins \
-    && chown -R gateway:gateway ./ \
+    && chown -R manba:manba ./ \
     && if [ -e ${CURRENT_EXEC_PATH} ]; then \
          setcap CAP_NET_BIND_SERVICE=+eip ${CURRENT_EXEC_PATH}; \
        fi \
     && echo 'hosts: files mdns4_minimal [NOTFOUND=return] dns mdns4' >> /etc/nsswitch.conf \
     && echo -n ${CMD_NAME} > cmd
 
-USER gateway
+USER manba
 
 EXPOSE 80 2379 9092 9093
 

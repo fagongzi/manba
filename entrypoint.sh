@@ -9,7 +9,7 @@ start_etcd() {
 DEFAULT_IP="0.0.0.0"
 
 start_apiserver() {
-    apiserver --addr=${DEFAULT_IP}:9092 --addr-http=${DEFAULT_IP}:9093 --discovery $API_SERVER_OPTS &
+    manba-apiserver --addr=${DEFAULT_IP}:9092 --addr-http=${DEFAULT_IP}:9093 --discovery $API_SERVER_OPTS &
 }
 
 INPUT_CMD=$@
@@ -19,7 +19,7 @@ then
     INPUT_CMD=${CMD}
 fi
 
-DEFAULT_EXEC="proxy --addr=${DEFAULT_IP}:80 --log-level=$GATEWAY_LOG_LEVEL $GW_PROXY_OPTS"
+DEFAULT_EXEC="manba-proxy --addr=${DEFAULT_IP}:80 --log-level=$MANBA_LOG_LEVEL $GW_PROXY_OPTS"
 if [ "${INPUT_CMD}" = 'demo' ]
 then
     start_etcd

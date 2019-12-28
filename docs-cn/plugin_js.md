@@ -1,6 +1,6 @@
 Filter javascript plugin
 --------------
-Gateway提供以`Javascript`编写插件的能力，用以动态的扩展功能，甚至可以提供`Serverless`的能力扩展功能。
+Manba提供以`Javascript`编写插件的能力，用以动态的扩展功能，甚至可以提供`Serverless`的能力扩展功能。
 
 ## 定义
 一个js的插件定义如下：
@@ -82,7 +82,7 @@ function NewPlugin(cfg) {
 |SetStatusCode|Integer||设置响应状态码
 
 ### 内建模块
-由于js执行引擎并不兼容nodejs module，所以不能使用nodes module，所以gateway提供了一些内建的模块帮助编写插件。`由于这些内建库都是GO实现的，所以所有的方法名称首字母都是大写`，这里的习惯和js有点违背，但无关大雅
+由于js执行引擎并不兼容nodejs module，所以不能使用nodes module，所以Manba提供了一些内建的模块帮助编写插件。`由于这些内建库都是GO实现的，所以所有的方法名称首字母都是大写`，这里的习惯和js有点违背，但无伤大雅.
 
 #### JSON
 JSON内建插件JSON的编解码
@@ -93,7 +93,7 @@ JSON内建插件JSON的编解码
 |Parse|String|JSON||
 
 #### LOG
-提供插件日志打印到gateway的日志文件中
+提供插件日志打印到Manba的日志文件中
 
 |method|args|return|remark|
 | - | - | - | - |
@@ -162,14 +162,18 @@ JSON内建插件JSON的编解码
 |Int64MapValue||Object|把本次操作的结果转换为JSON ，一般用于hash结构|
 
 ## 插件方法
+
 ### pre
-gateway在转发请求到后端server之前会调用插件的`pre`方法，方法返回一个JSON结构，有`code`和`error`字段。一旦返回的`error`字段不为空，gateway会使用返回的`code`的字段返回客户端。例如插件检测请求没有鉴权可以返回`{"code": 403, "error": "not login"}`。正常情况可以返回`{"code": 200}`。
+
+Manba在转发请求到后端server之前会调用插件的`pre`方法，方法返回一个JSON结构，有`code`和`error`字段。一旦返回的`error`字段不为空，Manba会使用返回的`code`的字段返回客户端。例如插件检测请求没有鉴权可以返回`{"code": 403, "error": "not login"}`。正常情况可以返回`{"code": 200}`。
 
 在`pre`方法中，插件可以从调用上下文中获取`原始请求`和`转发请求`来处理。
 
 一些其他功能:
+
 - 插件可以使用`BreakFilterChainCode`来停止后续的插件`pre`方法的运行。例如返回：`{"code": BreakFilterChainCode}`
-- 插件可以在插件上下文中设置属性`UsingResponse`，来让gateway使用指定的`Response`来返回客户端。提示：可以使用内建的`http`模块的`NewHTTPResponse`方法创建一个HTTP响应。例如在`pre`方法中加入如下逻辑：
+- 插件可以在插件上下文中设置属性`UsingResponse`，来让Manba使用指定的`Response`来返回客户端。提示：可以使用内建的`http`模块的`NewHTTPResponse`方法创建一个HTTP响应。例如在`pre`方法中加入如下逻辑：
+
 ```javascript
 {
     "pre": function(ctx) {
@@ -188,11 +192,12 @@ gateway在转发请求到后端server之前会调用插件的`pre`方法，方�
 ```
 
 ### post
-gateway会在收到后端server的响应后调用插件的`post`方法，方法返回一个JSON结构，有`code`和`error`字段。一旦返回的`error`字段不为空，gateway会使用返回的`code`的字段返回客户端。正常情况可以返回`{"code": 200}`。
+
+Manba会在收到后端server的响应后调用插件的`post`方法，方法返回一个JSON结构，有`code`和`error`字段。一旦返回的`error`字段不为空，Manba会使用返回的`code`的字段返回客户端。正常情况可以返回`{"code": 200}`。
 
 在`post`方法中，插件可以从调用上下文中获取`原始请求`，`转发请求`和`响应`来处理。
 
 ### postErr
-Gateway calls `postErr` when redirecting to backend server fails.
+Manba calls `postErr` when redirecting to backend server fails.
 
 In `postErr`, plugin can retrieve `OriginalRequest`，`RedirectRequest` from context.
