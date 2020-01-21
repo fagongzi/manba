@@ -55,36 +55,6 @@ Please make sure your Go version is 1.10 or above. Otherwise, **undefined "math/
 
 The following content requires reader some knowledge of Docker. You can refer to [this book][2], or check out [the official documentation][1]。
 
-### Quick Start
-Use `docker pull fagongzi/manba` command to download Manba Docker image.
-`docker run -d -p 9093:9093 -p 80:80 -p 9092:9092 fagongzi/manba` initiates the container. 3 Ports are exposed:
-
-* 80
-
-  Proxy's HTTP port, this port is for client access.
-
-* 9092
-
-  APIServer's external GRPC port
-
-* 9093
-
-  APIServer's external HTTP Restful port. Visit `http://127.0.0.1:9093/ui/index.html` to access the web UI.
-
-Running parameters can be set by the following environment varaibles. Configuration overrides default.
-
-- GW_PROXY_OPTS
-
-   All options in `proxy --help` are supported.
-
-- API_SERVER_OPTS
-
-   All options in `apiserver --help` are supported.
-
-- ETCD_OPTS
-
-   All options in `etcd --help` are supported.
-
 ### Available Docker Images
 * `fagongzi/proxy`
 

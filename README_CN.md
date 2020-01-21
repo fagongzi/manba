@@ -39,45 +39,6 @@ Manba是一个基于HTTP协议的restful的API网关。可以作为统一的API�
 
 以下内容要求对docker基本操作有一定了解，可以看[这本书][2]，或者直接看[官方文档][1]。
 
-### 快速开始
-使用 `docker pull fagongzi/manba` 命令下载Docker镜像, 使用 `docker run -d -p 9093:9093 -p 80:80 -p 9092:9092 fagongzi/manba` 运行镜像. 镜像启动后export 3个端口:
-
-* 80
-
-  Proxy的http端口，这个端口就是直接为终端用户服务的
-
-* 9092
-
-  APIServer的对外GRPC的端口
-
-* 9093
-
-  APIServer的对外HTTP Restful的端口，访问 `http://127.0.0.1:9093/ui/index.html`访问WEBUI
-
-通过设置以下环境变量可以改变运行参数，参数相同时配置参数将会覆盖默认参数
-
-- GW_PROXY_OPTS
-
-   支持`proxy --help`中的所有参数；
-
-- API_SERVER_OPTS
-
-   支持`apiserver --help`中的所有参数；
-
-- ETCD_OPTS
-
-   支持`etcd --help`中的所有参数；
-
-### 可用的docker镜像
-
-* `fagongzi/proxy`
-
-   proxy组件，`生产可用`
-
-* `fagongzi/apiserver`
-
-   apiserver组件，`生产可用`
-
 ### Quick start with docker-compose
 ```bash
 docker-compose up -d
