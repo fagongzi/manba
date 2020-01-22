@@ -60,6 +60,8 @@ var (
 
 	// internal plugin configuration file
 	jwtCfg = flag.String("jwt", "", "Plugin(JWT): jwt plugin configuration file, json format")
+	// crossCfg
+	crossCfg = flag.String("cross", "", "Plugin(CROSS): cross plugin configuration file, json format")
 
 	// metric
 	metricJob          = flag.String("metric-job", "", "prometheus job name")
@@ -170,6 +172,7 @@ func getCfg() *proxy.Cfg {
 	cfg.Option.LimitTimeoutWrite = time.Second * time.Duration(*limitTimeoutWriteSec)
 	cfg.Option.LimitIntervalHeathCheck = time.Second * time.Duration(*limitIntervalHeathCheckSec)
 	cfg.Option.JWTCfgFile = *jwtCfg
+	cfg.Option.CrossCfgFile = *crossCfg
 	cfg.Option.EnableWebSocket = *enableWebSocket
 	cfg.Option.EnableJSPlugin = *enableJSPlugin
 	cfg.Option.DisableHeaderNameNormalizing = *disableHeaderNameNormalizing

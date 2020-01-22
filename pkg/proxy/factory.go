@@ -38,6 +38,8 @@ const (
 	FilterCaching = "CACHING"
 	// FilterJWT jwt filter
 	FilterJWT = "JWT"
+	// FilterCross cross filter
+	FilterCross = "CROSS"
 	// FilterJSPlugin js plugin engine
 	FilterJSPlugin = "JS-ENGINE"
 )
@@ -74,6 +76,8 @@ func (p *Proxy) newFilter(filterSpec *FilterSpec) (filter.Filter, error) {
 		return newCachingFilter(p.cfg.Option.LimitBytesCaching, p.dispatcher.tw), nil
 	case FilterJWT:
 		return newJWTFilter(p.cfg.Option.JWTCfgFile)
+	case FilterCross:
+		return newCrossDomainFilter(p.cfg.Option.CrossCfgFile)
 	case FilterJSPlugin:
 		return p.jsEngine, nil
 	default:

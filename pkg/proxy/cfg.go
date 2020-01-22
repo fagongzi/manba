@@ -24,7 +24,8 @@ type Option struct {
 	LimitBytesBody             int
 	LimitBytesCaching          uint64
 
-	JWTCfgFile string
+	JWTCfgFile   string
+	CrossCfgFile string
 
 	EnableWebSocket              bool
 	EnableJSPlugin               bool
