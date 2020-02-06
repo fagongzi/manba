@@ -176,7 +176,6 @@ func (r *Route) Find(url []byte, method string, paramsFunc func(name, value []by
 	var matchesItem *routeItem
 	matchedIdx := 0
 
-OUTER:
 	for idx, node := range nodes {
 		for _, item := range target {
 			if item.urlMatches(node, &matchAllParams) {
@@ -186,11 +185,9 @@ OUTER:
 					paramsFunc(item.node.argName, node.value)
 				}
 
-				if !item.node.isMatchAllConstString() {
-					target = item.children // find in children
-				}
+				target = item.children // find in children
 
-				continue OUTER
+				break // jump to first loop
 			}
 		}
 	}
