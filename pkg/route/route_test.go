@@ -263,6 +263,16 @@ func TestFind(t *testing.T) {
 		URLPattern: "/(enum:on|off):action",
 		Method:     "*",
 	})
+	r.Add(&metapb.API{
+		ID:         5,
+		URLPattern: "/(enum:on|off):action",
+		Method:     "*",
+	})
+	r.Add(&metapb.API{
+		ID:         6,
+		URLPattern: "/test/*/test",
+		Method:     "*",
+	})
 
 	params := make(map[string][]byte, 0)
 	paramsFunc := func(name, value []byte) {
@@ -320,5 +330,14 @@ func TestFind(t *testing.T) {
 	id, _ = r.Find([]byte("/on/notmatches"), "GET", paramsFunc)
 	if id != 0 {
 		t.Errorf("expect not matched , but %d", id)
+	}
+	
+	params = make(map[string][]byte, 0)
+	id, _ = r.Find([]byte("/test/match/test"), "GET", paramsFunc)
+	if id != 6 {
+		t.Errorf("expect not matched , but %d", id)
+	}
+	if string(params["*"]) != "match" {
+		t.Errorf("expect not matched, should match /test/*/test")
 	}
 }
