@@ -185,9 +185,11 @@ func (dn *dispatchNode) copyHeaderTo(ctx *fasthttp.RequestCtx) {
 }
 
 func (dn *dispatchNode) maybeDone() {
-	if nil != dn.wg {
+	if nil != dn.multiCtx {
 		dn.multiCtx.completePart(dn.node.meta.AttrName, dn.getResponseBody())
-		dn.wg.Done()
+		if nil != dn.wg {
+			dn.wg.Done()
+		}
 	}
 }
 
