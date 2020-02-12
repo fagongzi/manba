@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/fagongzi/gateway/pkg/util"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
 	"time"
+
+	"github.com/fagongzi/gateway/pkg/util"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/fagongzi/gateway/pkg/pb/rpcpb"
@@ -31,7 +32,7 @@ var (
 	servicePrefix  = flag.String("service-prefix", "/services", "The prefix for service name.")
 	publishLease   = flag.Int64("publish-lease", 10, "Publish service lease seconds")
 	publishTimeout = flag.Int("publish-timeout", 30, "Publish service timeout seconds")
-	ui             = flag.String("ui", "/app/gateway/ui/dist", "The gateway ui dist dir.")
+	ui             = flag.String("ui", "/app/manba/ui/dist", "The gateway ui dist dir.")
 	uiPrefix       = flag.String("ui-prefix", "/ui", "The gateway ui prefix path.")
 	version        = flag.Bool("version", false, "Show version info")
 )
