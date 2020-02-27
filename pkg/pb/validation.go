@@ -2,11 +2,11 @@ package pb
 
 import (
 	"fmt"
-
-	"github.com/fagongzi/gateway/pkg/plugin"
+	"regexp"
 
 	"github.com/fagongzi/gateway/pkg/expr"
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/fagongzi/gateway/pkg/plugin"
 )
 
 // ValidateRouting validate routing
@@ -67,6 +67,17 @@ func ValidateAPI(value *metapb.API) error {
 			_, err := expr.Parse([]byte(n.URLRewrite))
 			if err != nil {
 				return err
+			}
+		}
+
+		for _, v := range n.Validations {
+			for _, r := range v.Rules {
+				if r.RuleType == metapb.RuleRegexp {
+					_, err := regexp.Compile(r.Expression)
+					if err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}
