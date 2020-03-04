@@ -18,11 +18,11 @@ import (
 
 const (
 	// besides checking token is legitimate or not, it checks whether token exists in redis
-	actionTokenInRedis  string = "token_in_redis"
+	actionTokenInRedis string = "token_in_redis"
 	// update token's TTL
-	actionRenewByRaw    string = "renew_by_raw"
+	actionRenewByRaw string = "renew_by_raw"
 	// update token's TTL and in the same time put new token in redis, previous token invalid
-	actionRenewByRedis  string = "renew_by_redis"
+	actionRenewByRedis string = "renew_by_redis"
 	// fetch fields from token and put them in header which is redirected to a backend server who is unbeknownst to JWT
 	actionFetchToHeader string = "fetch_to_header"
 	actionFetchToCookie string = "fetch_to_cookie"
@@ -96,7 +96,10 @@ func newJWTFilter(file string) (filter.Filter, error) {
 	}
 
 	f.initRedisPool()
-	f.initTokenLookup()
+	err = f.initTokenLookup()
+	if err != nil {
+		return nil, err
+	}
 	return f, nil
 }
 
@@ -190,8 +193,11 @@ func (f *JWTFilter) initSigningMethod() error {
 	return nil
 }
 
-func (f *JWTFilter) initTokenLookup() {
+func (f *JWTFilter) initTokenLookup() error {
 	parts := strings.Split(f.cfg.TokenLookup, ":")
+	if len(parts) < 2 {
+		return fmt.Errorf("TokenLookup should contain : ")
+	}
 	f.getter = jwtFromHeader(parts[1], f.cfg.AuthSchema)
 	switch parts[0] {
 	case "query":
@@ -199,6 +205,7 @@ func (f *JWTFilter) initTokenLookup() {
 	case "cookie":
 		f.getter = jwtFromCookie(parts[1])
 	}
+	return nil
 }
 
 func (f *JWTFilter) initActions() error {
