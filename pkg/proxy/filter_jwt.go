@@ -217,7 +217,7 @@ func (f *JWTFilter) initTokenLookup() {
 	case "cookie":
 		f.getter = jwtFromCookie(parts[1])
 	}
-	f.csrfGetter = jwtFromHeader(f.cfg.CSRFHeaderName, "")
+	f.csrfGetter = csrfFromHeader(f.cfg.CSRFHeaderName)
 }
 
 func (f *JWTFilter) initActions() error {
@@ -429,5 +429,15 @@ func jwtFromHeader(header string, authScheme string) tokenGetter {
 			return auth[l+1:], nil
 		}
 		return "", errJWTMissing
+	}
+}
+
+func csrfFromHeader(header string) tokenGetter {
+	return func(c filter.Context) (string, error) {
+		value := string(c.OriginRequest().Request.Header.Peek(header))
+		if len(value) == 0 {
+			return "", errCSRFMissing
+		}
+		return value, nil
 	}
 }
