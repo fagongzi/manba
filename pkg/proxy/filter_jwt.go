@@ -37,6 +37,15 @@ var (
 	errJWTInvalid  = errors.New("invalid jwt token")
 	errCSRFMissing = errors.New("missing csrf token")
 	errCSRFInvalid = errors.New("invalid csrf token")
+
+	//handler custom error to statusCode
+	customErrMaps = map[string]int{
+		errJWTMissing.Error():  fasthttp.StatusUnauthorized,
+		errJWTInvalid.Error():  fasthttp.StatusUnauthorized,
+		errCSRFMissing.Error(): fasthttp.StatusForbidden,
+		errCSRFInvalid.Error(): fasthttp.StatusForbidden,
+		redis.ErrNil.Error():   fasthttp.StatusForbidden, //redis nil err
+	}
 )
 
 type tokenGetter func(filter.Context) (string, error)
@@ -130,11 +139,14 @@ func (f *JWTFilter) Pre(c filter.Context) (statusCode int, err error) {
 	for idx, act := range f.actions {
 		ok, err := act(f.actionArgs[idx], token, claims, c)
 		if err != nil {
+			if code, custom := customErrMaps[err.Error()]; custom {
+				return code, err
+			}
 			return fasthttp.StatusInternalServerError, err
 		}
 
 		if !ok {
-			return fasthttp.StatusForbidden, nil
+			return fasthttp.StatusForbidden, nil //Note: if return err is nil, the httpStatusCode will be 200 OK
 		}
 	}
 
