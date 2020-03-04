@@ -18,11 +18,13 @@ import (
 
 const (
 	// besides checking token is legitimate or not, it checks whether token exists in redis
-	actionTokenInRedis  string = "token_in_redis"
+	actionTokenInRedis string = "token_in_redis"
+	// besides checking token is legitimate or not, it checks whether token exists in redis and the value is the csrfToken value
+	actionTokenAndCSRFInRedis string = "token_and_csrf_in_redis"
 	// update token's TTL
-	actionRenewByRaw    string = "renew_by_raw"
+	actionRenewByRaw string = "renew_by_raw"
 	// update token's TTL and in the same time put new token in redis, previous token invalid
-	actionRenewByRedis  string = "renew_by_redis"
+	actionRenewByRedis string = "renew_by_redis"
 	// fetch fields from token and put them in header which is redirected to a backend server who is unbeknownst to JWT
 	actionFetchToHeader string = "fetch_to_header"
 	actionFetchToCookie string = "fetch_to_cookie"
@@ -31,8 +33,10 @@ const (
 )
 
 var (
-	errJWTMissing = errors.New("missing jwt token")
-	errJWTInvalid = errors.New("invalid jwt token")
+	errJWTMissing  = errors.New("missing jwt token")
+	errJWTInvalid  = errors.New("invalid jwt token")
+	errCSRFMissing = errors.New("missing csrf token")
+	errCSRFInvalid = errors.New("invalid csrf token")
 )
 
 type tokenGetter func(filter.Context) (string, error)
@@ -43,6 +47,7 @@ type JWTCfg struct {
 	Secret               string   `json:"secret"`
 	Method               string   `json:"method"`
 	TokenLookup          string   `json:"tokenLookup"`
+	CSRFHeaderName       string   `json:"csrfHeaderName"`
 	AuthSchema           string   `json:"authSchema"`
 	RenewTokenHeaderName string   `json:"renewTokenHeaderName,omitempty"`
 	Redis                *Redis   `json:"redis,omitempty"`
@@ -70,6 +75,7 @@ type JWTFilter struct {
 	cfg              *JWTCfg
 	secretBytes      []byte
 	getter           tokenGetter
+	csrfGetter       tokenGetter
 	redisPool        *redis.Pool
 	leaseTTLDuration time.Duration
 	signing          *jwt.SigningMethodHMAC
@@ -199,6 +205,7 @@ func (f *JWTFilter) initTokenLookup() {
 	case "cookie":
 		f.getter = jwtFromCookie(parts[1])
 	}
+	f.csrfGetter = jwtFromHeader(f.cfg.CSRFHeaderName, "")
 }
 
 func (f *JWTFilter) initActions() error {
@@ -208,6 +215,8 @@ func (f *JWTFilter) initActions() error {
 		switch c.Method {
 		case actionTokenInRedis:
 			f.actions = append(f.actions, f.tokenInRedisAction)
+		case actionTokenAndCSRFInRedis:
+			f.actions = append(f.actions, f.actionTokenAndCSRFInRedis)
 		case actionRenewByRaw:
 			f.actions = append(f.actions, f.renewByRawAction)
 		case actionRenewByRedis:
@@ -320,6 +329,36 @@ func (f *JWTFilter) tokenInRedisAction(args map[string]interface{}, token string
 	value, err := redis.Bool(conn.Do("EXISTS", key))
 	conn.Close()
 	return value, err
+}
+
+func (f *JWTFilter) actionTokenAndCSRFInRedis(args map[string]interface{}, token string, claims jwt.MapClaims, c filter.Context) (bool, error) {
+	if f.cfg.Redis == nil {
+		return false, fmt.Errorf("redis not setting")
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString(args["prefix"].(string))
+	buf.WriteString(token)
+	key := hack.SliceToString(buf.Bytes())
+
+	conn := f.getRedis()
+	value, err := redis.String(conn.Do("GET", key))
+	conn.Close()
+
+	if err != nil {
+		return false, err
+	}
+	csrfToken, err := f.csrfGetter(c)
+	if err != nil {
+		if err == errJWTMissing {
+			err = errCSRFMissing
+		}
+		return false, err
+	}
+	if value != csrfToken {
+		return false, errCSRFInvalid
+	}
+	return true, err
 }
 
 func (f *JWTFilter) fetchToHeader(args map[string]interface{}, token string, claims jwt.MapClaims, c filter.Context) (bool, error) {
