@@ -33,6 +33,8 @@ const (
 )
 
 var (
+	operationFail = errors.New("jwt filter operation fail")
+
 	errJWTMissing  = errors.New("missing jwt token")
 	errJWTInvalid  = errors.New("invalid jwt token")
 	errCSRFMissing = errors.New("missing csrf token")
@@ -147,7 +149,7 @@ func (f *JWTFilter) Pre(c filter.Context) (statusCode int, err error) {
 		}
 
 		if !ok {
-			return fasthttp.StatusForbidden, fmt.Errorf("%s", "jwt filter operation fail")
+			return fasthttp.StatusForbidden, operationFail
 		}
 	}
 
