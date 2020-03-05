@@ -19,6 +19,14 @@
             }
         },
         {
+            "method": "token_and_csrf_in_redis",
+            "params": {
+                "prefix": "the prefix of token in the redis",
+                "csrf_white_method":"GET,OPTION",
+                "csrf_white_path":"/testinfo,/testdesc"
+            }
+        },
+        {
             "method": "renew_by_redis",
             "params": {
                 "prefix": "the prefix of token in the redis",

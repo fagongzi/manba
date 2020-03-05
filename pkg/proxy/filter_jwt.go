@@ -138,6 +138,7 @@ func (f *JWTFilter) Pre(c filter.Context) (statusCode int, err error) {
 
 	for idx, act := range f.actions {
 		ok, err := act(f.actionArgs[idx], token, claims, c)
+		//Note: if return err is nil, the request will be continue，otherwise termination the request
 		if err != nil {
 			if code, custom := customErrMaps[err.Error()]; custom {
 				return code, err
@@ -146,7 +147,7 @@ func (f *JWTFilter) Pre(c filter.Context) (statusCode int, err error) {
 		}
 
 		if !ok {
-			return fasthttp.StatusForbidden, nil //Note: if return err is nil, the httpStatusCode will be 200 OK
+			return fasthttp.StatusForbidden, fmt.Errorf("%s", "jwt filter operation fail")
 		}
 	}
 
@@ -360,6 +361,37 @@ func (f *JWTFilter) actionTokenAndCSRFInRedis(args map[string]interface{}, token
 	if err != nil {
 		return false, err
 	}
+
+	//filter csrf white list
+	reqMethod := strings.ToUpper(string(c.OriginRequest().Method()))
+	reqPath := strings.ToUpper(string(c.OriginRequest().URI().Path()))
+	sep := ","
+
+	if args["csrf_white_method"] != nil {
+		noAuthMethods := strings.Split(args["csrf_white_method"].(string), sep)
+		for _, v := range noAuthMethods {
+			if v == "" {
+				continue
+			}
+			if strings.ToUpper(string(v)) == reqMethod {
+				return true, err
+			}
+		}
+	}
+
+	if args["csrf_white_path"] != nil {
+		noAuthUri := strings.Split(args["csrf_white_path"].(string), sep)
+		for _, v := range noAuthUri {
+			if v == "" {
+				continue
+			}
+			if strings.ToUpper(v) == reqPath {
+				return true, err
+			}
+		}
+	}
+
+	//check csrf
 	csrfToken, err := f.csrfGetter(c)
 	if err != nil {
 		if err == errJWTMissing {
