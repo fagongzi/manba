@@ -4,6 +4,7 @@
     "tokenLookup": "header:Authorization",
     "authSchema": "Bearer",
     "renewTokenHeaderName": "",
+    "csrfHeaderName": "_csrf",
     "redis": {
         "addr": "127.0.0.1:6379",
         "maxActive": 1000,

@@ -4,6 +4,7 @@
     "tokenLookup": "token lookup, [header|query|cookie:Authorization]",
     "authSchema": "jwt schema, [Bearer]",
     "renewTokenHeaderName": "the header name for new token in the response header",
+    "csrfHeaderName": "the header name for CSRFToken",
     "redis": {
         "addr": "127.0.0.1:6379",
         "maxActive": "max connections, int",
@@ -15,6 +16,14 @@
             "method": "token_in_redis",
             "params": {
                 "prefix": "the prefix of token in the redis"
+            }
+        },
+        {
+            "method": "token_and_csrf_in_redis",
+            "params": {
+                "prefix": "the prefix of token in the redis",
+                "csrf_white_method":"GET,OPTION",
+                "csrf_white_path":"/testinfo,/testdesc"
             }
         },
         {
