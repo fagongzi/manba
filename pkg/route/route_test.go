@@ -176,6 +176,21 @@ func TestAdd(t *testing.T) {
 	if len(r.root.children) != 5 {
 		t.Errorf("expect 4 children but %d, %+v", len(r.root.children), r.root)
 	}
+
+	r.Add(&metapb.API{
+		ID:         6,
+		URLPattern: "/a/b/b/a",
+		Method:     "*",
+	})
+	r.Add(&metapb.API{
+		ID:         7,
+		URLPattern: "/a/b/b/c",
+		Method:     "*",
+	})
+	_, ok := r.Find([]byte("/a/b/b/c"), "*", nil)
+	if !ok {
+		t.Errorf("expected match /a/b/b/c, but not")
+	}
 }
 
 func TestFindWithStar(t *testing.T) {
