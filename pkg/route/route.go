@@ -114,7 +114,7 @@ func (r *Route) Add(api *metapb.API) error {
 	parent := r.root
 	matchedIdx := 0
 	for idx, node := range nodes {
-		if parent.matches(node) {
+		if idx == 0 && parent.matches(node) {
 			matchedIdx = idx
 			continue
 		}
