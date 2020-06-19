@@ -62,16 +62,15 @@ type dispatchNode struct {
 	exprCtx  *expr.Ctx
 	wg       *sync.WaitGroup
 
-	requestTag           string
-	idx                  int
-	api                  *apiRuntime
-	node                 *apiNode
-	dest                 *serverRuntime
-	copyTo               *serverRuntime
-	res                  *fasthttp.Response
-	cachedBody, cachedCT []byte
-	err                  error
-	code                 int
+	requestTag string
+	idx        int
+	api        *apiRuntime
+	node       *apiNode
+	dest       *serverRuntime
+	copyTo     *serverRuntime
+	res        *fasthttp.Response
+	err        error
+	code       int
 }
 
 func (dn *dispatchNode) setHost(forwardReq *fasthttp.Request) {
@@ -135,10 +134,6 @@ func (dn *dispatchNode) needRewrite() bool {
 }
 
 func (dn *dispatchNode) getResponseContentType() []byte {
-	if len(dn.cachedCT) > 0 {
-		return dn.cachedCT
-	}
-
 	if nil != dn.res {
 		return dn.res.Header.ContentType()
 	}
@@ -147,10 +142,6 @@ func (dn *dispatchNode) getResponseContentType() []byte {
 }
 
 func (dn *dispatchNode) getResponseBody() []byte {
-	if len(dn.cachedBody) > 0 {
-		return dn.cachedBody
-	}
-
 	if dn.node.meta.UseDefault ||
 		(dn.hasError() && dn.hasDefaultValue()) {
 		return dn.node.meta.DefaultValue.Body

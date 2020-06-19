@@ -21,6 +21,7 @@ func main() {
 
 	server := echo.New()
 	server.Use(md.Logger())
+	server.Use(md.Gzip())
 
 	server.GET("/serverinfo", func(c echo.Context) error {
 		hostname, _ := os.Hostname()

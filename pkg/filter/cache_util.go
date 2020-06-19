@@ -1,31 +1,41 @@
 package filter
 
+import (
+	"github.com/fagongzi/goetty"
+	"github.com/valyala/fasthttp"
+)
+
 // NewCachedValue returns a cached value
-func NewCachedValue(body, contentType []byte) []byte {
-	size := len(contentType) + 4 + len(body)
-	data := make([]byte, size, size)
-	idx := 0
-	int2BytesTo(len(contentType), data[0:4])
-	idx += 4
-	copy(data[idx:idx+len(contentType)], contentType)
-	idx += len(contentType)
-	copy(data[idx:], body)
-	return data
+func NewCachedValue(resp *fasthttp.Response) *goetty.ByteBuf {
+	buf := goetty.NewByteBuf(128)
+	buf.WriteInt(0)
+	n := 0
+	resp.Header.VisitAll(func(key, value []byte) {
+		buf.WriteInt(len(key))
+		buf.Write(key)
+		buf.WriteInt(len(value))
+		buf.Write(value)
+		n++
+	})
+	buf.WriteInt(len(resp.Body()))
+	buf.Write(resp.Body())
+
+	goetty.Int2BytesTo(n, buf.RawBuf())
+	return buf
 }
 
-// ParseCachedValue returns cached value as content-type and body value
-func ParseCachedValue(data []byte) ([]byte, []byte) {
-	size := byte2Int(data[0:4])
-	return data[4 : 4+size], data[4+size:]
+// ReadCachedValueTo read cached value to response
+func ReadCachedValueTo(buf *goetty.ByteBuf, resp *fasthttp.Response) {
+	headers, _ := buf.ReadInt()
+	for i := 0; i < headers; i++ {
+		resp.Header.SetBytesKV(readBytes(buf), readBytes(buf))
+	}
+
+	resp.SetBody(readBytes(buf))
 }
 
-func int2BytesTo(v int, ret []byte) {
-	ret[0] = byte(v >> 24)
-	ret[1] = byte(v >> 16)
-	ret[2] = byte(v >> 8)
-	ret[3] = byte(v)
-}
-
-func byte2Int(data []byte) int {
-	return int((int(data[0])&0xff)<<24 | (int(data[1])&0xff)<<16 | (int(data[2])&0xff)<<8 | (int(data[3]) & 0xff))
+func readBytes(buf *goetty.ByteBuf) []byte {
+	n, _ := buf.ReadInt()
+	_, value, _ := buf.ReadBytes(n)
+	return value
 }

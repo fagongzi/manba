@@ -15,6 +15,7 @@ import (
 	"github.com/fagongzi/gateway/pkg/plugin"
 	"github.com/fagongzi/gateway/pkg/store"
 	"github.com/fagongzi/gateway/pkg/util"
+	"github.com/fagongzi/goetty"
 	"github.com/fagongzi/log"
 	"github.com/fagongzi/util/hack"
 	"github.com/fagongzi/util/task"
@@ -434,9 +435,16 @@ func (p *Proxy) doProxy(dn *dispatchNode, adjustH func(*proxyContext)) {
 		return
 	}
 
-	// using spec response
-	if value := c.GetAttr(filter.AttrUsingResponse); nil != value {
-		res, ok := value.(*fasthttp.Response)
+	var res *fasthttp.Response
+
+	if value := c.GetAttr(filter.AttrUsingCachingValue); nil != value { // hit cache
+		res = fasthttp.AcquireResponse()
+		filter.ReadCachedValueTo(value.(*goetty.ByteBuf), res)
+		log.Infof("%s: dispatch node %d using cache",
+			dn.requestTag,
+			dn.idx)
+	} else if value := c.GetAttr(filter.AttrUsingResponse); nil != value { // using spec response
+		specRes, ok := value.(*fasthttp.Response)
 		if !ok {
 			dn.err = fmt.Errorf("not support using response attr %T", value)
 			dn.code = fasthttp.StatusInternalServerError
@@ -450,89 +458,72 @@ func (p *Proxy) doProxy(dn *dispatchNode, adjustH func(*proxyContext)) {
 			return
 		}
 
-		dn.res = res
-		dn.maybeDone()
-		releaseContext(c)
-
 		log.Infof("%s: dispatch node %d using response attr",
 			dn.requestTag,
 			dn.idx)
-		return
-	}
-
-	// hit cache
-	if value := c.GetAttr(filter.AttrUsingCachingValue); nil != value {
-		dn.cachedCT, dn.cachedBody = filter.ParseCachedValue(value.([]byte))
-		dn.maybeDone()
-		releaseContext(c)
-
-		log.Infof("%s: dispatch node %d using cache",
-			dn.requestTag,
-			dn.idx)
-		return
-	}
-
-	var res *fasthttp.Response
-	times := int32(0)
-	for {
-		log.Infof("%s: dispatch node %d sent for %d times",
-			dn.requestTag,
-			dn.idx,
-			times)
-
-		if !dn.api.isWebSocket() {
-			dn.setHost(forwardReq)
-			res, err = p.client.Do(forwardReq, svr.meta.Addr, dn.httpOption())
-		} else {
-			res, err = p.onWebsocket(c, svr.meta.Addr)
-		}
-		c.setEndAt(time.Now())
-
-		times++
-
-		// skip succeed
-		if err == nil && res.StatusCode() < fasthttp.StatusBadRequest {
-			break
-		}
-
-		// skip no retry strategy
-		if !dn.hasRetryStrategy() {
-			break
-		}
-
-		// skip not match
-		if !dn.matchAllRetryStrategy() &&
-			!dn.matchRetryStrategy(int32(res.StatusCode())) {
-			break
-		}
-
-		// retry with strategiess
-		retry := dn.retryStrategy()
-		if times >= retry.MaxTimes {
-			log.Infof("%s: dispatch node %d sent times over the max %d",
+		res = specRes
+	} else {
+		times := int32(0)
+		for {
+			log.Infof("%s: dispatch node %d sent for %d times",
 				dn.requestTag,
 				dn.idx,
-				retry.MaxTimes)
-			break
-		}
+				times)
 
-		if retry.Interval > 0 {
-			time.Sleep(time.Millisecond * time.Duration(retry.Interval))
-		}
+			if !dn.api.isWebSocket() {
+				dn.setHost(forwardReq)
+				res, err = p.client.Do(forwardReq, svr.meta.Addr, dn.httpOption())
+			} else {
+				res, err = p.onWebsocket(c, svr.meta.Addr)
+			}
+			c.setEndAt(time.Now())
 
-		fasthttp.ReleaseResponse(res)
-		// update selectServer params : change fasthttp.Request to fasthttp.RequestCtx
-		p.dispatcher.selectServer(ctx, dn, dn.requestTag)
-		svr = dn.dest
-		if nil == svr {
-			dn.err = ErrNoServer
-			dn.code = fasthttp.StatusServiceUnavailable
-			dn.maybeDone()
+			times++
 
-			log.Infof("%s: dispatch node %d has no server, return with 503",
-				dn.requestTag,
-				dn.idx)
-			return
+			// skip succeed
+			if err == nil && res.StatusCode() < fasthttp.StatusBadRequest {
+				break
+			}
+
+			// skip no retry strategy
+			if !dn.hasRetryStrategy() {
+				break
+			}
+
+			// skip not match
+			if !dn.matchAllRetryStrategy() &&
+				!dn.matchRetryStrategy(int32(res.StatusCode())) {
+				break
+			}
+
+			// retry with strategiess
+			retry := dn.retryStrategy()
+			if times >= retry.MaxTimes {
+				log.Infof("%s: dispatch node %d sent times over the max %d",
+					dn.requestTag,
+					dn.idx,
+					retry.MaxTimes)
+				break
+			}
+
+			if retry.Interval > 0 {
+				time.Sleep(time.Millisecond * time.Duration(retry.Interval))
+			}
+
+			fasthttp.ReleaseResponse(res)
+			// update selectServer params : change fasthttp.Request to fasthttp.RequestCtx
+			p.dispatcher.selectServer(ctx, dn, dn.requestTag)
+			svr = dn.dest
+			if nil == svr {
+				dn.err = ErrNoServer
+				dn.code = fasthttp.StatusServiceUnavailable
+				dn.maybeDone()
+
+				log.Infof("%s: dispatch node %d has no server, return with 503",
+					dn.requestTag,
+					dn.idx)
+				return
+			}
 		}
 	}
 

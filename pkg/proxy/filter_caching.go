@@ -26,10 +26,12 @@ type CachingFilter struct {
 }
 
 func newCachingFilter(maxBytes uint64, tw *goetty.TimeoutWheel) filter.Filter {
-	return &CachingFilter{
-		tw:    tw,
-		cache: util.NewLRUCache(maxBytes),
+	f := &CachingFilter{
+		tw: tw,
 	}
+
+	f.cache = util.NewLRUCache(maxBytes, f.onEvicted)
+	return f
 }
 
 // Name return name of this filter
@@ -79,6 +81,14 @@ func (f *CachingFilter) removeCache(id interface{}) {
 	f.cache.Remove(id)
 }
 
+func (f *CachingFilter) onEvicted(key util.Key, value *goetty.ByteBuf) {
+	f.tw.Schedule(time.Second*10, f.doReleaseCacheBuf, value)
+}
+
+func (f *CachingFilter) doReleaseCacheBuf(arg interface{}) {
+	arg.(*goetty.ByteBuf).Release()
+}
+
 func getCachingID(c filter.Context) (bool, string) {
 	req := c.ForwardRequest()
 	if len(c.DispatchNode().Cache.Conditions) == 0 {
@@ -115,8 +125,6 @@ func getID(req *fasthttp.Request, keys []metapb.Parameter) string {
 	return strings.Join(ids, "-")
 }
 
-func genCachedValue(c filter.Context) []byte {
-	contentType := c.Response().Header.ContentType()
-	body := c.Response().Body()
-	return filter.NewCachedValue(body, contentType)
+func genCachedValue(c filter.Context) *goetty.ByteBuf {
+	return filter.NewCachedValue(c.Response())
 }

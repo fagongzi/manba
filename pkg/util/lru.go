@@ -3,6 +3,8 @@ package util
 import (
 	"container/list"
 	"sync"
+
+	"github.com/fagongzi/goetty"
 )
 
 // Cache is an LRU cache. It is not safe for concurrent access.
@@ -16,7 +18,7 @@ type Cache struct {
 
 	// OnEvicted optionally specificies a callback function to be
 	// executed when an entry is purged from the cache.
-	OnEvicted func(key Key, value interface{})
+	OnEvicted func(key Key, value *goetty.ByteBuf)
 
 	ll    *list.List
 	cache map[interface{}]*list.Element
@@ -27,22 +29,23 @@ type Key interface{}
 
 type entry struct {
 	key   Key
-	value []byte
+	value *goetty.ByteBuf
 }
 
 // NewLRUCache creates a new Cache.
 // If maxBytes is zero, the cache has no limit and it's assumed
 // that eviction is done by the caller.
-func NewLRUCache(maxBytes uint64) *Cache {
+func NewLRUCache(maxBytes uint64, evictedFunc func(key Key, value *goetty.ByteBuf)) *Cache {
 	return &Cache{
-		MaxBytes: maxBytes,
-		ll:       list.New(),
-		cache:    make(map[interface{}]*list.Element),
+		MaxBytes:  maxBytes,
+		ll:        list.New(),
+		cache:     make(map[interface{}]*list.Element),
+		OnEvicted: evictedFunc,
 	}
 }
 
 // Add adds a value to the cache.
-func (c *Cache) Add(key Key, value []byte) {
+func (c *Cache) Add(key Key, value *goetty.ByteBuf) {
 	c.Lock()
 
 	if c.cache == nil {
@@ -53,14 +56,14 @@ func (c *Cache) Add(key Key, value []byte) {
 		c.ll.MoveToFront(ee)
 
 		entry := ee.Value.(*entry)
-		c.current -= uint64(len(entry.value))
-		c.current += uint64(len(value))
+		c.current -= uint64(value.Readable())
+		c.current += uint64(value.Readable())
 		entry.value = value
 		c.Unlock()
 		return
 	}
 
-	c.current += uint64(len(value))
+	c.current += uint64(value.Readable())
 	ele := c.ll.PushFront(&entry{key, value})
 	c.cache[key] = ele
 	if c.MaxBytes != 0 && c.current > c.MaxBytes {
@@ -70,7 +73,7 @@ func (c *Cache) Add(key Key, value []byte) {
 }
 
 // Get looks up a key's value from the cache.
-func (c *Cache) Get(key Key) (value []byte, ok bool) {
+func (c *Cache) Get(key Key) (value *goetty.ByteBuf, ok bool) {
 	c.RLock()
 
 	if c.cache == nil {
@@ -117,7 +120,7 @@ func (c *Cache) removeElement(e *list.Element) {
 	c.ll.Remove(e)
 	kv := e.Value.(*entry)
 	delete(c.cache, kv.key)
-	c.current -= uint64(len(kv.value))
+	c.current -= uint64(kv.value.Readable())
 	if c.OnEvicted != nil {
 		c.OnEvicted(kv.key, kv.value)
 	}
