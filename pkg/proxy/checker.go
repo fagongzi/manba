@@ -55,6 +55,11 @@ func (r *dispatcher) check(id uint64) {
 			if svr.useCheckDuration > r.cnf.Option.LimitIntervalHeathCheck {
 				svr.useCheckDuration = r.cnf.Option.LimitIntervalHeathCheck
 			}
+
+			if svr.useCheckDuration == 0 {
+				svr.useCheckDuration = time.Duration(svr.meta.HeathCheck.CheckInterval)
+			}
+
 			svr.heathTimeout, _ = r.tw.Schedule(svr.useCheckDuration, r.heathCheckTimeout, id)
 		}
 	}()
