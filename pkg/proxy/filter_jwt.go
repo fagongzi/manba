@@ -33,12 +33,11 @@ const (
 )
 
 var (
-	operationFail = errors.New("jwt filter operation fail")
-
-	errJWTMissing  = errors.New("missing jwt token")
-	errJWTInvalid  = errors.New("invalid jwt token")
-	errCSRFMissing = errors.New("missing csrf token")
-	errCSRFInvalid = errors.New("invalid csrf token")
+	errOperationFail = errors.New("jwt filter operation fail")
+	errJWTMissing    = errors.New("missing jwt token")
+	errJWTInvalid    = errors.New("invalid jwt token")
+	errCSRFMissing   = errors.New("missing csrf token")
+	errCSRFInvalid   = errors.New("invalid csrf token")
 
 	//handler custom error to statusCode
 	customErrMaps = map[string]int{
@@ -149,7 +148,7 @@ func (f *JWTFilter) Pre(c filter.Context) (statusCode int, err error) {
 		}
 
 		if !ok {
-			return fasthttp.StatusForbidden, operationFail
+			return fasthttp.StatusForbidden, errOperationFail
 		}
 	}
 
@@ -382,8 +381,8 @@ func (f *JWTFilter) actionTokenAndCSRFInRedis(args map[string]interface{}, token
 	}
 
 	if args["csrf_white_path"] != nil {
-		noAuthUri := strings.Split(args["csrf_white_path"].(string), sep)
-		for _, v := range noAuthUri {
+		noAuthURI := strings.Split(args["csrf_white_path"].(string), sep)
+		for _, v := range noAuthURI {
 			if v == "" {
 				continue
 			}
