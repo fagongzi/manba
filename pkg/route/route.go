@@ -181,10 +181,6 @@ OUTER:
 		ok := false
 		for _, item := range target {
 			ok = item.urlMatches(node, &matchAllParams)
-			log.Infof(">>>>>>>>>> %s matches %s: %+v",
-				string(item.node.value),
-				string(node.value),
-				ok)
 			if ok {
 				matchedIdx = idx
 				matchesItem = item
