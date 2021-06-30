@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/fagongzi/gateway/pkg/pb/metapb"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAddWithMethod(t *testing.T) {
@@ -336,4 +337,25 @@ func TestFind(t *testing.T) {
 	if id != 0 {
 		t.Errorf("expect not matched , but %d", id)
 	}
+}
+
+func TestIssue225(t *testing.T) {
+	domain1 := "baidu.com"
+	params := make(map[string][]byte)
+	paramsFunc := func(name, value []byte) {
+		params[string(name)] = value
+	}
+
+	r := NewRoute()
+	r.Add(&metapb.API{
+		ID:         1,
+		MatchRule:  metapb.MatchAll,
+		URLPattern: "/a/b/c",
+		Method:     "POST",
+		Domain:     domain1,
+	})
+
+	id, ok := r.Find([]byte("/a/b/d/c"), "POST", paramsFunc)
+	assert.False(t, ok)
+	assert.Equal(t, uint64(0), id)
 }

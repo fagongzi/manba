@@ -178,8 +178,14 @@ func (r *Route) Find(url []byte, method string, paramsFunc func(name, value []by
 
 OUTER:
 	for idx, node := range nodes {
+		ok := false
 		for _, item := range target {
-			if item.urlMatches(node, &matchAllParams) {
+			ok = item.urlMatches(node, &matchAllParams)
+			log.Infof(">>>>>>>>>> %s matches %s: %+v",
+				string(item.node.value),
+				string(node.value),
+				ok)
+			if ok {
 				matchedIdx = idx
 				matchesItem = item
 				if item.node.hasArg && paramsFunc != nil {
@@ -192,6 +198,11 @@ OUTER:
 
 				continue OUTER
 			}
+		}
+		log.Infof("check next item")
+
+		if !ok {
+			return 0, false
 		}
 	}
 
