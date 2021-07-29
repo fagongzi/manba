@@ -259,7 +259,7 @@ func newExpr(value []byte) (Expr, error) {
 			return nil, fmt.Errorf("syntax error: depend error")
 		}
 
-		return &dependParamExpr{param: toStringSlice(values[2:])}, nil
+		return &dependParamExpr{param: toStringSlice(values[1:])}, nil
 	} else if bytes.Equal(values[0], param) {
 		if len(values) != 2 {
 			return nil, fmt.Errorf("syntax error: param error")
