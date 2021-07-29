@@ -441,7 +441,14 @@ func (e *pathParamExpr) Name() string {
 func toStringSlice(values [][]byte) []string {
 	paths := make([]string, 0, len(values))
 	for _, value := range values {
-		paths = append(paths, hack.SliceToString(value))
+		s := hack.SliceToString(value)
+		if strings.Contains(s,"["){
+			tmp := strings.Split(s, "[")
+			tmp[1] = "["+tmp[1]
+			paths = append(paths, tmp...)
+		}else{
+			paths = append(paths, s)
+		}
 	}
 	return paths
 }
