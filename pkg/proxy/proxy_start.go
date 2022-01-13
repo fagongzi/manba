@@ -164,8 +164,8 @@ func (p *Proxy) startHTTPCMUX() {
 	}
 
 	m := cmux.New(l)
-	go p.startHTTPWithListener(m.Match(cmux.Any()))
 	go p.startHTTPWebSocketWithListener(m.Match(cmux.HTTP1HeaderField("Upgrade", "websocket")))
+	go p.startHTTPWithListener(m.Match(cmux.Any()))
 	err = m.Serve()
 	if err != nil {
 		log.Fatalf("start http failed failed with %+v",
