@@ -3,6 +3,7 @@ package expr
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/buger/jsonparser"
 	"github.com/fagongzi/util/hack"
@@ -442,11 +443,11 @@ func toStringSlice(values [][]byte) []string {
 	paths := make([]string, 0, len(values))
 	for _, value := range values {
 		s := hack.SliceToString(value)
-		if strings.Contains(s,"["){
+		if strings.Contains(s, "[") {
 			tmp := strings.Split(s, "[")
-			tmp[1] = "["+tmp[1]
+			tmp[1] = "[" + tmp[1]
 			paths = append(paths, tmp...)
-		}else{
+		} else {
 			paths = append(paths, s)
 		}
 	}
