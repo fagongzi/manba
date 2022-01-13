@@ -16,7 +16,22 @@ import (
 const (
 	websocketRspKey = "__ws_rsp"
 )
-
+var wsHeaders = map[string]bool{
+	"Origin":                   true,
+	"Sec-WebSocket-Protocol":   true,
+	"Sec-Websocket-Protocol":   true,
+	"Cookie":                   true,
+	"Sec-WebSocket-Version":    true,
+	"Sec-Websocket-Version":    true,
+	"Sec-WebSocket-Key":        true,
+	"Sec-Websocket-Key":        true,
+	"Sec-Websocket-Extensions": true,
+	"Connection":               true,
+	"Upgrade":                  true,
+	"Set-Cookie":               true,
+	"Sec-WebSocket-Extensions": true,
+	"Sec-WebSocket-Accept":     true,
+}
 // ServeHTTP  http reverse handler by http
 func (p *Proxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if p.isStopped() {
@@ -103,7 +118,15 @@ func (p *Proxy) onWebsocket(c *proxyContext, addr string) (*fasthttp.Response, e
 		},
 		Director: func(incoming *http.Request, out http.Header) {
 			out.Set("Origin", fmt.Sprintf("http://%s", addr))
-			out.Set("Host", addr)
+			for key, vals := range incoming.Header {
+				if _, ok := wsHeaders[key]; ok {
+					continue
+				}
+				for _, val := range vals {
+					out.Set(key, val)
+
+				}
+			}
 		},
 		Backend: func(r *http.Request) *url.URL {
 			u, _ := url.Parse(fmt.Sprintf("ws://%s%s", addr, r.RequestURI))
