@@ -146,6 +146,9 @@ func (rt *Runtime) Pre(c *Ctx) (int, error) {
 		return rt.BaseFilter.Pre(c.delegate)
 	}
 
+	rt.Lock()
+	defer rt.Unlock()
+
 	value, err := rt.preFunc.Call(rt.this, c)
 	if err != nil {
 		log.Errorf("plugin %d/%s:%d plugin pre func failed with %+v",
@@ -168,6 +171,9 @@ func (rt *Runtime) Post(c *Ctx) (int, error) {
 	if rt.postFunc.IsUndefined() {
 		return rt.BaseFilter.Post(c.delegate)
 	}
+
+	rt.Lock()
+	defer rt.Unlock()
 
 	value, err := rt.postFunc.Call(rt.this, c)
 	if err != nil {
@@ -192,6 +198,9 @@ func (rt *Runtime) PostErr(c *Ctx, code int, err error) {
 		rt.BaseFilter.PostErr(c.delegate, code, err)
 		return
 	}
+
+	rt.Lock()
+	defer rt.Unlock()
 
 	_, jerr := rt.postErrFunc.Call(rt.this, c, err.Error())
 	if jerr != nil {
