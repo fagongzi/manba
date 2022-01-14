@@ -1,12 +1,13 @@
 package proxy
 
 import (
+	"github.com/huandu/go-clone"
+	"github.com/valyala/fasthttp"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
-
-	"github.com/valyala/fasthttp"
 )
 
 type writeFlusher interface {
@@ -81,6 +82,10 @@ func (c *runOnFirstRead) Read(bs []byte) (int, error) {
 func copyRequest(req *fasthttp.Request) *fasthttp.Request {
 	newreq := fasthttp.AcquireRequest()
 	newreq.Reset()
-	req.CopyTo(newreq)
+	if strings.Contains(string(req.Header.ContentType()), "multipart/form-data") {
+		newreq = clone.Clone(req).(*fasthttp.Request)
+	} else {
+		req.CopyTo(newreq)
+	}
 	return newreq
 }
