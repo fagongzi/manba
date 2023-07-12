@@ -52,7 +52,7 @@ func (item *routeItem) urlMatches(n node, matchAllParam *bytes.Buffer) bool {
 			return true
 		}
 
-		return bytes.Compare(item.node.value, n.value) == 0
+		return bytes.Equal(item.node.value, n.value)
 	case stringType:
 		return true
 	default:
@@ -75,7 +75,7 @@ func (item *routeItem) matches(n node) bool {
 	case stringType:
 		return true
 	case constType:
-		return bytes.Compare(item.node.value, n.value) == 0
+		return bytes.Equal(item.node.value, n.value)
 	case enumType:
 		return true
 	default:

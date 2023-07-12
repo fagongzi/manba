@@ -239,7 +239,7 @@ func TestFindMatchAll(t *testing.T) {
 	if id != 1 {
 		t.Errorf("expect matched 1, but %d", id)
 	}
-	if bytes.Compare(params["*"], []byte("p1")) != 0 {
+	if !bytes.Equal(params["*"], []byte("p1")) {
 		t.Errorf("expect params p1, but %s", params["*"])
 	}
 
@@ -247,7 +247,7 @@ func TestFindMatchAll(t *testing.T) {
 	if id != 1 {
 		t.Errorf("expect matched 1, but %d", id)
 	}
-	if bytes.Compare(params["*"], []byte("p1/p2")) != 0 {
+	if !bytes.Equal(params["*"], []byte("p1/p2")) {
 		t.Errorf("expect params p1/p2, but %s", params["*"])
 	}
 }
@@ -301,7 +301,7 @@ func TestFind(t *testing.T) {
 	if id != 3 {
 		t.Errorf("expect matched 3, but %d", id)
 	}
-	if bytes.Compare(params["name"], []byte("check2")) != 0 {
+	if !bytes.Equal(params["name"], []byte("check2")) {
 		t.Errorf("expect params check2, but %s", params["name"])
 	}
 
@@ -310,7 +310,7 @@ func TestFind(t *testing.T) {
 	if id != 4 {
 		t.Errorf("expect matched 4, but %d", id)
 	}
-	if bytes.Compare(params["age"], []byte("123")) != 0 {
+	if !bytes.Equal(params["age"], []byte("123")) {
 		t.Errorf("expect params 123, but %s", params["age"])
 	}
 
@@ -319,7 +319,7 @@ func TestFind(t *testing.T) {
 	if id != 5 {
 		t.Errorf("expect matched 5, but %d", id)
 	}
-	if bytes.Compare(params["action"], []byte("on")) != 0 {
+	if !bytes.Equal(params["action"], []byte("on")) {
 		t.Errorf("expect params on, but %s", params["action"])
 	}
 
@@ -328,7 +328,7 @@ func TestFind(t *testing.T) {
 	if id != 5 {
 		t.Errorf("expect matched 5, but %d", id)
 	}
-	if bytes.Compare(params["action"], []byte("off")) != 0 {
+	if !bytes.Equal(params["action"], []byte("off")) {
 		t.Errorf("expect params off, but %s", params["action"])
 	}
 
