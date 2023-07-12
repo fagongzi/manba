@@ -47,7 +47,7 @@ func (n *node) isMatchAllConstString() bool {
 func (n *node) inEnumValue(value []byte) bool {
 	in := false
 	for _, enum := range n.enums {
-		if bytes.Compare(enum, value) == 0 {
+		if bytes.Equal(enum, value) {
 			in = true
 		}
 	}

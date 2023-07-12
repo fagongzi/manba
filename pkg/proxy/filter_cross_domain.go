@@ -62,7 +62,7 @@ func (f *CrossDomainFilter) Name() string {
 
 // Pre execute before proxy
 func (f *CrossDomainFilter) Pre(c filter.Context) (statusCode int, err error) {
-	if bytes.Compare(c.OriginRequest().Method(), options) != 0 {
+	if !bytes.Equal(c.OriginRequest().Method(), options) {
 		return f.BaseFilter.Pre(c)
 	}
 
